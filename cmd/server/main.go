@@ -4,99 +4,91 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"brunch-card-digital/internal/api"
 	"brunch-card-digital/internal/database"
 )
 
-// Main entry point for the Brunch Card API
 func main() {
-	// 1. Database Configuration
-	// These values match the postgres-db.yaml setup in Kubernetes
-	dbHost := "postgres-service"
-	dbUser := "admin"
-	dbPass := "brunch_pass"
-	dbName := "loyalty_db"
+	// 1. DATABASE CONFIGURATION
+	// Using the service names defined in your Kubernetes manifests
+	dbConfig := struct {
+		host, user, pass, name string
+	}{
+		host: "postgres-service",
+		user: "admin",
+		pass: "brunch_pass",
+		name: "loyalty_db",
+	}
 
-	log.Println("Connecting to PostgreSQL...")
-	db, err := database.ConnectDB(dbHost, dbUser, dbPass, dbName)
+	// 2. INITIALIZE DATABASE
+	log.Printf("Connecting to database at %s...", dbConfig.host)
+	db, err := database.ConnectDB(dbConfig.host, dbConfig.user, dbConfig.pass, dbConfig.name)
 	if err != nil {
-		log.Fatalf("Critical: Database connection failed: %v", err)
+		log.Fatalf("Critical Error: Failed to connect to DB: %v", err)
 	}
 	defer db.Close()
 
-	// 2. Run Database Migrations
-	// Path relative to the WORKDIR in Dockerfile (/root/)
+	// 3. RUN MIGRATIONS
+	// Ensure the table structure exists before handling requests
 	migrationPath := "internal/database/migrations.sql"
-	err = database.RunMigrations(db, migrationPath)
-	if err != nil {
-		log.Printf("Migration warning: %v", err)
+	if err := database.RunMigrations(db, migrationPath); err != nil {
+		log.Printf("Migration warning (continuing...): %v", err)
 	}
 
-	// 3. Initialize Repository
+	// 4. REPOSITORY & HANDLERS INJECTION
 	repo := database.NewCardRepository(db)
 
-	// --- ROUTES ---
+	// 5. DEFINE HTTP HANDLERS (ROUTING)
+	mux := http.NewServeMux()
 
-	// Health check for Kubernetes liveness/readiness probes
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Brunch Card API is running!")
-	})
+	// API Endpoints
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/api/v1/cards", makeHandler(api.CreateCardHandler, repo))
+	mux.HandleFunc("/api/v1/cards/status", makeHandler(api.GetStatusHandler, repo))
+	mux.HandleFunc("/api/v1/cards/stamp", makeHandler(api.StampHandler, repo))
+	mux.HandleFunc("/api/v1/qrcode", makeHandler(api.GetQRCodeHandler, repo))
 
-	// API Route to create a new digital loyalty card
-	http.HandleFunc("/api/v1/cards", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			api.CreateCardHandler(w, r, repo)
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
-	// API Route to get the card status (stamps count, reward status)
-	http.HandleFunc("/api/v1/cards/status", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			api.GetStatusHandler(w, r, repo)
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
-	// API Route to generate the QR Code image
-	http.HandleFunc("/api/v1/qrcode", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			api.GetQRCodeHandler(w, r, repo)
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
-	// API Route to add a stamp to a card
-	http.HandleFunc("/api/v1/cards/stamp", func(w http.ResponseWriter, r *http.Request) {
-		// Permitimos POST (pelo botão) e GET (pelo browser para testares rápido)
-		if r.Method == http.MethodPost || r.Method == http.MethodGet {
-			api.StampHandler(w, r, repo)
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
-	// Serve static files (CSS, JS) from the /web directory
-	fs := http.FileServer(http.Dir("web"))
-	http.Handle("/web/", http.StripPrefix("/web/", fs))
-
-	// Main UI Route to view the digital card in the browser
-	http.HandleFunc("/card", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		// Serves the HTML file for the loyalty card
+	// UI Endpoints (Vue.js App)
+	mux.HandleFunc("/card", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/card.html")
 	})
 
-	fmt.Println("Server starting on port 8080...")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	// 6. SERVER CONFIGURATION
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      loggingMiddleware(mux), // Adding a simple logger
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
+
+	fmt.Println("🚀 Brunch API Server started on port 8080")
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Server startup failed: %v", err)
+	}
+}
+
+// --- HELPER FUNCTIONS & MIDDLEWARE ---
+
+// healthHandler for K8s Liveness/Readiness probes
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "OK")
+}
+
+// makeHandler is a wrapper to inject the repository into handlers without repeating logic
+func makeHandler(fn func(http.ResponseWriter, *http.Request, *database.CardRepository), repo *database.CardRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(w, r, repo)
+	}
+}
+
+// loggingMiddleware prints basic info for every request to help debugging
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
+	})
 }

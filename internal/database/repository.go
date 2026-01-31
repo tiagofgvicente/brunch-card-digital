@@ -33,6 +33,7 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
 // AddStamp incrementa um carimbo e verifica se o prémio está pronto
 func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 	var card models.BrunchCard
+	// Atomic increment and status check in one query
 	query := `
 		UPDATE brunch_cards 
 		SET stamps_count = stamps_count + 1,
