@@ -1,50 +1,77 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>O Meu Brunch Card</title>
+    <title>My Brunch Card</title>
     <style>
-        :root { --gold: #D4AF37; --dark: #1a1a1a; --cream: #F5F5DC; }
-        body { background: var(--dark); display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Segoe UI', sans-serif; }
+        :root { --gold: #D4AF37; --dark: #1a1a1a; --cream: #F5F5DC; --success: #2e7d32; }
+        body { background: var(--dark); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .card { background: var(--cream); width: 320px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; border: 3px solid var(--gold); }
-        h2 { color: var(--dark); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+        h2 { color: var(--dark); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
-        .stamp { width: 45px; height: 45px; border-radius: 12px; border: 2px dashed var(--gold); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #ccc; }
+        .stamp { width: 45px; height: 45px; border-radius: 12px; border: 2px dashed var(--gold); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #ccc; transition: all 0.3s; }
         .stamped { background: var(--gold); border-style: solid; color: var(--dark); animation: pop 0.3s ease-out; }
         @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
-        .qr-area { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-top: 20px; }
-        .status-text { margin-top: 15px; font-weight: bold; color: var(--dark); }
+        .qr-area { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-top: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status-text { margin-top: 15px; font-weight: bold; color: var(--dark); min-height: 20px; }
+        
+        /* TEST BUTTON STYLES - Remove these and the button below later */
+        #test-stamp-btn { margin-top: 25px; padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: 5px; cursor: pointer; display: none; font-weight: bold; width: 100%; }
+        #test-stamp-btn:hover { background: #1b5e20; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>Brunch Premium</h2>
         <div id="grid" class="grid"></div>
-        <p id="status" class="status-text">A carregar...</p>
+        <p id="status" class="status-text">Loading...</p>
         <div class="qr-area">
-            <img id="qr" width="120" src="">
+            <img id="qr" width="120" src="" alt="QR Code">
         </div>
+
+        <button id="test-stamp-btn" onclick="addStamp()">🍳 ADD TEST STAMP</button>
     </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
+        const isAdmin = urlParams.get('admin');
 
-        fetch(`/api/v1/cards/status?id=${id}`)
-            .then(res => res.json())
-            .then(data => {
-                const grid = document.getElementById('grid');
-                for (let i = 1; i <= 10; i++) {
-                    const div = document.createElement('div');
-                    div.className = `stamp ${i <= data.stamps_count ? 'stamped' : ''}`;
-                    div.innerHTML = i <= data.stamps_count ? '🍳' : i;
-                    grid.appendChild(div);
-                }
-                document.getElementById('status').innerText = data.is_reward_ready ? 
-                    "🎉 BRUNCH GRÁTIS DISPONÍVEL!" : `Faltam ${10 - data.stamps_count} carimbos`;
-                document.getElementById('qr').src = `/api/v1/qrcode?id=${id}`;
-            });
+        // Show the test button only if &admin=true is in the URL
+        if (isAdmin === 'true') {
+            document.getElementById('test-stamp-btn').style.display = 'block';
+        }
+
+        function loadCardData() {
+            fetch(`/api/v1/cards/status?id=${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('grid');
+                    grid.innerHTML = ''; // Clear existing
+                    for (let i = 1; i <= 10; i++) {
+                        const div = document.createElement('div');
+                        div.className = `stamp ${i <= data.stamps_count ? 'stamped' : ''}`;
+                        div.innerHTML = i <= data.stamps_count ? '🍳' : i;
+                        grid.appendChild(div);
+                    }
+                    document.getElementById('status').innerText = data.is_reward_ready ? 
+                        "🎉 FREE BRUNCH READY!" : `Need ${10 - data.stamps_count} more stamps`;
+                    document.getElementById('qr').src = `/api/v1/qrcode?id=${id}`;
+                })
+                .catch(err => console.error("Error loading card:", err));
+        }
+
+        function addStamp() {
+            fetch(`/api/v1/cards/stamp?id=${id}`, { method: 'POST' })
+                .then(res => {
+                    if(res.ok) loadCardData();
+                    else alert("Failed to add stamp");
+                });
+        }
+
+        if (id) loadCardData();
+        else document.getElementById('status').innerText = "No ID provided";
     </script>
 </body>
 </html>
