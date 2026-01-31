@@ -30,10 +30,9 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
 	return nil
 }
 
+// AddStamp incrementa um carimbo e verifica se o prémio está pronto
 func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 	var card models.BrunchCard
-
-	// Atomic update: increment stamps and check if reward is ready
 	query := `
 		UPDATE brunch_cards 
 		SET stamps_count = stamps_count + 1,
@@ -42,15 +41,10 @@ func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 		WHERE id = $1
 		RETURNING id, customer_id, stamps_count, is_reward_ready, design;
 	`
-
 	err := r.db.QueryRow(query, id).Scan(
 		&card.ID, &card.CustomerID, &card.StampsCount, &card.IsRewardReady, &card.Design,
 	)
-
-	if err != nil {
-		return nil, err
-	}
-	return &card, nil
+	return &card, err
 }
 
 func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {

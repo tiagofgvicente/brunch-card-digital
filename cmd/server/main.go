@@ -67,6 +67,9 @@ func main() {
 		api.StampHandler(w, r, repo)
 	})
 
+	// Serve ficheiros estáticos da pasta /web
+	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
+
 	fmt.Println("Server starting on port 8080...")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
