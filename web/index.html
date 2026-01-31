@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Brunch Card</title>
+    <style>
+        .card { border: 2px solid #333; border-radius: 15px; padding: 20px; width: 300px; text-align: center; font-family: sans-serif; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
+        .stamp { width: 40px; height: 40px; border-radius: 50%; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; }
+        .stamped { background-color: #ffcc00; border-style: solid; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Brunch Loyalty</h2>
+        <div id="stamps-grid" class="grid">
+            </div>
+        <p id="status"></p>
+        <img id="qr-code" src="" width="150">
+    </div>
+
+    <script>
+        const cardID = new URLSearchParams(window.location.search).get('id');
+        // Fetch card data from our Go API
+        fetch(`/api/v1/cards/status?id=${cardID}`)
+            .then(res => res.json())
+            .then(data => {
+                const grid = document.getElementById('stamps-grid');
+                for(let i=1; i<=10; i++) {
+                    const div = document.createElement('div');
+                    div.className = `stamp ${i <= data.stamps_count ? 'stamped' : ''}`;
+                    div.innerHTML = i <= data.stamps_count ? '🍳' : i;
+                    grid.appendChild(div);
+                }
+                document.getElementById('qr-code').src = `/api/v1/qrcode?id=${cardID}`;
+            });
+    </script>
+</body>
+</html>
