@@ -47,15 +47,27 @@ func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 	return &card, err
 }
 
+// GetCardByID retrieves a specific card by its UUID
 func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {
 	var card models.BrunchCard
-	query := `SELECT id, customer_id, stamps_count, is_reward_ready, design FROM brunch_cards WHERE id = $1`
+
+	query := `
+		SELECT id, customer_id, stamps_count, is_reward_ready, design 
+		FROM brunch_cards 
+		WHERE id = $1
+	`
 
 	err := r.db.QueryRow(query, id).Scan(
-		&card.ID, &card.CustomerID, &card.StampsCount, &card.IsRewardReady, &card.Design,
+		&card.ID,
+		&card.CustomerID,
+		&card.StampsCount,
+		&card.IsRewardReady,
+		&card.Design,
 	)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &card, nil
 }
