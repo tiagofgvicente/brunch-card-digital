@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	// Replace 'youruser' with your actual GitHub username
 	"brunch-card-digital/internal/api"
 	"brunch-card-digital/internal/database"
 )
@@ -13,7 +12,7 @@ import (
 // Main entry point for the Brunch Card API
 func main() {
 	// 1. Database Configuration
-	// These values match our postgres-db.yaml setup
+	// These values match the postgres-db.yaml setup in Kubernetes
 	dbHost := "postgres-service"
 	dbUser := "admin"
 	dbPass := "brunch_pass"
@@ -26,15 +25,15 @@ func main() {
 	}
 	defer db.Close()
 
-	// 2. Run Migrations
-	// The path here is relative to the WORKDIR in the Dockerfile (/root/)
+	// 2. Run Database Migrations
+	// Path relative to the WORKDIR in Dockerfile (/root/)
 	migrationPath := "internal/database/migrations.sql"
 	err = database.RunMigrations(db, migrationPath)
 	if err != nil {
 		log.Printf("Migration warning: %v", err)
 	}
 
-	// 3. Initialize Repository and Handlers
+	// 3. Initialize Repository
 	repo := database.NewCardRepository(db)
 
 	// --- ROUTES ---
@@ -45,7 +44,7 @@ func main() {
 		fmt.Fprintf(w, "Brunch Card API is running!")
 	})
 
-	// API Route to create a new digital card
+	// API Route to create a new digital loyalty card
 	http.HandleFunc("/api/v1/cards", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			api.CreateCardHandler(w, r, repo)
@@ -54,7 +53,16 @@ func main() {
 		}
 	})
 
-	// Route to get the QR Code image
+	// API Route to get the card status (stamps count, reward status)
+	http.HandleFunc("/api/v1/cards/status", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			api.GetStatusHandler(w, r, repo)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// API Route to generate the QR Code image
 	http.HandleFunc("/api/v1/qrcode", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			api.GetQRCodeHandler(w, r, repo)
@@ -63,14 +71,26 @@ func main() {
 		}
 	})
 
+	// API Route to add a stamp to a card
 	http.HandleFunc("/api/v1/cards/stamp", func(w http.ResponseWriter, r *http.Request) {
-		api.StampHandler(w, r, repo)
+		if r.Method == http.MethodPost {
+			api.StampHandler(w, r, repo)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
 	})
 
-	// Serve ficheiros estáticos da pasta /web
-	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
+	// Serve static files (CSS, JS) from the /web directory
+	fs := http.FileServer(http.Dir("web"))
+	http.Handle("/web/", http.StripPrefix("/web/", fs))
 
+	// Main UI Route to view the digital card in the browser
 	http.HandleFunc("/card", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		// Serves the HTML file for the loyalty card
 		http.ServeFile(w, r, "web/card.html")
 	})
 
