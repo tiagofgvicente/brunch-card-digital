@@ -73,7 +73,8 @@ func main() {
 
 	// API Route to add a stamp to a card
 	http.HandleFunc("/api/v1/cards/stamp", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
+		// Permitimos POST (pelo botão) e GET (pelo browser para testares rápido)
+		if r.Method == http.MethodPost || r.Method == http.MethodGet {
 			api.StampHandler(w, r, repo)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

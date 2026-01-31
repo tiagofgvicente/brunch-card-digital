@@ -3,75 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Brunch Card</title>
+    <title>Brunch VIP Card</title>
     <style>
-        :root { --gold: #D4AF37; --dark: #1a1a1a; --cream: #F5F5DC; --success: #2e7d32; }
-        body { background: var(--dark); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { background: var(--cream); width: 320px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; border: 3px solid var(--gold); }
-        h2 { color: var(--dark); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
-        .stamp { width: 45px; height: 45px; border-radius: 12px; border: 2px dashed var(--gold); display: flex; align-items: center; justify-content: center; font-size: 24px; color: #ccc; transition: all 0.3s; }
-        .stamped { background: var(--gold); border-style: solid; color: var(--dark); animation: pop 0.3s ease-out; }
-        @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
-        .qr-area { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-top: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .status-text { margin-top: 15px; font-weight: bold; color: var(--dark); min-height: 20px; }
+        :root { --gold: #D4AF37; --dark: #1a1a1a; --cream: #F5F5DC; }
+        body { background: var(--dark); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: 'Helvetica', sans-serif; }
         
-        /* TEST BUTTON STYLES - Remove these and the button below later */
-        #test-stamp-btn { margin-top: 25px; padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: 5px; cursor: pointer; display: none; font-weight: bold; width: 100%; }
-        #test-stamp-btn:hover { background: #1b5e20; }
+        /* Container do Card com efeito 3D */
+        .card-container { width: 320px; height: 450px; perspective: 1000px; cursor: pointer; }
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s; transform-style: preserve-3d; }
+        .card-container.flipped .card-inner { transform: rotateY(180deg); }
+
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 20px; border: 3px solid var(--gold); background: var(--cream); display: flex; flex-direction: column; align-items: center; justify-content: space-around; padding: 20px; box-sizing: border-box; }
+        .card-back { transform: rotateY(180deg); }
+
+        h2 { color: var(--dark); margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+        .customer-name { font-size: 1.2rem; color: #555; font-weight: bold; }
+        
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; }
+        .stamp { width: 45px; height: 45px; border-radius: 50%; border: 2px dashed var(--gold); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stamped { background: var(--gold); border-style: solid; color: var(--dark); }
+
+        .qr-image { background: white; padding: 10px; border-radius: 10px; }
+        .hint { color: var(--gold); font-size: 0.8rem; margin-top: 10px; }
+        
+        button { margin-top: 20px; padding: 10px; background: #2e7d32; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 100; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Brunch Premium</h2>
-        <div id="grid" class="grid"></div>
-        <p id="status" class="status-text">Loading...</p>
-        <div class="qr-area">
-            <img id="qr" width="120" src="" alt="QR Code">
-        </div>
 
-        <button id="test-stamp-btn" onclick="addStamp()">🍳 ADD TEST STAMP</button>
+    <div class="card-container" id="card" onclick="this.classList.toggle('flipped')">
+        <div class="card-inner">
+            <div class="card-front">
+                <h2>Brunch VIP</h2>
+                <div class="customer-name" id="name">Loading...</div>
+                <div class="grid" id="grid"></div>
+                <div id="status">Loading status...</div>
+                <div class="hint">Click to flip for QR Code</div>
+            </div>
+
+            <div class="card-back">
+                <h2>Scan at Counter</h2>
+                <div class="qr-image">
+                    <img id="qr" width="200" src="">
+                </div>
+                <div class="hint">Click to flip back</div>
+            </div>
+        </div>
     </div>
 
+    <button id="admin-btn" style="display:none" onclick="event.stopPropagation(); addStamp()">🍳 STAMP (Admin)</button>
+
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get('id');
-        const isAdmin = urlParams.get('admin');
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
 
-        // Show the test button only if &admin=true is in the URL
-        if (isAdmin === 'true') {
-            document.getElementById('test-stamp-btn').style.display = 'block';
-        }
+        if(params.get('admin') === 'true') document.getElementById('admin-btn').style.display = 'block';
 
-        function loadCardData() {
+        function updateData() {
             fetch(`/api/v1/cards/status?id=${id}`)
-                .then(res => res.json())
+                .then(r => r.json())
                 .then(data => {
-                    const grid = document.getElementById('grid');
-                    grid.innerHTML = ''; // Clear existing
-                    for (let i = 1; i <= 10; i++) {
-                        const div = document.createElement('div');
-                        div.className = `stamp ${i <= data.stamps_count ? 'stamped' : ''}`;
-                        div.innerHTML = i <= data.stamps_count ? '🍳' : i;
-                        grid.appendChild(div);
-                    }
-                    document.getElementById('status').innerText = data.is_reward_ready ? 
-                        "🎉 FREE BRUNCH READY!" : `Need ${10 - data.stamps_count} more stamps`;
+                    document.getElementById('name').innerText = data.customer_id;
                     document.getElementById('qr').src = `/api/v1/qrcode?id=${id}`;
-                })
-                .catch(err => console.error("Error loading card:", err));
-        }
-
-        function addStamp() {
-            fetch(`/api/v1/cards/stamp?id=${id}`, { method: 'POST' })
-                .then(res => {
-                    if(res.ok) loadCardData();
-                    else alert("Failed to add stamp");
+                    
+                    const grid = document.getElementById('grid');
+                    grid.innerHTML = '';
+                    for(let i=1; i<=10; i++) {
+                        const s = document.createElement('div');
+                        s.className = `stamp ${i <= data.stamps_count ? 'stamped' : ''}`;
+                        s.innerHTML = i <= data.stamps_count ? '🍳' : '';
+                        grid.appendChild(s);
+                    }
+                    document.getElementById('status').innerText = data.is_reward_ready ? "FREE BRUNCH READY!" : `${10-data.stamps_count} to go`;
                 });
         }
 
-        if (id) loadCardData();
-        else document.getElementById('status').innerText = "No ID provided";
+        function addStamp() {
+            fetch(`/api/v1/cards/stamp?id=${id}`, { method: 'POST' }).then(() => updateData());
+        }
+
+        updateData();
     </script>
 </body>
 </html>
