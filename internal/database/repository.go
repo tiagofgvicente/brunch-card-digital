@@ -30,22 +30,28 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
 	return nil
 }
 
-// AddStamp incrementa um carimbo e verifica se o prémio está pronto
+// / AddStamp handles the atomic increment of both current and total stamps
 func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 	var card models.BrunchCard
-	// Atomic increment and status check in one query
+	// Logic: If current is 10, next one resets it to 1. Total always grows.
 	query := `
 		UPDATE brunch_cards 
-		SET stamps_count = stamps_count + 1,
-		    is_reward_ready = (stamps_count + 1 >= 10),
+		SET stamps_count = CASE WHEN stamps_count >= 10 THEN 1 ELSE stamps_count + 1 END,
+		    total_stamps = total_stamps + 1,
+		    is_reward_ready = (CASE WHEN stamps_count >= 9 OR (stamps_count = 10) THEN true ELSE false END),
 		    updated_at = NOW()
 		WHERE id = $1
-		RETURNING id, customer_id, stamps_count, is_reward_ready, design;
+		RETURNING id, customer_id, stamps_count, total_stamps, is_reward_ready;
 	`
-	err := r.db.QueryRow(query, id).Scan(
-		&card.ID, &card.CustomerID, &card.StampsCount, &card.IsRewardReady, &card.Design,
-	)
+	err := r.db.QueryRow(query, id).Scan(&card.ID, &card.CustomerID, &card.StampsCount, &card.TotalStamps, &card.IsRewardReady)
 	return &card, err
+}
+
+// UseReward subtracts 10 stamps from the total (consumes one side-reward)
+func (r *CardRepository) UseReward(id string) error {
+	query := `UPDATE brunch_cards SET total_stamps = total_stamps - 10 WHERE id = $1 AND total_stamps >= 10`
+	_, err := r.db.Exec(query, id)
+	return err
 }
 
 // GetCardByID retrieves a specific card by its UUID

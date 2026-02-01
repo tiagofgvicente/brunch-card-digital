@@ -37,3 +37,13 @@ func StampHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRep
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedCard)
 }
+
+// UseRewardHandler handles the deduction of 10 points for a reward
+func UseRewardHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	cardID := r.URL.Query().Get("id")
+	if err := repo.UseReward(cardID); err != nil {
+		http.Error(w, "Failed to use reward", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}

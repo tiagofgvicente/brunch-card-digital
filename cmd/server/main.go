@@ -43,22 +43,50 @@ func main() {
 	// 5. DEFINE HTTP HANDLERS (ROUTING)
 	mux := http.NewServeMux()
 
-	// API Endpoints
-	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/api/v1/cards", makeHandler(api.CreateCardHandler, repo))
-	mux.HandleFunc("/api/v1/cards/status", makeHandler(api.GetStatusHandler, repo))
-	mux.HandleFunc("/api/v1/cards/stamp", makeHandler(api.StampHandler, repo))
-	mux.HandleFunc("/api/v1/qrcode", makeHandler(api.GetQRCodeHandler, repo))
+	// --- UI ENDPOINTS ---
 
-	// UI Endpoints (Vue.js App)
+	// Landing Page / Registration Form
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Only handle exactly "/" to avoid matching all sub-paths
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		http.ServeFile(w, r, "web/index.html")
+	})
+
+	// Digital Card View (Vue.js App)
 	mux.HandleFunc("/card", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/card.html")
 	})
 
+	// Static Files Support (if needed in the future)
+	mux.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
+
+	// --- API ENDPOINTS ---
+
+	// Health check for Kubernetes probes
+	mux.HandleFunc("/health", healthHandler)
+
+	// Create a new digital card
+	mux.HandleFunc("/api/v1/cards", makeHandler(api.CreateCardHandler, repo))
+
+	// Get card status and stamp count
+	mux.HandleFunc("/api/v1/cards/status", makeHandler(api.GetStatusHandler, repo))
+
+	// Add a stamp to a card
+	mux.HandleFunc("/api/v1/cards/stamp", makeHandler(api.StampHandler, repo))
+
+	// Consume a 10-stamp side reward (Gifts)
+	mux.HandleFunc("/api/v1/cards/use-reward", makeHandler(api.UseRewardHandler, repo))
+
+	// Generate QR Code image
+	mux.HandleFunc("/api/v1/qrcode", makeHandler(api.GetQRCodeHandler, repo))
+
 	// 6. SERVER CONFIGURATION
 	server := &http.Server{
 		Addr:         ":8080",
-		Handler:      loggingMiddleware(mux), // Adding a simple logger
+		Handler:      loggingMiddleware(mux), // Request logging
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}

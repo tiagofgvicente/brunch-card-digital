@@ -1,38 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Brunch Card</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brunch.co - Register Client</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        .card { border: 2px solid #333; border-radius: 15px; padding: 20px; width: 300px; text-align: center; font-family: sans-serif; }
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
-        .stamp { width: 40px; height: 40px; border-radius: 50%; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; }
-        .stamped { background-color: #ffcc00; border-style: solid; }
+        :root { --primary: #00a896; --dark: #1a1a1a; --gold: #ffd166; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .reg-box { background: #2a2a2a; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; border-top: 5px solid var(--primary); }
+        h1 { color: var(--primary); margin-bottom: 30px; }
+        input { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: none; font-size: 1rem; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .result { margin-top: 30px; padding: 20px; background: rgba(0,168,150,0.1); border: 1px dashed var(--primary); border-radius: 10px; animation: fadeIn 0.5s; }
+        .card-link { color: var(--gold); word-break: break-all; font-family: monospace; font-size: 0.9rem; display: block; margin: 15px 0; text-decoration: none; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Brunch Loyalty</h2>
-        <div id="stamps-grid" class="grid">
-            </div>
-        <p id="status"></p>
-        <img id="qr-code" src="" width="150">
+    <div id="app" class="reg-box">
+        <h1>New VIP Client</h1>
+        
+        <div v-if="!createdCard">
+            <input v-model="customerName" placeholder="Customer Name (e.g. Jose Silva)" @keyup.enter="register">
+            <button @click="register">CREATE DIGITAL CARD</button>
+        </div>
+
+        <div v-else class="result">
+            <p>✅ Card Created Successfully!</p>
+            <p>Share this link with the client:</p>
+            <a :href="cardUrl" target="_blank" class="card-link">{{ cardUrl }}</a>
+            <button @click="openCard" style="background: var(--gold); color: #333;">OPEN CARD NOW</button>
+            <button @click="createdCard = null" style="margin-top:10px; background: transparent; border: 1px solid #666;">Register Another</button>
+        </div>
     </div>
 
     <script>
-        const cardID = new URLSearchParams(window.location.search).get('id');
-        // Fetch card data from our Go API
-        fetch(`/api/v1/cards/status?id=${cardID}`)
-            .then(res => res.json())
-            .then(data => {
-                const grid = document.getElementById('stamps-grid');
-                for(let i=1; i<=10; i++) {
-                    const div = document.createElement('div');
-                    div.className = `stamp ${i <= data.stamps_count ? 'stamped' : ''}`;
-                    div.innerHTML = i <= data.stamps_count ? '🍳' : i;
-                    grid.appendChild(div);
-                }
-                document.getElementById('qr-code').src = `/api/v1/qrcode?id=${cardID}`;
-            });
+        const { createApp, ref, computed } = Vue;
+        createApp({
+            setup() {
+                const customerName = ref('');
+                const createdCard = ref(null);
+
+                const cardUrl = computed(() => {
+                    if (!createdCard.value) return '';
+                    // Generate the full URL for the client view
+                    const host = window.location.origin;
+                    return `${host}/card?id=${createdCard.value.id}`;
+                });
+
+                const register = async () => {
+                    if (!customerName.value) return alert("Please enter a name");
+                    
+                    const res = await fetch('/api/v1/cards', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ customer_id: customerName.value, design: 'modern' })
+                    });
+                    
+                    if (res.ok) {
+                        createdCard.value = await res.json();
+                        customerName.value = '';
+                    } else {
+                        alert("Error creating card");
+                    }
+                };
+
+                const openCard = () => {
+                    // Open with admin=true for immediate testing
+                    window.open(`${cardUrl.value}&admin=true`, '_blank');
+                };
+
+                return { customerName, createdCard, cardUrl, register, openCard };
+            }
+        }).mount('#app');
     </script>
 </body>
 </html>
