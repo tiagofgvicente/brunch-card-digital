@@ -47,3 +47,4 @@ func UseRewardHandler(w http.ResponseWriter, r *http.Request, repo *database.Car
 	}
 	w.WriteHeader(http.StatusOK)
 }
+

@@ -17,23 +17,26 @@
         .rewards-sidebar { display: flex; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
         .reward-token { width: 45px; height: 45px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: 0.3s; animation: bounceIn 0.5s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
         .reward-token:hover { transform: scale(1.1); background: #fff; }
+        .reward-count-label { font-size: 0.6rem; text-align: center; color: var(--gold); font-weight: bold; }
 
         /* Card Visuals */
         .card-wrapper { width: 340px; height: 210px; perspective: 1000px; cursor: pointer; }
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
         .card-inner.is-flipped { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 18px; border: 2px solid var(--gold); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 18px; border: 2px solid var(--gold); overflow: hidden; }
         
         .card-front { background: var(--primary); color: white; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
-        .stamps-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .stamps-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 15px 0; }
         .circle { width: 42px; height: 42px; background: rgba(0,0,0,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px dashed rgba(255,255,255,0.4); }
         .circle.active { background: white; border-style: solid; border-color: var(--gold); }
 
-        .card-back { background: white; color: var(--dark); transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .card-back { background: white; color: var(--dark); transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
+        .card-back img { max-width: 130px; height: auto; margin-bottom: 5px; }
 
         .controls { margin-top: 30px; display: flex; gap: 10px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .btn { padding: 12px 24px; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.2s; }
         .btn-stamp { background: var(--gold); color: #333; }
+        .btn-stamp:active { transform: scale(0.95); }
 
         @keyframes bounceIn { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
     </style>
@@ -42,13 +45,14 @@
 
     <div id="app">
         <div class="stats-banner" v-if="card.id">
-            🔥 TOTAL BRUNCHES VISITS: {{ card.total_stamps }}
+            🔥 VISITAS TOTAIS: {{ card.total_stamps }}
         </div>
 
         <div class="admin-container">
             <div class="rewards-sidebar" v-if="isAdmin && availableRewards > 0">
+                <div class="reward-count-label">BÓNUS</div>
                 <div v-for="n in availableRewards" :key="n" class="reward-token" 
-                     @click="redeemReward" title="Click to use reward">
+                     @click="redeemReward" title="Resgatar 10 Visitas">
                     🎁
                 </div>
             </div>
@@ -57,19 +61,25 @@
                 <div class="card-inner" :class="{ 'is-flipped': isFlipped }">
                     <div class="card-face card-front">
                         <div style="font-weight: bold; letter-spacing: 1px;">BRUNCH.CO VIP</div>
+                        
                         <div class="stamps-grid">
                             <div v-for="n in 10" :key="n" class="circle" :class="{ active: n <= card.stamps_count }">
                                 <span v-if="n <= card.stamps_count">🍳</span>
                             </div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
-                            <span>ID: {{ card.customer_id }}</span>
-                            <span v-if="card.is_reward_ready" style="color: var(--gold); font-weight: bold;">FREE NEXT!</span>
+
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.8rem;">
+                            <div style="text-transform: uppercase; font-weight: bold;">
+                                {{ card.customer_id }} {{ card.last_name }}
+                            </div>
+                            <span v-if="card.is_reward_ready" style="color: var(--gold); font-weight: bold; font-size: 0.7rem; border: 1px solid var(--gold); padding: 2px 5px; border-radius: 4px;">FREE NEXT!</span>
                         </div>
                     </div>
+
                     <div class="card-face card-back">
-                        <img v-if="card.id" :src="'/api/v1/qrcode?id=' + card.id" width="140">
-                        <p style="font-size: 0.7rem; font-weight: bold; color: var(--primary);">SCAN TO STAMP</p>
+                        <img v-if="card.id" :src="'/api/v1/qrcode?id=' + card.id" alt="QR Code">
+                        <p style="font-size: 0.6rem; font-weight: bold; color: var(--primary); margin: 0;">SCAN TO STAMP</p>
+                        <p style="font-size: 0.5rem; color: #999; margin-top: 5px;">ID: {{ card.id }}</p>
                     </div>
                 </div>
             </div>
@@ -84,27 +94,37 @@
         const { createApp, ref, computed, onMounted } = Vue;
         createApp({
             setup() {
-                const card = ref({ stamps_count: 0, total_stamps: 0, id: null });
+                const card = ref({ stamps_count: 0, total_stamps: 0, id: null, customer_id: '', last_name: '' });
                 const isFlipped = ref(false);
                 const isAdmin = ref(new URLSearchParams(window.location.search).get('admin') === 'true');
                 const cardId = new URLSearchParams(window.location.search).get('id');
 
-                const availableRewards = computed(() => Math.floor(card.total_stamps / 10));
+                // Calcula quantos "blocos de 10" existem no total acumulado
+                const availableRewards = computed(() => Math.floor(card.value.total_stamps / 10));
 
                 const fetchCard = async () => {
-                    const res = await fetch(`/api/v1/cards/status?id=${cardId}`);
-                    card.value = await res.json();
+                    try {
+                        const res = await fetch(`/api/v1/cards/status?id=${cardId}`);
+                        if (res.ok) {
+                            card.value = await res.json();
+                        }
+                    } catch (err) {
+                        console.error("Erro ao carregar cartão:", err);
+                    }
                 };
 
                 const addStamp = async () => {
-                    await fetch(`/api/v1/cards/stamp?id=${cardId}`, { method: 'POST' });
-                    fetchCard();
+                    const res = await fetch(`/api/v1/cards/stamp?id=${cardId}`, { method: 'POST' });
+                    if (res.ok) fetchCard();
                 };
 
                 const redeemReward = async () => {
-                    if (confirm("Descontar 1 prémio (10 brunchs acumulados)?")) {
+                    if (confirm("Confirmar resgate de 1 Brunch Grátis (Descontar 10 visitas do total)?")) {
                         const res = await fetch(`/api/v1/cards/use-reward?id=${cardId}`, { method: 'POST' });
-                        if (res.ok) fetchCard();
+                        if (res.ok) {
+                            fetchCard();
+                            alert("Prémio descontado com sucesso!");
+                        }
                     }
                 };
 

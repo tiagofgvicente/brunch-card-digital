@@ -23,7 +23,24 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
         INSERT INTO brunch_cards (id, customer_id, last_name, email, phone, nif, stamps_count, is_reward_ready, design, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
     `
-	_, err := r.db.Exec(query, card.ID, card.CustomerID, card.LastName, card.Email, card.Phone, card.NIF, card.StampsCount, card.IsRewardReady, card.Design)
+	toNull := func(s string) interface{} {
+		if s == "" {
+			return nil
+		}
+		return s
+	}
+
+	_, err := r.db.Exec(query,
+		card.ID,
+		card.CustomerID,
+		card.LastName,
+		toNull(card.Email), // Opcional
+		toNull(card.Phone), // Opcional
+		toNull(card.NIF),   // Opcional
+		card.StampsCount,
+		card.IsRewardReady,
+		card.Design,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to insert card: %w", err)
 	}

@@ -16,9 +16,9 @@ func GetStatusHandler(w http.ResponseWriter, r *http.Request, repo *database.Car
 	}
 
 	// 2. Fetch the card details using the repository
+	// Este método já deve retornar: ID, CustomerID, LastName, StampsCount, TotalStamps, IsRewardReady, Design
 	card, err := repo.GetCardByID(cardID)
 	if err != nil {
-		// If the card doesn't exist, return a 404
 		http.Error(w, "Card not found", http.StatusNotFound)
 		return
 	}
