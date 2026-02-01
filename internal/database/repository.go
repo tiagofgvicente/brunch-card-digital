@@ -78,3 +78,30 @@ func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {
 
 	return &card, nil
 }
+
+// GetAllCards retorna todos os clientes para o Dashboard
+func (r *CardRepository) GetAllCards() ([]models.BrunchCard, error) {
+	query := `SELECT id, customer_id, stamps_count, total_stamps, is_reward_ready FROM brunch_cards ORDER BY updated_at DESC`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cards []models.BrunchCard
+	for rows.Next() {
+		var c models.BrunchCard
+		if err := rows.Scan(&c.ID, &c.CustomerID, &c.StampsCount, &c.TotalStamps, &c.IsRewardReady); err != nil {
+			return nil, err
+		}
+		cards = append(cards, c)
+	}
+	return cards, nil
+}
+
+// ResetCard zera os contadores de um cliente específico (Ação de Admin)
+func (r *CardRepository) ResetCard(id string) error {
+	query := `UPDATE brunch_cards SET stamps_count = 0, total_stamps = 0, is_reward_ready = false, updated_at = NOW() WHERE id = $1`
+	_, err := r.db.Exec(query, id)
+	return err
+}

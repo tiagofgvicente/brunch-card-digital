@@ -83,6 +83,25 @@ func main() {
 	// Generate QR Code image
 	mux.HandleFunc("/api/v1/qrcode", makeHandler(api.GetQRCodeHandler, repo))
 
+	// Nas tuas rotas, protege o admin:
+	mux.HandleFunc("/admin", basicAuth(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/admin.html")
+	}))
+
+	// API Admin
+	// Rota para listar todos os cartões (usada pelo Dashboard)
+	mux.HandleFunc("/api/v1/admin/cards", basicAuth(makeHandler(api.ListAllCardsHandler, repo)))
+	mux.HandleFunc("/api/v1/admin/reset", basicAuth(makeHandler(api.AdminResetHandler, repo)))
+
+	// Balcão (Público/Staff)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/index.html") })
+	mux.HandleFunc("/card", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/card.html") })
+
+	// Dashboard Admin (Protegido por Basic Auth)
+	mux.HandleFunc("/admin", basicAuth(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/admin.html")
+	}))
+
 	// 6. SERVER CONFIGURATION
 	server := &http.Server{
 		Addr:         ":8080",
@@ -119,4 +138,18 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
 	})
+}
+
+// No main.go, adiciona esta função
+func basicAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		// Define aqui o teu login e password de admin
+		if !ok || user != "admin" || pass != "brunch2026" {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
 }

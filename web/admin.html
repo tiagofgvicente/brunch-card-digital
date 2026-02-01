@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Brunch Admin Dashboard</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        body { background: #121212; color: white; font-family: sans-serif; padding: 40px; }
+        .container { max-width: 900px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
+        th { background: #00a896; color: white; }
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; font-weight: bold; }
+        .btn-reset { background: #ff4444; color: white; }
+        .btn-view { background: #ffd166; color: #333; }
+        tr:hover { background: #252525; }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <h1>Dashboard de Gestão</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Progresso</th>
+                    <th>Total Visitas</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="card in cards" :key="card.id">
+                    <td>{{ card.customer_id }}</td>
+                    <td>{{ card.stamps_count }} / 10</td>
+                    <td>{{ card.total_stamps }}</td>
+                    <td>
+                        <button class="btn btn-view" @click="viewCard(card.id)">Ver</button>
+                        <button class="btn btn-reset" @click="resetCard(card.id)">Full Reset</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        createApp({
+            setup() {
+                const cards = ref([]);
+                const fetchCards = async () => {
+                    const res = await fetch('/api/v1/admin/cards');
+                    if (res.status === 401) return alert("Sessão expirada ou não autorizado.");
+                    cards.value = await res.json();
+                };
+                const resetCard = async (id) => {
+                    if (confirm("Tens a certeza? Isto apagará TODO o histórico do cliente!")) {
+                        await fetch(`/api/v1/admin/reset?id=${id}`, { method: 'POST' });
+                        fetchCards();
+                    }
+                };
+                const viewCard = (id) => window.open(`/card?id=${id}&admin=true`, '_blank');
+
+                onMounted(fetchCards);
+                return { cards, resetCard, viewCard };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

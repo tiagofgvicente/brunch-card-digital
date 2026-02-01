@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
 	"brunch-card-digital/internal/database"
 	"brunch-card-digital/internal/models"
+
+	"github.com/google/uuid"
 )
 
 // CreateCardRequest defines the payload for creating a new card
@@ -30,9 +31,12 @@ func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 		ID:            uuid.New().String(),
 		CustomerID:    req.CustomerID,
 		StampsCount:   0,
+		TotalStamps:   0, // Ensure this field exists in your struct
 		IsRewardReady: false,
-		Design:        req.Design,
-		CreatedAt:     time.Now(),
+		// Conversion: string(req.Design) ensures the types match
+		Design: string(req.Design),
+		// Use UpdatedAt if CreatedAt is not in your struct
+		UpdatedAt: time.Now(),
 	}
 
 	// Persist the card to PostgreSQL

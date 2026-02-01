@@ -3,61 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brunch.co - Register Client</title>
+    <title>Brunch.co - Balcão</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         :root { --primary: #00a896; --dark: #1a1a1a; --gold: #ffd166; }
         body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .reg-box { background: #2a2a2a; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; border-top: 5px solid var(--primary); }
-        h1 { color: var(--primary); margin-bottom: 30px; }
-        input { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: none; font-size: 1rem; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .result { margin-top: 30px; padding: 20px; background: rgba(0,168,150,0.1); border: 1px dashed var(--primary); border-radius: 10px; animation: fadeIn 0.5s; }
-        .card-link { color: var(--gold); word-break: break-all; font-family: monospace; font-size: 0.9rem; display: block; margin: 15px 0; text-decoration: none; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .reg-box { background: #2a2a2a; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; border-top: 5px solid var(--primary); }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .tabs button { background: transparent; color: #888; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; padding: 5px 10px; }
+        .tabs button.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+        h1 { color: var(--primary); margin-bottom: 20px; font-size: 1.5rem; }
+        input { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #444; background: #333; color: white; font-size: 1rem; box-sizing: border-box; }
+        button.main-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        
+        .result { margin-top: 20px; padding: 15px; background: rgba(0,168,150,0.1); border: 1px dashed var(--primary); border-radius: 10px; }
+        .card-link { color: var(--gold); word-break: break-all; font-family: monospace; font-size: 0.8rem; display: block; margin: 10px 0; text-decoration: none; }
+        
+        .admin-link { display: block; margin-top: 30px; color: #666; font-size: 0.75rem; text-decoration: none; }
+        .admin-link:hover { color: var(--gold); }
     </style>
 </head>
 <body>
     <div id="app" class="reg-box">
-        <h1>New VIP Client</h1>
-        
+        <h1>Brunch.co Balcão</h1>
+
         <div v-if="!createdCard">
-            <input v-model="customerName" placeholder="Customer Name (e.g. Jose Silva)" @keyup.enter="register">
-            <button @click="register">CREATE DIGITAL CARD</button>
+            <div class="tabs">
+                <button @click="tab = 'new'" :class="{active: tab === 'new'}">NEW CLIENT</button>
+                <button @click="tab = 'find'" :class="{active: tab === 'find'}">FIND CARD</button>
+            </div>
+
+            <div v-if="tab === 'new'">
+                <input v-model="customerName" placeholder="Client Full Name" @keyup.enter="register">
+                <button class="main-btn" @click="register">CREATE DIGITAL CARD</button>
+            </div>
+
+            <div v-else>
+                <input v-model="searchId" placeholder="Paste Card UUID here" @keyup.enter="openCard">
+                <button class="main-btn" @click="openCard" style="background: var(--gold); color: #333;">OPEN & STAMP</button>
+            </div>
         </div>
 
         <div v-else class="result">
-            <p>✅ Card Created Successfully!</p>
-            <p>Share this link with the client:</p>
+            <p>✅ Success!</p>
             <a :href="cardUrl" target="_blank" class="card-link">{{ cardUrl }}</a>
-            <button @click="openCard" style="background: var(--gold); color: #333;">OPEN CARD NOW</button>
-            <button @click="createdCard = null" style="margin-top:10px; background: transparent; border: 1px solid #666;">Register Another</button>
+            <button class="main-btn" @click="viewCreated" style="background: var(--gold); color: #333; margin-bottom: 10px;">OPEN NOW</button>
+            <button class="main-btn" @click="createdCard = null" style="background: transparent; border: 1px solid #666;">REGISTER ANOTHER</button>
         </div>
+
+        <a href="/admin" class="admin-link">🔒 Management Dashboard</a>
     </div>
 
     <script>
         const { createApp, ref, computed } = Vue;
         createApp({
             setup() {
+                const tab = ref('new');
                 const customerName = ref('');
+                const searchId = ref('');
                 const createdCard = ref(null);
 
                 const cardUrl = computed(() => {
                     if (!createdCard.value) return '';
-                    // Generate the full URL for the client view
-                    const host = window.location.origin;
-                    return `${host}/card?id=${createdCard.value.id}`;
+                    return `${window.location.origin}/card?id=${createdCard.value.id}`;
                 });
 
                 const register = async () => {
                     if (!customerName.value) return alert("Please enter a name");
-                    
                     const res = await fetch('/api/v1/cards', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ customer_id: customerName.value, design: 'modern' })
                     });
-                    
                     if (res.ok) {
                         createdCard.value = await res.json();
                         customerName.value = '';
@@ -67,11 +86,15 @@
                 };
 
                 const openCard = () => {
-                    // Open with admin=true for immediate testing
+                    if (!searchId.value) return alert("Please enter an ID");
+                    window.location.href = `/card?id=${searchId.value}&admin=true`;
+                };
+
+                const viewCreated = () => {
                     window.open(`${cardUrl.value}&admin=true`, '_blank');
                 };
 
-                return { customerName, createdCard, cardUrl, register, openCard };
+                return { tab, customerName, searchId, createdCard, cardUrl, register, openCard, viewCreated };
             }
         }).mount('#app');
     </script>
