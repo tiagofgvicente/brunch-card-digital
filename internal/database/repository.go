@@ -2,6 +2,8 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
+	"log"
 
 	"brunch-card-digital/internal/models"
 )
@@ -24,6 +26,7 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
     `
+
 	toNull := func(s string) interface{} {
 		if s == "" {
 			return nil
@@ -31,10 +34,18 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
 		return s
 	}
 
+	// VERIFICA ESTA ORDEM:
 	_, err := r.db.Exec(query,
-		card.ID, card.CustomerID, card.LastName,
-		toNull(card.Email), toNull(card.Phone), toNull(card.NIF),
-		card.StampsCount, card.TotalStamps, card.IsRewardReady, card.Design,
+		card.ID,            // $1
+		card.CustomerID,    // $2 (Primeiro Nome)
+		card.LastName,      // $3 (Apelido)
+		toNull(card.Email), // $4
+		toNull(card.Phone), // $5
+		toNull(card.NIF),   // $6
+		card.StampsCount,   // $7
+		card.TotalStamps,   // $8
+		card.IsRewardReady, // $9
+		card.Design,        // $10
 	)
 	return err
 }
@@ -112,8 +123,11 @@ func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {
 	return &card, nil
 }
 
+// No ficheiro internal/database/repository.go
 func (r *CardRepository) GetAllCards() ([]models.BrunchCard, error) {
-	query := `SELECT id, customer_id, last_name, stamps_count, total_stamps, is_reward_ready FROM brunch_cards ORDER BY updated_at DESC`
+	// 1. Pedir TODAS as colunas
+	query := `SELECT id, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, is_reward_ready FROM brunch_cards ORDER BY updated_at DESC`
+
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -123,9 +137,23 @@ func (r *CardRepository) GetAllCards() ([]models.BrunchCard, error) {
 	var cards []models.BrunchCard
 	for rows.Next() {
 		var c models.BrunchCard
-		if err := rows.Scan(&c.ID, &c.CustomerID, &c.LastName, &c.StampsCount, &c.TotalStamps, &c.IsRewardReady); err != nil {
+		var email, phone, nif sql.NullString // IMPORTANTE para campos que podem ser NULL
+
+		// 2. O SCAN tem de ter 9 campos para bater com o SELECT
+		err := rows.Scan(
+			&c.ID, &c.CustomerID, &c.LastName,
+			&email, &phone, &nif,
+			&c.StampsCount, &c.TotalStamps, &c.IsRewardReady,
+		)
+		if err != nil {
+			log.Printf("Erro no Scan: %v", err)
 			return nil, err
 		}
+
+		c.Email = email.String
+		c.Phone = phone.String
+		c.NIF = nif.String
+
 		cards = append(cards, c)
 	}
 	return cards, nil
@@ -188,12 +216,14 @@ func (r *CardRepository) SearchCards(term string) ([]models.BrunchCard, error) {
 	}
 	return cards, nil
 }
+
 func (r *CardRepository) UpdateCard(card models.BrunchCard) error {
 	query := `
         UPDATE brunch_cards 
         SET customer_id = $1, last_name = $2, email = $3, phone = $4, nif = $5, updated_at = NOW()
         WHERE id = $6`
 
+	// Se o frontend enviar string vazia, gravamos NULL para não quebrar os CHECKs
 	toNull := func(s string) interface{} {
 		if s == "" {
 			return nil
@@ -201,13 +231,22 @@ func (r *CardRepository) UpdateCard(card models.BrunchCard) error {
 		return s
 	}
 
-	_, err := r.db.Exec(query,
-		card.CustomerID,
-		card.LastName,
-		toNull(card.Email),
-		toNull(card.Phone),
-		toNull(card.NIF),
-		card.ID,
+	result, err := r.db.Exec(query,
+		card.CustomerID,    // $1
+		card.LastName,      // $2
+		toNull(card.Email), // $3
+		toNull(card.Phone), // $4
+		toNull(card.NIF),   // $5
+		card.ID,            // $6
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Verifica se alguma linha foi realmente afetada
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("nenhum cartão encontrado com o ID: %s", card.ID)
+	}
+	return nil
 }

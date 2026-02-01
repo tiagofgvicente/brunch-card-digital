@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
-	"time"
 
 	"brunch-card-digital/internal/database"
 	"brunch-card-digital/internal/models"
@@ -24,41 +24,39 @@ type CreateCardRequest struct {
 // CreateCardHandler manages the card creation and persistence
 // It now receives the repository as an argument
 func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	var req CreateCardRequest
+	var req models.CreateCardRequest // Usa a struct de Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Initialize the new card model
+	// Criamos o modelo final para a BD transferindo os dados do Request
 	newCard := models.BrunchCard{
 		ID:            uuid.New().String(),
-		CustomerID:    req.CustomerID,
-		LastName:      req.LastName,
+		CustomerID:    req.CustomerID, // Primeiro Nome
+		LastName:      req.LastName,   // Apelido
 		Email:         req.Email,
 		Phone:         req.Phone,
 		NIF:           req.NIF,
+		Design:        req.Design,
 		StampsCount:   0,
 		TotalStamps:   0,
 		IsRewardReady: false,
-		Design:        req.Design,
-		UpdatedAt:     time.Now(),
 	}
 
-	// Persist the card to PostgreSQL
 	if err := repo.SaveCard(newCard); err != nil {
-		http.Error(w, "Failed to save card: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Respond with the created card details
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(newCard)
 }
 
 func UpdateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	var req models.BrunchCard
+	json.NewDecoder(r.Body).Decode(&req)
+	log.Printf("Recebido para Update: ID=%s, Nome=%s, Apelido=%s", req.ID, req.CustomerID, req.LastName)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
