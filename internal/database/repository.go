@@ -188,3 +188,26 @@ func (r *CardRepository) SearchCards(term string) ([]models.BrunchCard, error) {
 	}
 	return cards, nil
 }
+func (r *CardRepository) UpdateCard(card models.BrunchCard) error {
+	query := `
+        UPDATE brunch_cards 
+        SET customer_id = $1, last_name = $2, email = $3, phone = $4, nif = $5, updated_at = NOW()
+        WHERE id = $6`
+
+	toNull := func(s string) interface{} {
+		if s == "" {
+			return nil
+		}
+		return s
+	}
+
+	_, err := r.db.Exec(query,
+		card.CustomerID,
+		card.LastName,
+		toNull(card.Email),
+		toNull(card.Phone),
+		toNull(card.NIF),
+		card.ID,
+	)
+	return err
+}

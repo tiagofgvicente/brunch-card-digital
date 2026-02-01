@@ -13,12 +13,12 @@ import (
 
 // CreateCardRequest defines the payload for creating a new card
 type CreateCardRequest struct {
-    CustomerID string `json:"customer_id"`
-    LastName   string `json:"last_name"`
-    Email      string `json:"email"`
-    Phone      string `json:"phone"`
-    NIF        string `json:"nif"`
-    Design     string `json:"design"`
+	CustomerID string `json:"customer_id"`
+	LastName   string `json:"last_name"`
+	Email      string `json:"email"`
+	Phone      string `json:"phone"`
+	NIF        string `json:"nif"`
+	Design     string `json:"design"`
 }
 
 // CreateCardHandler manages the card creation and persistence
@@ -55,4 +55,18 @@ func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(newCard)
+}
+
+func UpdateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req models.BrunchCard
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	if err := repo.UpdateCard(req); err != nil {
+		http.Error(w, "Failed to update: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

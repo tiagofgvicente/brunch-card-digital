@@ -72,6 +72,7 @@ func main() {
 	// Protected Admin API
 	mux.HandleFunc("/api/v1/admin/cards", basicAuth(makeHandler(api.ListAllCardsHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/reset", basicAuth(makeHandler(api.AdminResetHandler, repo)))
+	mux.HandleFunc("/api/v1/admin/update", basicAuth(makeHandler(api.UpdateCardHandler, repo)))
 
 	// 6. SERVER CONFIGURATION
 	server := &http.Server{
