@@ -13,16 +13,17 @@ CREATE TABLE IF NOT EXISTS brunch_cards (
 
 DROP TABLE IF EXISTS brunch_cards;
 
-CREATE TABLE brunch_cards (
+CREATE TABLE IF NOT EXISTS brunch_cards (
     id UUID PRIMARY KEY,
-    customer_id TEXT NOT NULL, -- First Name
+    member_number SERIAL, -- Gerado automaticamente (1, 2, 3...)
+    customer_id TEXT NOT NULL,
     last_name TEXT NOT NULL,
     email TEXT CHECK (email IS NULL OR email LIKE '%@%'),
-    nif TEXT CHECK (nif IS NULL OR (nif ~ '^[0-9]{9}$')),
     phone TEXT CHECK (phone IS NULL OR (phone ~ '^[0-9]+$')),
-    
-    stamps_count INTEGER DEFAULT 0,
-    total_stamps INTEGER DEFAULT 0,
+    nif TEXT CHECK (nif IS NULL OR (nif ~ '^[0-9]{9}$')),
+    stamps_count INTEGER DEFAULT 0, -- Ciclo 0-10
+    total_stamps INTEGER DEFAULT 0, -- Histórico Vitalício (Sempre cresce)
+    total_redeemed_bonuses INTEGER DEFAULT 0, -- Contador de prémios ganhos
     is_reward_ready BOOLEAN DEFAULT FALSE,
     design TEXT DEFAULT 'minimalist',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
