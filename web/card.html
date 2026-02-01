@@ -3,90 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brunch Loyalty Card</title>
+    <title>Brunch VIP - POC</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        :root { --primary: #00a896; --bg: #f4f1ea; --dark: #333; }
-        body { background: #e0e0e0; font-family: 'Arial', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        :root { --primary: #00a896; --bg: #f4f1ea; --dark: #333; --gold: #ffd166; }
+        body { background: #222; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: white; }
+
+        .demo-badge { background: #ff4444; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-bottom: 20px; text-transform: uppercase; }
 
         /* Card Container & Flip Logic */
-        .card-wrapper { width: 350px; height: 220px; perspective: 1000px; cursor: pointer; }
-        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .card-wrapper { width: 340px; height: 210px; perspective: 1000px; cursor: pointer; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; }
         .card-inner.is-flipped { transform: rotateY(180deg); }
 
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); overflow: hidden; }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 18px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); overflow: hidden; border: 2px solid rgba(255,255,255,0.1); }
 
-        /* FRONT: Based on your reference image */
+        /* FRONT FACE */
         .card-front { background: var(--primary); color: white; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
-        .promo-text { font-weight: bold; font-size: 1.2rem; text-align: center; margin-bottom: 10px; }
-        .stamps-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 10px; background: rgba(255,255,255,0.2); border-radius: 10px; }
-        .circle { width: 45px; height: 45px; background: rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 2px solid transparent; }
-        .circle.active { background: white; border-color: #ffd166; animation: scaleUp 0.3s ease; }
-        
-        /* BACK: QR Code side */
-        .card-back { background: white; transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--dark); }
-        .qr-placeholder { padding: 10px; border: 2px solid var(--primary); border-radius: 10px; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .brand { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; }
+        .promo-tag { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: bold; }
 
-        @keyframes scaleUp { 0% { transform: scale(0.8); } 100% { transform: scale(1); } }
+        .stamps-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 15px 0; }
+        .circle { width: 42px; height: 42px; background: rgba(0,0,0,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: all 0.3s; border: 1.5px dashed rgba(255,255,255,0.3); }
+        .circle.active { background: white; border-style: solid; border-color: var(--gold); transform: scale(1.1); box-shadow: 0 0 10px rgba(255,209,102,0.5); }
         
-        .controls { margin-top: 30px; text-align: center; }
-        button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .footer { display: flex; justify-content: space-between; font-size: 0.75rem; opacity: 0.9; }
+
+        /* BACK FACE */
+        .card-back { background: white; transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--dark); }
+        .qr-placeholder { background: #fff; padding: 12px; border: 2px solid var(--primary); border-radius: 12px; margin-bottom: 10px; }
+        .qr-placeholder img { display: block; filter: contrast(1.2); }
+        .back-text { font-size: 0.8rem; font-weight: bold; color: var(--primary); }
+
+        /* Controls */
+        .controls { margin-top: 40px; display: flex; gap: 10px; }
+        button { padding: 12px 25px; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; transition: 0.2s; text-transform: uppercase; font-size: 0.8rem; }
+        .btn-stamp { background: var(--gold); color: #444; }
+        .btn-reset { background: transparent; color: #888; border: 1px solid #444; }
+        button:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
+
+    <div class="demo-badge">POC - Static Preview Mode</div>
+
     <div id="app">
         <div class="card-wrapper" @click="isFlipped = !isFlipped">
             <div class="card-inner" :class="{ 'is-flipped': isFlipped }">
                 
                 <div class="card-face card-front">
-                    <div class="promo-text">BUY 9 GET 1 FREE</div>
+                    <div class="card-header">
+                        <div class="brand">BRUNCH.CO</div>
+                        <div class="promo-tag">VIP LOYALTY</div>
+                    </div>
+
                     <div class="stamps-grid">
-                        <div v-for="n in 10" :key="n" class="circle" :class="{ active: n <= card.stamps_count }">
-                            <span v-if="n <= card.stamps_count">🍳</span>
+                        <div v-for="n in 10" :key="n" class="circle" :class="{ active: n <= stamps }">
+                            <span v-if="n <= stamps">🍳</span>
                         </div>
                     </div>
-                    <div style="font-size: 0.8rem; text-align: center; margin-top: 10px;">{{ card.customer_id }}</div>
+
+                    <div class="footer">
+                        <div>CLIENT: {{ customerName }}</div>
+                        <div v-if="stamps < 10">LACKING {{ 10 - stamps }} STAMPS</div>
+                        <div v-else style="color: var(--gold); font-weight: bold;">REWARD READY! 🎁</div>
+                    </div>
                 </div>
 
                 <div class="card-face card-back">
-                    <strong>SCAN AT COUNTER</strong>
-                    <div class="qr-placeholder" v-if="card.id">
-                        <img :src="'/api/v1/qrcode?id=' + card.id" width="140" alt="QR Code">
+                    <div class="qr-placeholder">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=POC_DEMO_USER" width="140" alt="QR">
                     </div>
-                    <p style="font-size: 0.7rem;">Click to flip back</p>
+                    <div class="back-text">SCAN TO STAMP</div>
+                    <div style="font-size: 0.6rem; color: #aaa; margin-top: 5px;">Tap to flip back</div>
                 </div>
 
             </div>
         </div>
 
-        <div class="controls" v-if="isAdmin">
-            <button @click.stop="addStamp">🍳 ADD STAMP (ADMIN)</button>
+        <div class="controls">
+            <button class="btn-stamp" @click.stop="addStamp">🍳 Add Stamp</button>
+            <button class="btn-reset" @click.stop="resetStamps">Reset</button>
         </div>
+        
+        <p style="margin-top: 20px; font-size: 0.8rem; color: #666;">Tip: Click the card to see the flip effect.</p>
     </div>
 
     <script>
-        const { createApp, ref, onMounted } = Vue;
-
+        const { createApp, ref } = Vue;
         createApp({
             setup() {
-                const card = ref({ stamps_count: 0, customer_id: 'Loading...', id: null });
+                const stamps = ref(3); // Start with 3 stamps for the demo
                 const isFlipped = ref(false);
-                const isAdmin = ref(new URLSearchParams(window.location.search).get('admin') === 'true');
-                const cardId = new URLSearchParams(window.location.search).get('id');
+                const customerName = ref("JOSE SILVA");
 
-                const fetchCard = async () => {
-                    const res = await fetch(`/api/v1/cards/status?id=${cardId}`);
-                    card.value = await res.json();
+                const addStamp = () => {
+                    if (stamps.value < 10) stamps.value++;
                 };
 
-                const addStamp = async () => {
-                    await fetch(`/api/v1/cards/stamp?id=${cardId}`, { method: 'POST' });
-                    fetchCard();
+                const resetStamps = () => {
+                    stamps.value = 0;
                 };
 
-                onMounted(fetchCard);
-
-                return { card, isFlipped, isAdmin, addStamp };
+                return { stamps, isFlipped, customerName, addStamp, resetStamps };
             }
         }).mount('#app');
     </script>
