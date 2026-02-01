@@ -24,12 +24,14 @@ WORKDIR /root/
 
 # Copia o binário
 COPY --from=builder /app/brunch-api .
+COPY --from=builder /app/web ./web
 
 # GARANTE QUE A PASTA EXISTE ANTES DE COPIAR
 RUN mkdir -p internal/database
 
 # Copia o ficheiro SQL da pasta local para dentro da imagem
 COPY internal/database/migrations.sql ./internal/database/migrations.sql
+COPY --from=builder /app/internal/database ./internal/database
 
 EXPOSE 8080
 CMD ["./brunch-api"]
