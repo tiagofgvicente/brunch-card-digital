@@ -138,6 +138,7 @@ func (r *CardRepository) ResetCard(id string) error {
 }
 
 func (r *CardRepository) SearchCards(term string) ([]models.BrunchCard, error) {
+	// 1. Definimos a query com todas as colunas necessárias
 	query := `
         SELECT id, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, is_reward_ready 
         FROM brunch_cards 
@@ -159,13 +160,30 @@ func (r *CardRepository) SearchCards(term string) ([]models.BrunchCard, error) {
 	var cards []models.BrunchCard
 	for rows.Next() {
 		var c models.BrunchCard
+		// Usamos NullString para campos que podem estar vazios na BD
+		var email, phone, nif sql.NullString
+
+		// O Scan tem de bater exatamente com a ordem do SELECT acima (9 campos)
 		err := rows.Scan(
-			&c.ID, &c.CustomerID, &c.LastName, &c.Email,
-			&c.Phone, &c.NIF, &c.StampsCount, &c.TotalStamps, &c.IsRewardReady,
+			&c.ID,
+			&c.CustomerID,
+			&c.LastName,
+			&email,
+			&phone,
+			&nif,
+			&c.StampsCount,
+			&c.TotalStamps,
+			&c.IsRewardReady,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Mapeamos os valores de volta para a struct
+		c.Email = email.String
+		c.Phone = phone.String
+		c.NIF = nif.String
+
 		cards = append(cards, c)
 	}
 	return cards, nil
