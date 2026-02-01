@@ -3,6 +3,7 @@ package api
 import (
 	"brunch-card-digital/internal/database"
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -16,14 +17,19 @@ func GetStatusHandler(w http.ResponseWriter, r *http.Request, repo *database.Car
 	}
 
 	// 2. Fetch the card details using the repository
-	// Este método já deve retornar: ID, CustomerID, LastName, StampsCount, TotalStamps, IsRewardReady, Design
 	card, err := repo.GetCardByID(cardID)
 	if err != nil {
-		http.Error(w, "Card not found", http.StatusNotFound)
+		// Logamos o erro real no servidor para sabermos se o SQL falhou
+		log.Printf("Error fetching card status for ID %s: %v", cardID, err)
+
+		// Se o erro for do SQL por colunas em falta, o err não será nulo
+		http.Error(w, "Card not found or database error", http.StatusNotFound)
 		return
 	}
 
 	// 3. Return the card object as JSON
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(card)
+	if err := json.NewEncoder(w).Encode(card); err != nil {
+		log.Printf("Error encoding card JSON: %v", err)
+	}
 }

@@ -42,8 +42,6 @@ func main() {
 	mux := http.NewServeMux()
 
 	// --- UI ENDPOINTS (Frontend) ---
-
-	// Landing Page / Counter Registration Form
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -52,19 +50,15 @@ func main() {
 		http.ServeFile(w, r, "web/index.html")
 	})
 
-	// Digital Card View (Vue.js App)
 	mux.HandleFunc("/card", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/card.html")
 	})
 
-	// Protected Admin Dashboard
 	mux.HandleFunc("/admin", basicAuth(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/admin.html")
 	}))
 
 	// --- API ENDPOINTS (Backend) ---
-
-	// Health check
 	mux.HandleFunc("/health", healthHandler)
 
 	// Public API
@@ -92,8 +86,6 @@ func main() {
 		log.Fatalf("Server startup failed: %v", err)
 	}
 }
-
-// --- HELPER FUNCTIONS & MIDDLEWARE ---
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
