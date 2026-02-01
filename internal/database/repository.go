@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 
 	"brunch-card-digital/internal/models"
 )
@@ -33,26 +32,18 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
 	}
 
 	_, err := r.db.Exec(query,
-		card.ID,            // $1
-		card.CustomerID,    // $2
-		card.LastName,      // $3
-		toNull(card.Email), // $4
-		toNull(card.Phone), // $5
-		toNull(card.NIF),   // $6
-		card.StampsCount,   // $7
-		card.TotalStamps,   // $8
-		card.IsRewardReady, // $9
-		card.Design,        // $10
+		card.ID, card.CustomerID, card.LastName,
+		toNull(card.Email), toNull(card.Phone), toNull(card.NIF),
+		card.StampsCount, card.TotalStamps, card.IsRewardReady, card.Design,
 	)
-	if err != nil {
-		return fmt.Errorf("failed to insert card: %w", err)
-	}
-	return nil
+	return err
 }
 
 // AddStamp CORRIGIDO: Retorna o objeto completo para o Vue não "limpar" os nomes
 func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 	var card models.BrunchCard
+	var email, phone, nif, design sql.NullString
+
 	query := `
         UPDATE brunch_cards 
         SET stamps_count = CASE WHEN stamps_count >= 10 THEN 1 ELSE stamps_count + 1 END,
@@ -63,9 +54,17 @@ func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
         RETURNING id, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, is_reward_ready, design;
     `
 	err := r.db.QueryRow(query, id).Scan(
-		&card.ID, &card.CustomerID, &card.LastName, &card.Email, &card.Phone,
-		&card.NIF, &card.StampsCount, &card.TotalStamps, &card.IsRewardReady, &card.Design,
+		&card.ID, &card.CustomerID, &card.LastName, &email, &phone, &nif,
+		&card.StampsCount, &card.TotalStamps, &card.IsRewardReady, &design,
 	)
+
+	if err == nil {
+		card.Email = email.String
+		card.Phone = phone.String
+		card.NIF = nif.String
+		card.Design = design.String
+	}
+
 	return &card, err
 }
 
@@ -77,18 +76,39 @@ func (r *CardRepository) UseReward(id string) error {
 
 func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {
 	var card models.BrunchCard
+
+	// Criamos variáveis temporárias que suportam NULL
+	var email, phone, nif, design sql.NullString
+
 	query := `
         SELECT id, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, is_reward_ready, design 
         FROM brunch_cards 
         WHERE id = $1
     `
+
 	err := r.db.QueryRow(query, id).Scan(
-		&card.ID, &card.CustomerID, &card.LastName, &card.Email, &card.Phone,
-		&card.NIF, &card.StampsCount, &card.TotalStamps, &card.IsRewardReady, &card.Design,
+		&card.ID,
+		&card.CustomerID,
+		&card.LastName,
+		&email, // Scan para NullString
+		&phone, // Scan para NullString
+		&nif,   // Scan para NullString
+		&card.StampsCount,
+		&card.TotalStamps,
+		&card.IsRewardReady,
+		&design, // Scan para NullString
 	)
+
 	if err != nil {
 		return nil, err
 	}
+
+	// Convertemos de volta para o modelo (o campo .String extrai o valor ou fica "")
+	card.Email = email.String
+	card.Phone = phone.String
+	card.NIF = nif.String
+	card.Design = design.String
+
 	return &card, nil
 }
 
