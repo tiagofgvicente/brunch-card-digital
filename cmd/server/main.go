@@ -73,6 +73,7 @@ func main() {
 	mux.HandleFunc("/api/v1/cards/stamp", makeHandler(api.StampHandler, repo))
 	mux.HandleFunc("/api/v1/cards/use-reward", makeHandler(api.UseRewardHandler, repo))
 	mux.HandleFunc("/api/v1/qrcode", makeHandler(api.GetQRCodeHandler, repo))
+	mux.HandleFunc("/api/v1/cards/search", makeHandler(api.SearchHandler, repo))
 
 	// Protected Admin API
 	mux.HandleFunc("/api/v1/admin/cards", basicAuth(makeHandler(api.ListAllCardsHandler, repo)))

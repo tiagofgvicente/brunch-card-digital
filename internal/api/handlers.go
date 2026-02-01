@@ -13,8 +13,12 @@ import (
 
 // CreateCardRequest defines the payload for creating a new card
 type CreateCardRequest struct {
-	CustomerID string            `json:"customer_id"`
-	Design     models.CardDesign `json:"design"`
+    CustomerID string `json:"customer_id"`
+    LastName   string `json:"last_name"`
+    Email      string `json:"email"`
+    Phone      string `json:"phone"`
+    NIF        string `json:"nif"`
+    Design     string `json:"design"`
 }
 
 // CreateCardHandler manages the card creation and persistence
@@ -30,13 +34,15 @@ func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 	newCard := models.BrunchCard{
 		ID:            uuid.New().String(),
 		CustomerID:    req.CustomerID,
+		LastName:      req.LastName,
+		Email:         req.Email,
+		Phone:         req.Phone,
+		NIF:           req.NIF,
 		StampsCount:   0,
-		TotalStamps:   0, // Ensure this field exists in your struct
+		TotalStamps:   0,
 		IsRewardReady: false,
-		// Conversion: string(req.Design) ensures the types match
-		Design: string(req.Design),
-		// Use UpdatedAt if CreatedAt is not in your struct
-		UpdatedAt: time.Now(),
+		Design:        req.Design,
+		UpdatedAt:     time.Now(),
 	}
 
 	// Persist the card to PostgreSQL

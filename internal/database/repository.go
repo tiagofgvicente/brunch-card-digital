@@ -20,10 +20,10 @@ func NewCardRepository(db *sql.DB) *CardRepository {
 // SaveCard inserts a new card into the PostgreSQL database
 func (r *CardRepository) SaveCard(card models.BrunchCard) error {
 	query := `
-		INSERT INTO brunch_cards (id, customer_id, stamps_count, is_reward_ready, design, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-	`
-	_, err := r.db.Exec(query, card.ID, card.CustomerID, card.StampsCount, card.IsRewardReady, card.Design)
+        INSERT INTO brunch_cards (id, customer_id, last_name, email, phone, nif, stamps_count, is_reward_ready, design, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+    `
+	_, err := r.db.Exec(query, card.ID, card.CustomerID, card.LastName, card.Email, card.Phone, card.NIF, card.StampsCount, card.IsRewardReady, card.Design)
 	if err != nil {
 		return fmt.Errorf("failed to insert card: %w", err)
 	}
@@ -57,25 +57,18 @@ func (r *CardRepository) UseReward(id string) error {
 // GetCardByID retrieves a specific card by its UUID
 func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {
 	var card models.BrunchCard
-
 	query := `
-		SELECT id, customer_id, stamps_count, is_reward_ready, design 
-		FROM brunch_cards 
-		WHERE id = $1
-	`
-
+        SELECT id, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, is_reward_ready, design 
+        FROM brunch_cards 
+        WHERE id = $1
+    `
 	err := r.db.QueryRow(query, id).Scan(
-		&card.ID,
-		&card.CustomerID,
-		&card.StampsCount,
-		&card.IsRewardReady,
-		&card.Design,
+		&card.ID, &card.CustomerID, &card.LastName, &card.Email, &card.Phone,
+		&card.NIF, &card.StampsCount, &card.TotalStamps, &card.IsRewardReady, &card.Design,
 	)
-
 	if err != nil {
 		return nil, err
 	}
-
 	return &card, nil
 }
 
@@ -104,4 +97,40 @@ func (r *CardRepository) ResetCard(id string) error {
 	query := `UPDATE brunch_cards SET stamps_count = 0, total_stamps = 0, is_reward_ready = false, updated_at = NOW() WHERE id = $1`
 	_, err := r.db.Exec(query, id)
 	return err
+}
+
+// SearchCards searches for customers by various fields (Case-insensitive)
+func (r *CardRepository) SearchCards(term string) ([]models.BrunchCard, error) {
+	// The % wildcard allows for partial matches (e.g., "91" matches "912345678")
+	query := `
+		SELECT id, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, is_reward_ready 
+		FROM brunch_cards 
+		WHERE customer_id ILIKE $1 
+		   OR last_name ILIKE $1 
+		   OR email ILIKE $1 
+		   OR phone ILIKE $1 
+		   OR nif ILIKE $1
+		ORDER BY updated_at DESC 
+		LIMIT 15`
+
+	searchTerm := "%" + term + "%"
+	rows, err := r.db.Query(query, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cards []models.BrunchCard
+	for rows.Next() {
+		var c models.BrunchCard
+		err := rows.Scan(
+			&c.ID, &c.CustomerID, &c.LastName, &c.Email,
+			&c.Phone, &c.NIF, &c.StampsCount, &c.TotalStamps, &c.IsRewardReady,
+		)
+		if err != nil {
+			return nil, err
+		}
+		cards = append(cards, c)
+	}
+	return cards, nil
 }
