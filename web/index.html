@@ -78,6 +78,9 @@
 
     <script>
         const { createApp, ref } = Vue;
+        // DEFINIÇÃO DA CHAVE SECRETA DE STAFF
+        const STAFF_KEY = "brunch2026vip"; 
+
         createApp({
             setup() {
                 const tab = ref('new');
@@ -87,51 +90,47 @@
                 const createdCard = ref(null);
 
                 const register = async () => {
-    // 1. Validação de campos Obrigatórios
-    if (!form.value.first_name || !form.value.last_name) {
-        return alert("Nome e Apelido são obrigatórios");
-    }
-    
-    // 2. Validação de NIF (Apenas se estiver preenchido)
-    if (form.value.nif && !/^[0-9]{9}$/.test(form.value.nif)) {
-        return alert("O NIF deve conter exatamente 9 dígitos numéricos.");
-    }
+                    if (!form.value.first_name || !form.value.last_name) {
+                        return alert("Nome e Apelido são obrigatórios");
+                    }
+                    
+                    if (form.value.nif && !/^[0-9]{9}$/.test(form.value.nif)) {
+                        return alert("O NIF deve conter exatamente 9 dígitos numéricos.");
+                    }
 
-    // 3. Validação de Email (Apenas se estiver preenchido)
-    if (form.value.email && !form.value.email.includes('@')) {
-        return alert("Por favor, insira um email válido.");
-    }
+                    if (form.value.email && !form.value.email.includes('@')) {
+                        return alert("Por favor, insira um email válido.");
+                    }
 
-    // 4. Validação de Telefone (Apenas se estiver preenchido - só números)
-    if (form.value.phone && !/^[0-9]+$/.test(form.value.phone)) {
-        return alert("O telemóvel deve conter apenas números.");
-    }
+                    if (form.value.phone && !/^[0-9]+$/.test(form.value.phone)) {
+                        return alert("O telemóvel deve conter apenas números.");
+                    }
 
-    try {
-        const res = await fetch('/api/v1/cards', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                customer_id: form.value.first_name,
-                last_name: form.value.last_name,
-                email: form.value.email,
-                phone: form.value.phone,
-                nif: form.value.nif,
-                design: 'modern'
-            })
-        });
-        
-        if (res.ok) {
-            createdCard.value = await res.json();
-            form.value = { first_name: '', last_name: '', email: '', phone: '', nif: '' };
-        } else {
-            const errorMsg = await res.text();
-            alert("Erro ao criar cliente: " + errorMsg);
-        }
-    } catch (err) {
-        alert("Erro de conexão com o servidor.");
-    }
-};
+                    try {
+                        const res = await fetch('/api/v1/cards', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                customer_id: form.value.first_name,
+                                last_name: form.value.last_name,
+                                email: form.value.email,
+                                phone: form.value.phone,
+                                nif: form.value.nif,
+                                design: 'modern'
+                            })
+                        });
+                        
+                        if (res.ok) {
+                            createdCard.value = await res.json();
+                            form.value = { first_name: '', last_name: '', email: '', phone: '', nif: '' };
+                        } else {
+                            const errorMsg = await res.text();
+                            alert("Erro ao criar cliente: " + errorMsg);
+                        }
+                    } catch (err) {
+                        alert("Erro de conexão com o servidor.");
+                    }
+                };
 
                 const doSearch = async () => {
                     if (searchTerm.value.length < 2) {
@@ -142,12 +141,14 @@
                     if (res.ok) searchResults.value = await res.json();
                 };
 
+                // MODIFICADO: Abre na mesma aba com a chave de staff
                 const openCard = (id) => {
-                    window.location.href = `/card?id=${id}&admin=true`;
+                    window.location.href = `/card?id=${id}&staff=${STAFF_KEY}`;
                 };
 
+                // MODIFICADO: Abre em nova aba com a chave de staff
                 const viewCreated = () => {
-                    window.open(`/card?id=${createdCard.value.id}&admin=true`, '_blank');
+                    window.open(`/card?id=${createdCard.value.id}&staff=${STAFF_KEY}`, '_blank');
                 };
 
                 return { tab, form, searchTerm, searchResults, createdCard, register, doSearch, openCard, viewCreated };

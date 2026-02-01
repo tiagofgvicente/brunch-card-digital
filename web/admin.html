@@ -141,8 +141,10 @@
                         fetchCards();
                     }
                 };
-
-                const viewCard = (id) => window.open(`/card?id=${id}&admin=true`, '_blank');
+                const STAFF_KEY = "brunch2026vip";
+                const viewCard = (id) => {
+                 window.open(`/card?id=${id}&staff=${STAFF_KEY}`, '_blank');
+                };
                 const openEdit = (card) => {
                     editForm.value = { ...card };
                     editingCard.value = true;

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"brunch-card-digital/internal/database"
@@ -8,33 +9,41 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
-// GetQRCodeHandler generates a PNG QR code for a specific card ID
+// GetQRCodeHandler gera um QR Code que aponta para o URL público do cartão
 func GetQRCodeHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	// 1. Extract the ID from query parameters (?id=UUID)
+	// 1. Extrair o ID dos parâmetros da query (?id=UUID)
 	cardID := r.URL.Query().Get("id")
 	if cardID == "" {
 		http.Error(w, "ID parameter is required", http.StatusBadRequest)
 		return
 	}
 
-	// 2. Security: Validate if the card exists in the database before generating QR
+	// 2. Validar se o cartão existe na base de dados
 	_, err := repo.GetCardByID(cardID)
 	if err != nil {
-		// Return 404 if the ID is not found to prevent generating QR codes for non-existent users
-		http.Error(w, "Card ID not found in database. Create a new one first.", http.StatusNotFound)
+		http.Error(w, "Card ID not found", http.StatusNotFound)
 		return
 	}
 
-	// 3. Generate QR Code bytes using the skip2/go-qrcode library
-	// Medium recovery level and 256px size
-	png, err := qrcode.Encode(cardID, qrcode.Medium, 256)
+	// 3. Construir o URL que o cliente vai usar
+	// detetamos o protocolo (http/https) e o host (localhost:8080 ou domínio real)
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	// Usamos o r.Host para que o QR Code funcione tanto em localhost como no Kubernetes
+	targetURL := fmt.Sprintf("%s://%s/card?id=%s", scheme, r.Host, cardID)
+
+	// 4. Gerar os bytes do QR Code com o URL completo
+	// Nível de recuperação Médio e tamanho de 256px
+	png, err := qrcode.Encode(targetURL, qrcode.Medium, 256)
 	if err != nil {
 		http.Error(w, "Error generating QR Code", http.StatusInternalServerError)
 		return
 	}
 
-	// 4. Set the correct Content-Type so the browser renders it as an image
+	// 5. Enviar a imagem com os headers corretos
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Cache-Control", "public, max-age=3600") // Cache for 1 hour for better performance
+	w.Header().Set("Cache-Control", "public, max-age=3600")
 	w.Write(png)
 }
