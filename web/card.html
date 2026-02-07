@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brunch VIP - O Teu Cartão</title>
+    <title>VIP Loyalty Card</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        /* Variáveis dinâmicas que o Vue vai controlar */
+        /* Dynamic CSS variables controlled by Vue */
         :root { 
             --primary: #00a896; 
             --dark: #1a1a1a; 
@@ -15,6 +15,7 @@
         }
         body { background: #1a1a1a; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; color: white; padding: 20px; }
 
+        /* Card container and flip animation */
         .card-wrapper { width: 350px; height: 215px; perspective: 1000px; }
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer; }
         .card-inner.is-flipped { transform: rotateY(180deg); }
@@ -25,32 +26,54 @@
             border: 2px solid var(--gold); overflow: hidden; box-sizing: border-box; 
         }
         
-        /* O background agora usa a variável --primary */
+        /* Front face uses dynamic background variable */
         .card-front { 
             background: var(--primary); 
             color: white; padding: 20px; 
             display: flex; flex-direction: column; justify-content: space-between; 
-            transition: background 0.5s ease; /* Transição suave ao mudar skin */
+            transition: background 0.5s ease;
         }
         
+        /* Back face styling */
         .card-back { background: white; color: var(--dark); transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
         .card-back img { max-width: 130px; width: 80%; height: auto; margin-bottom: 5px; }
+
+        /* Header branding styles */
+        .card-top { display: flex; justify-content: space-between; align-items: center; }
+        .store-branding { display: flex; align-items: center; gap: 8px; }
+        .store-logo-mini { width: 22px; height: 22px; border-radius: 4px; object-fit: cover; background: white; padding: 1px; }
 
         .card-top-right { display: flex; gap: 12px; align-items: center; }
         .stat-item { font-size: 1rem; display: flex; align-items: center; gap: 4px; font-weight: bold; }
         .stat-item.bonus { color: var(--gold); }
+
+        /* Loyalty stamps grid */
         .stamps-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 10px 0; }
-        .circle { width: 44px; height: 44px; background: rgba(0,0,0,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px dashed rgba(255,255,255,0.4); }
-        .circle.active { background: white; border-style: solid; border-color: var(--gold); }
+        .circle { width: 44px; height: 44px; background: rgba(0,0,0,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px dashed rgba(255,255,255,0.4); overflow: hidden; }
+        .circle.active { background: white; border-style: solid; border-color: var(--gold); animation: pop 0.3s ease; }
+        
+        /* Dynamic Logo Stamp */
+        .stamp-img { width: 80%; height: 80%; object-fit: contain; }
+        .stamp-emoji { font-size: 22px; }
+
+        /* Footer styling */
         .card-footer { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
         .client-info { text-transform: uppercase; font-weight: bold; font-size: 0.85rem; line-height: 1.2; }
         .member-number-sub { display: block; font-size: 0.65rem; color: var(--gold); opacity: 0.9; margin-top: 2px; }
         .total-visits-footer { font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 4px; }
         .total-visits-footer span { color: var(--gold); }
+
+        /* Staff controls */
         .controls { margin-top: 30px; }
         .btn { padding: 12px 24px; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.2s; background: var(--gold); color: #333; box-shadow: 0 4px 15px rgba(255,209,102,0.3); }
         .staff-bonus-overlay { position: absolute; top: 10px; left: 10px; display: flex; gap: 5px; }
         .mini-reward-token { width: 32px; height: 32px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid white; }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -60,25 +83,38 @@
             <div class="card-inner" :class="{ 'is-flipped': isFlipped }" @click="isFlipped = !isFlipped">
                 
                 <div class="card-face card-front" :style="themeStyles">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: bold; letter-spacing: 1.5px; font-size: 0.9rem;">BRUNCH.CO VIP</span>
+                    <div class="card-top">
+                        <div class="store-branding">
+                            <img v-if="storeConfig.logo" :src="storeConfig.logo" class="store-logo-mini">
+                            <span style="font-weight: bold; letter-spacing: 1.5px; font-size: 0.9rem;">{{ storeConfig.name.toUpperCase() }} VIP</span>
+                        </div>
                         <div class="card-top-right">
                             <div class="stat-item bonus">🎁 {{ availableRewards }}</div>
                             <div class="stat-item">🏆 {{ card.total_redeemed_bonuses || 0 }}</div>
                         </div>
                     </div>
+
                     <div class="stamps-grid">
                         <div v-for="n in 10" :key="n" class="circle" :class="{ active: n <= card.stamps_count }">
-                            <span v-if="n <= card.stamps_count">🍳</span>
+                            <template v-if="n <= card.stamps_count">
+                                <img v-if="storeConfig.logo" :src="storeConfig.logo" class="stamp-img">
+                                <span v-else class="stamp-emoji">🍳</span>
+                            </template>
                         </div>
                     </div>
+
                     <div class="card-footer">
                         <div class="client-info">
                             {{ card.customer_id }} {{ card.last_name }} 
-                            <span class="member-number-sub">SÓCIO Nº {{ card.member_number }}</span>
+                            <span class="member-number-sub">MEMBER Nº {{ card.member_number }}</span>
                         </div>
-                        <div class="total-visits-footer">🍳 <span>{{ card.total_stamps }}</span></div>
+                        <div class="total-visits-footer">
+                            <img v-if="storeConfig.logo" :src="storeConfig.logo" style="width:16px; height:16px; border-radius:2px;">
+                            <span v-else>🍳</span> 
+                            <span>{{ card.total_stamps }}</span>
+                        </div>
                     </div>
+
                     <div class="staff-bonus-overlay" v-if="isStaff && availableRewards > 0">
                         <div v-for="n in availableRewards" :key="n" class="mini-reward-token" @click.stop="redeemReward">🎁</div>
                     </div>
@@ -92,7 +128,7 @@
         </div>
 
         <div class="controls" v-if="isStaff">
-            <button class="btn" @click.stop="addStamp">🍳 Validar Visita</button>
+            <button class="btn" @click.stop="addStamp">Validate Visit</button>
         </div>
     </div>
 
@@ -102,19 +138,26 @@
 
         createApp({
             setup() {
-                const card = ref({ id: null, design: 'modern' });
+                const card = ref({ id: null, design: 'default' });
                 const isFlipped = ref(false);
                 const cardId = new URLSearchParams(window.location.search).get('id');
                 const isStaff = ref(new URLSearchParams(window.location.search).get('staff') === STAFF_KEY);
 
-                // DICIONÁRIO DE TEMAS - Adiciona aqui novas skins facilmente
-const themeStyles = computed(() => {
-    const themes = {
-        'default':   { primary: '#00a896', gold: '#ffd166' }, // A tua base atual
-        'loja':      { primary: '#1a1a1a', gold: '#ffd166' }, // Configuração para a LOJA (Preto e Ouro)
-        'valentine': { primary: '#ff4d6d', gold: '#ffffff' },
-        'holiday':   { primary: '#2d5a27', gold: '#ff4444' }
-    };
+                // Store Global Configuration
+                const storeConfig = ref({
+                    name: 'Brunch.co',
+                    logo: '', // Replace with actual Logo URL from System Settings
+                    primaryColor: '#00a896'
+                });
+
+                // Design Themes Dictionary
+                const themeStyles = computed(() => {
+                    const themes = {
+                        'default':   { primary: '#00a896', gold: '#ffd166' },
+                        'loja':      { primary: storeConfig.value.primaryColor, gold: '#ffd166' }, // Shop Identity colors
+                        'valentine': { primary: '#ff4d6d', gold: '#ffffff' },
+                        'holiday':   { primary: '#2d5a27', gold: '#ff4444' }
+                    };
                     const active = themes[card.value.design] || themes['default'];
                     return {
                         '--primary': active.primary,
@@ -122,32 +165,37 @@ const themeStyles = computed(() => {
                     };
                 });
 
+                // Calculate available rewards based on visit history
                 const availableRewards = computed(() => {
                     const earned = Math.floor(card.value.total_stamps / 10);
-                    return Math.max(0, earned - (card.value.total_redeemed_bonuses || 0));
+                    const available = earned - (card.value.total_redeemed_bonuses || 0);
+                    return available > 0 ? available : 0;
                 });
 
+                // Fetch card data from API
                 const fetchCard = async () => {
                     const res = await fetch(`/api/v1/cards/status?id=${cardId}`);
                     if (res.ok) { card.value = await res.json(); }
                 };
 
+                // Add a visit stamp (Staff only)
                 const addStamp = async () => {
                     if (!isStaff.value) return;
                     await fetch(`/api/v1/cards/stamp?id=${cardId}`, { method: 'POST' });
                     fetchCard();
                 };
 
+                // Redeem an earned bonus (Staff only)
                 const redeemReward = async () => {
                     if (!isStaff.value) return;
-                    if (confirm("Confirmar resgate de 1 bónus?")) {
+                    if (confirm("Confirm bonus redemption?")) {
                         const res = await fetch(`/api/v1/cards/use-reward?id=${cardId}`, { method: 'POST' });
                         if (res.ok) fetchCard();
                     }
                 };
 
                 onMounted(fetchCard);
-                return { card, isFlipped, isStaff, availableRewards, addStamp, redeemReward, themeStyles };
+                return { card, isFlipped, isStaff, availableRewards, addStamp, redeemReward, themeStyles, storeConfig };
             }
         }).mount('#app');
     </script>

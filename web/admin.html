@@ -5,24 +5,39 @@
     <title>Brunch Admin - Gestão VIP</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        :root { --primary: #00a896; --dark-bg: #121212; --sidebar-bg: #1e1e1e; --gold: #ffd166; --red: #ff4444; --orange: #e67e22; }
-        body { background: var(--dark-bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        /* VARIÁVEIS DINÂMICAS - Controladas pelo Vue */
+        :root { 
+            --primary: #00a896; 
+            --bg-main: #121212; 
+            --bg-side: #1e1e1e; 
+            --text-main: #ffffff;
+            --text-sub: #888888;
+            --border-color: #333333;
+            --gold: #ffd166; 
+            --red: #ff4444; 
+            --orange: #e67e22; 
+        }
+        
+        body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
 
-        .sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid #333; display: flex; flex-direction: column; padding: 20px 0; }
-        .sidebar-header { padding: 0 20px 30px; border-bottom: 1px solid #333; margin-bottom: 20px; }
-        .sidebar-header h2 { color: var(--primary); font-size: 1.2rem; margin: 0; }
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; transition: background 0.3s; }
+        .sidebar-header { padding: 0 20px 30px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .sidebar-header img { width: 35px; height: 35px; border-radius: 5px; object-fit: cover; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; margin: 0; }
 
-        .nav-item { padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #888; transition: 0.3s; font-weight: bold; }
-        .nav-item:hover { background: rgba(0, 168, 150, 0.1); color: white; }
+        .nav-item { padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-sub); transition: 0.3s; font-weight: bold; }
+        .nav-item:hover { background: rgba(0, 168, 150, 0.1); color: var(--text-main); }
         .nav-item.active { background: rgba(0, 168, 150, 0.2); color: var(--primary); border-left: 4px solid var(--primary); }
 
+        /* Main Content */
         .main-content { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
         .page-header { margin-bottom: 30px; }
         
-        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #333; font-size: 0.85rem; }
+        table { width: 100%; border-collapse: collapse; background: var(--bg-side); border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; }
         th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; }
-        tr:hover { background: #252525; }
+        tr:hover { background: rgba(255,255,255,0.05); }
 
         .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
         .btn-view { background: var(--gold); color: #333; }
@@ -30,13 +45,13 @@
         .btn-redeem { background: var(--primary); color: white; }
         .btn-reset { background: var(--red); color: white; }
 
-        .member-badge { background: #333; color: var(--gold); padding: 4px 8px; border-radius: 4px; font-family: monospace; }
+        .member-badge { background: rgba(0,0,0,0.2); color: var(--gold); padding: 4px 8px; border-radius: 4px; font-family: monospace; border: 1px solid var(--border-color); }
         .redeemed-badge { background: rgba(255, 209, 102, 0.1); color: var(--gold); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(255, 209, 102, 0.3); font-weight: bold; }
 
         /* MODAL PREVIEW */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-content { background: #1e1e1e; padding: 40px; border-radius: 20px; text-align: center; position: relative; border: 1px solid #444; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
-        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; color: #666; }
+        .modal-content { background: var(--bg-side); padding: 40px; border-radius: 20px; text-align: center; position: relative; border: 1px solid var(--border-color); box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; color: var(--text-sub); }
         
         .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 20px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); }
         .preview-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 0.8rem; }
@@ -48,10 +63,14 @@
 <body>
     <div id="app" style="display: contents;">
         <aside class="sidebar">
-            <div class="sidebar-header"><h2>Brunch.co Admin</h2></div>
+            <div class="sidebar-header">
+                <img v-if="storeConfig.logo" :src="storeConfig.logo" alt="Logo">
+                <h2>{{ storeConfig.name }}</h2>
+            </div>
             <nav>
-                <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="currentPage = 'customers'">👥 Gestão de Clientes</div>
+                <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 Gestão de Clientes</div>
                 <div class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 Skins de Cartões</div>
+                <div class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ Gestão de Sistema</div>
             </nav>
         </aside>
 
@@ -87,9 +106,9 @@
                 </table>
             </div>
 
-            <div v-if="currentPage === 'skins'">
-                <div v-if="loadingSkins" style="text-align: center; padding: 50px;"><p>A carregar skins...</p></div>
-                <div v-else v-html="skinsHtml"></div>
+            <div v-if="currentPage === 'skins' || currentPage === 'settings'">
+                <div v-if="loadingSubPage" style="text-align: center; padding: 50px;"><p>A carregar...</p></div>
+                <div v-else v-html="subPageHtml"></div>
             </div>
         </main>
 
@@ -98,7 +117,7 @@
                 <span class="close-modal" @click="showPreview = false">&times;</span>
                 <h2>Preview do Design</h2>
                 <div class="preview-card-shell" :style="{ backgroundColor: previewColors.bg, color: previewColors.text }">
-                    <div class="preview-header"><span>BRUNCH.CO VIP</span><span>🎁 2</span></div>
+                    <div class="preview-header"><span>{{ storeConfig.name }} VIP</span><span>🎁 2</span></div>
                     <div class="preview-grid"><div v-for="n in 10" :key="n" class="p-circle" :class="{ active: n <= 6 }"></div></div>
                     <div class="preview-footer"><div>CLIENTE EXEMPLO <br><span style="color: #ffd166">SÓCIO Nº 0000</span></div></div>
                 </div>
@@ -113,16 +132,43 @@
             setup() {
                 const cards = ref([]);
                 const currentPage = ref('customers');
-                const skinsHtml = ref('');
-                const loadingSkins = ref(false);
+                const subPageHtml = ref('');
+                const loadingSubPage = ref(false);
                 const activeSkin = ref('default');
                 const showPreview = ref(false);
                 const previewDesign = ref('default');
 
+                // Configuração Global da Loja
+                const storeConfig = ref({
+                    name: 'Brunch.co',
+                    logo: '',
+                    themeMode: 'dark', // 'light', 'dark', 'custom'
+                    primaryColor: '#00a896'
+                });
+
+                // Lógica de Temas do Site
+                const applyTheme = () => {
+                    const root = document.documentElement;
+                    if (storeConfig.value.themeMode === 'light') {
+                        root.style.setProperty('--bg-main', '#f5f5f5');
+                        root.style.setProperty('--bg-side', '#ffffff');
+                        root.style.setProperty('--text-main', '#1a1a1a');
+                        root.style.setProperty('--text-sub', '#666666');
+                        root.style.setProperty('--border-color', '#dddddd');
+                    } else if (storeConfig.value.themeMode === 'dark') {
+                        root.style.setProperty('--bg-main', '#121212');
+                        root.style.setProperty('--bg-side', '#1e1e1e');
+                        root.style.setProperty('--text-main', '#ffffff');
+                        root.style.setProperty('--text-sub', '#888888');
+                        root.style.setProperty('--border-color', '#333333');
+                    }
+                    root.style.setProperty('--primary', storeConfig.value.primaryColor);
+                };
+
                 const previewColors = computed(() => {
                     const themes = {
                         'default':   { bg: '#00a896', text: '#ffffff' },
-                        'loja':      { bg: '#1a1a1a', text: '#ffffff' },
+                        'loja':      { bg: storeConfig.value.primaryColor, text: '#ffffff' },
                         'valentine': { bg: '#ff4d6d', text: '#ffffff' },
                         'holiday':   { bg: '#2d5a27', text: '#ffffff' }
                     };
@@ -130,36 +176,22 @@
                 });
 
                 const updateSkinUI = () => {
+                    if (currentPage.value !== 'skins') return;
                     const design = activeSkin.value || 'default';
-                    console.log("A aplicar UI para skin:", design);
-
-                    // Limpa tudo primeiro
                     document.querySelectorAll('.skin-card').forEach(el => el.classList.remove('is-active'));
                     document.querySelectorAll('.btn-skin-act').forEach(el => {
-                        el.innerText = 'ATIVAR';
-                        el.disabled = false;
-                        el.style.opacity = '1';
+                        el.innerText = 'ATIVAR'; el.disabled = false; el.style.opacity = '1';
                     });
-
-                    // Aplica ao correto
                     const activeEl = document.getElementById(`skin-${design}`);
                     const activeBtn = document.getElementById(`btn-${design}`);
-
                     if (activeEl) activeEl.classList.add('is-active');
-                    if (activeBtn) {
-                        activeBtn.innerText = 'ACTIVA';
-                        activeBtn.disabled = true;
-                        activeBtn.style.opacity = '0.5';
-                    }
+                    if (activeBtn) { activeBtn.innerText = 'ACTIVA'; activeBtn.disabled = true; activeBtn.style.opacity = '0.5'; }
                 };
 
-                // WATCHER CRÍTICO: Sempre que o HTML das skins mudar ou a aba for aberta, 
-                // o Vue espera o DOM renderizar (nextTick) e pinta a UI.
-                watch([skinsHtml, currentPage], async () => {
-                    if (currentPage.value === 'skins') {
-                        await nextTick();
-                        updateSkinUI();
-                    }
+                watch([subPageHtml, currentPage], async () => {
+                    await nextTick();
+                    if (currentPage.value === 'skins') updateSkinUI();
+                    applyTheme();
                 });
 
                 const fetchCards = async () => {
@@ -167,22 +199,22 @@
                     if (res.ok) {
                         const data = await res.json();
                         cards.value = data;
-                        if (data.length > 0) {
-                            activeSkin.value = data[0].design || 'default';
-                        }
+                        if (data.length > 0) activeSkin.value = data[0].design || 'default';
                     }
                 };
 
                 const changePage = async (page) => {
                     currentPage.value = page;
-                    if (page === 'skins' && !skinsHtml.value) {
-                        loadingSkins.value = true;
-                        const res = await fetch('/skins.html');
-                        skinsHtml.value = await res.text();
-                        loadingSkins.value = false;
+                    if (page === 'skins' || page === 'settings') {
+                        loadingSubPage.value = true;
+                        const file = page === 'skins' ? '/skins.html' : '/settings.html';
+                        const res = await fetch(file);
+                        subPageHtml.value = await res.text();
+                        loadingSubPage.value = false;
                     }
                 };
 
+                // Funções Globais expostas para os ficheiros segregados
                 window.updateGlobalSkin = async (skinName) => {
                     if (!confirm(`Aplicar design "${skinName}"?`)) return;
                     const res = await fetch('/api/v1/admin/update-skin', {
@@ -190,15 +222,19 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ design: skinName })
                     });
-                    if (res.ok) {
-                        activeSkin.value = skinName;
-                        updateSkinUI();
-                    }
+                    if (res.ok) { activeSkin.value = skinName; updateSkinUI(); }
                 };
 
-                window.openPreview = (design) => {
-                    previewDesign.value = design;
-                    showPreview.value = true;
+                window.openPreview = (design) => { previewDesign.value = design; showPreview.value = true; };
+
+                window.setTheme = (mode) => { 
+                    storeConfig.value.themeMode = mode; 
+                    applyTheme(); 
+                };
+
+                window.saveSettings = () => {
+                    alert("Configurações guardadas com sucesso (Simulado)");
+                    // Aqui farias o POST para a tua API de settings
                 };
 
                 const calculateAvailable = (card) => {
@@ -224,11 +260,14 @@
                     }
                 };
 
-                onMounted(fetchCards);
+                onMounted(() => {
+                    fetchCards();
+                    applyTheme();
+                });
 
                 return { 
-                    cards, currentPage, skinsHtml, loadingSkins, activeSkin,
-                    showPreview, previewColors, changePage, calculateAvailable, 
+                    cards, currentPage, subPageHtml, loadingSubPage, activeSkin,
+                    showPreview, previewColors, storeConfig, changePage, calculateAvailable, 
                     addStampFromAdmin, redeemFromAdmin, viewCard, resetCard 
                 };
             }

@@ -63,6 +63,10 @@ func main() {
 		http.ServeFile(w, r, "web/admin.html")
 	}))
 
+	mux.HandleFunc("/settings.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/settings.html")
+	})
+
 	// --- API ENDPOINTS (Backend) ---
 	mux.HandleFunc("/health", healthHandler)
 
@@ -78,10 +82,9 @@ func main() {
 	mux.HandleFunc("/api/v1/admin/cards", basicAuth(makeHandler(api.ListAllCardsHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/reset", basicAuth(makeHandler(api.AdminResetHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/update", basicAuth(makeHandler(api.UpdateCardHandler, repo)))
-	
+
 	// Skins API
 	mux.HandleFunc("/api/v1/admin/update-skin", basicAuth(makeHandler(api.UpdateSkinHandler, repo)))
-    
 
 	// 6. SERVER CONFIGURATION
 	server := &http.Server{
