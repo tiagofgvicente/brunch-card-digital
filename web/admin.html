@@ -5,9 +5,9 @@
     <title>Brunch Admin Dashboard</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        :root { --primary: #00a896; --dark: #121212; --gold: #ffd166; --red: #ff4444; }
+        :root { --primary: #00a896; --dark: #121212; --gold: #ffd166; --red: #ff4444; --orange: #e67e22; }
         body { background: var(--dark); color: white; font-family: sans-serif; padding: 40px; margin: 0; }
-        .container { max-width: 1400px; margin: auto; }
+        .container { max-width: 1450px; margin: auto; }
         h1 { border-left: 5px solid var(--primary); padding-left: 15px; margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); table-layout: fixed; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #333; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -16,42 +16,34 @@
         .member-badge { background: #333; color: var(--gold); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; }
         
         /* Botões */
-        .btn { padding: 6px 10px; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
+        .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
         .btn-reset { background: var(--red); color: white; }
         .btn-view { background: var(--gold); color: #333; }
+        .btn-stamp-direct { background: var(--orange); color: white; }
         .btn-edit { background: #444; color: white; }
         .btn-redeem { background: var(--primary); color: white; border: 1px solid rgba(255,255,255,0.3); }
-        .btn-redeem:disabled { background: #333; color: #666; border: 1px solid #444; cursor: not-allowed; opacity: 0.5; }
+        .btn-redeem:disabled { background: #333; color: #666; border: 1px solid #444; cursor: not-allowed; opacity: 0.4; }
         .btn:hover:not(:disabled) { opacity: 0.8; transform: translateY(-1px); }
 
-        /* Estilos do Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #2a2a2a; padding: 30px; border-radius: 15px; width: 100%; max-width: 450px; border: 1px solid var(--primary); box-shadow: 0 0 20px rgba(0,168,150,0.2); }
-        .modal-content h3 { margin-top: 0; color: var(--primary); margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; text-align: left; }
-        .form-group label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
-        .btn-save { flex: 2; background: var(--primary); color: white; padding: 12px; font-weight: bold; }
-        .btn-cancel { flex: 1; background: #666; color: white; padding: 12px; }
         .bonus-token { font-size: 1.2rem; margin-right: 2px; }
+        .redeemed-badge { background: rgba(255, 209, 102, 0.1); color: var(--gold); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(255, 209, 102, 0.3); font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="app" class="container">
         <h1>Dashboard de Gestão - Brunch.co</h1>
+        
         <table>
             <thead>
                 <tr>
                     <th style="width: 80px;">Nº Sócio</th>
                     <th>Nome</th>
                     <th>Apelido</th>
-                    <th style="width: 180px;">Email</th>
-                    <th style="width: 120px;">Telemóvel</th>
-                    <th style="width: 100px;">NIF</th>
-                    <th style="width: 120px;">Bónus em Carteira</th>
+                    <th style="width: 140px;">Telemóvel</th>
+                    <th style="width: 150px;">Bónus em Carteira</th>
+                    <th style="width: 130px;">Bónus Gastos</th>
                     <th style="width: 100px;">Visitas Reais</th>
-                    <th style="width: 220px;">Ações</th>
+                    <th style="width: 330px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -59,9 +51,8 @@
                     <td><span class="member-badge">#{{ card.member_number }}</span></td>
                     <td style="font-weight: bold;">{{ card.customer_id }}</td>
                     <td>{{ card.last_name }}</td>
-                    <td><small>{{ card.email || '-' }}</small></td>
                     <td>{{ card.phone || '-' }}</td>
-                    <td>{{ card.nif || '-' }}</td>
+                    
                     <td style="text-align: center;">
                         <div v-if="calculateAvailable(card) > 0">
                             <span v-for="n in calculateAvailable(card)" :key="n" class="bonus-token">🎁</span>
@@ -69,15 +60,24 @@
                         </div>
                         <span v-else style="color: #555;">{{ card.stamps_count }}/10</span>
                     </td>
+
+                    <td style="text-align: center;">
+                        <span class="redeemed-badge">🏆 {{ card.total_redeemed_bonuses || 0 }}</span>
+                    </td>
+
                     <td><strong>{{ card.total_stamps }}</strong></td>
                     <td>
                         <div style="display: flex;">
                             <button class="btn btn-view" @click="viewCard(card.id)">Ver</button>
+                            
+                            <button class="btn btn-stamp-direct" @click="addStampFromAdmin(card)">🍳 Stamp</button>
+
                             <button class="btn btn-redeem" 
                                     :disabled="calculateAvailable(card) === 0" 
                                     @click="redeemFromAdmin(card)">
                                 Redeem
                             </button>
+                            
                             <button class="btn btn-edit" @click="openEdit(card)">Edit</button>
                             <button class="btn btn-reset" @click="resetCard(card.id)">Reset</button>
                         </div>
@@ -85,21 +85,6 @@
                 </tr>
             </tbody>
         </table>
-
-        <div v-if="editingCard" class="modal-overlay" @click.self="closeModal">
-            <div class="modal-content">
-                <h3>Editar Perfil do Cliente</h3>
-                <div class="form-group"><label>NOME</label><input v-model="editForm.customer_id"></div>
-                <div class="form-group"><label>APELIDO</label><input v-model="editForm.last_name"></div>
-                <div class="form-group"><label>EMAIL</label><input v-model="editForm.email" type="email"></div>
-                <div class="form-group"><label>TELEMÓVEL</label><input v-model="editForm.phone"></div>
-                <div class="form-group"><label>NIF</label><input v-model="editForm.nif" maxlength="9"></div>
-                <div class="modal-actions">
-                    <button class="btn btn-save" @click="saveEdit">GUARDAR ALTERAÇÕES</button>
-                    <button class="btn btn-cancel" @click="closeModal">CANCELAR</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -107,8 +92,6 @@
         createApp({
             setup() {
                 const cards = ref([]);
-                const editingCard = ref(false);
-                const editForm = ref({ id: '', customer_id: '', last_name: '', email: '', phone: '', nif: '' });
 
                 const calculateAvailable = (card) => {
                     const earned = Math.floor(card.total_stamps / 10);
@@ -118,22 +101,24 @@
 
                 const fetchCards = async () => {
                     const res = await fetch('/api/v1/admin/cards');
-                    if (res.status === 401) return alert("Não autorizado.");
-                    cards.value = await res.json();
+                    if (res.ok) cards.value = await res.json();
+                };
+
+                const addStampFromAdmin = async (card) => {
+                    if (!confirm(`Validar visita para ${card.customer_id}?`)) return;
+                    const res = await fetch(`/api/v1/cards/stamp?id=${card.id}`, { method: 'POST' });
+                    if (res.ok) fetchCards();
                 };
 
                 const redeemFromAdmin = async (card) => {
                     const available = calculateAvailable(card);
-                    if (confirm(`Resgatar 1 bónus para ${card.customer_id}? (Ficarão ${available - 1} restantes)`)) {
+                    if (confirm(`Resgatar 1 bónus para ${card.customer_id}?`)) {
                         const res = await fetch(`/api/v1/cards/use-reward?id=${card.id}`, { method: 'POST' });
-                        if (res.ok) {
-                            await fetchCards();
-                            alert("Bónus resgatado com sucesso!");
-                        } else {
-                            alert("Erro ao resgatar bónus.");
-                        }
+                        if (res.ok) fetchCards();
                     }
                 };
+
+                const viewCard = (id) => { window.open(`/card?id=${id}`, '_blank'); };
 
                 const resetCard = async (id) => {
                     if (confirm("Tens a certeza? Isto apagará TODO o histórico do cliente!")) {
@@ -141,38 +126,12 @@
                         fetchCards();
                     }
                 };
-                const STAFF_KEY = "brunch2026vip";
-                const viewCard = (id) => {
-                 window.open(`/card?id=${id}&staff=${STAFF_KEY}`, '_blank');
-                };
-                const openEdit = (card) => {
-                    editForm.value = { ...card };
-                    editingCard.value = true;
-                };
-                const closeModal = () => editingCard.value = false;
-
-                const saveEdit = async () => {
-                    const payload = { ...editForm.value };
-                    const res = await fetch('/api/v1/admin/update', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (res.ok) { editingCard.value = false; await fetchCards(); }
-                };
 
                 onMounted(fetchCards);
+
                 return { 
-                    cards, 
-                    resetCard, 
-                    viewCard, 
-                    editingCard, 
-                    editForm, 
-                    openEdit, 
-                    saveEdit, 
-                    closeModal, 
-                    calculateAvailable,
-                    redeemFromAdmin
+                    cards, calculateAvailable, addStampFromAdmin, 
+                    redeemFromAdmin, viewCard, resetCard 
                 };
             }
         }).mount('#app');

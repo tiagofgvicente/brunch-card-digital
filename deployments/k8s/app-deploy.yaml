@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: brunch-api
-        image: localhost/brunch-api:v1 # Image built with Podman
-        imagePullPolicy: IfNotPresent # Critical for local images in Kind
+        image: localhost/brunch-api:v1
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
 ---
@@ -33,4 +33,4 @@ spec:
   - protocol: TCP
     port: 8080
     targetPort: 8080
-    nodePort: 30080 # Maps to hostPort 8080 in kind-config
+    nodePort: 30080

@@ -73,7 +73,7 @@
             <button class="main-btn" @click="createdCard = null" style="background: transparent; border: 1px solid #666;">VOLTAR</button>
         </div>
 
-        <a href="/admin" style="display:block; margin-top:30px; color:#666; font-size:0.75rem; text-decoration:none;">🔒 Admin Dashboard</a>
+        <a href="/admin" target="_blank" style="display:block; margin-top:30px; color:#666; font-size:0.75rem; text-decoration:none;">🔒 Admin Dashboard</a>
     </div>
 
     <script>
@@ -143,7 +143,7 @@
 
                 // MODIFICADO: Abre na mesma aba com a chave de staff
                 const openCard = (id) => {
-                    window.location.href = `/card?id=${id}&staff=${STAFF_KEY}`;
+                    window.open(`/card?id=${id}&staff=${STAFF_KEY}`, '_blank');
                 };
 
                 // MODIFICADO: Abre em nova aba com a chave de staff

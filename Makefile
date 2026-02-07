@@ -9,7 +9,7 @@ K8S_DIR=deployments/k8s
 # Injects Podman as the provider for Kind
 export KIND_EXPERIMENTAL_PROVIDER=podman
 
-.PHONY: all cluster build load deploy clean status help
+.PHONY: all cluster build load deploy clean status help nuke update
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -39,6 +39,12 @@ deploy: ## Apply Kubernetes manifests
 	kubectl wait --for=condition=ready pod -l app=postgres --timeout=90s
 	kubectl apply -f $(K8S_DIR)/app-deploy.yaml
 
+update: build load ## Update the app with new code without deleting the cluster
+	@echo "Restarting deployment to apply new image..."
+	kubectl rollout restart deployment $(DEPLOYMENT_NAME)
+	@echo "Waiting for rollout to finish..."
+	kubectl rollout status deployment $(DEPLOYMENT_NAME)
+
 status: ## Check the status of the nodes and pods
 	kubectl get nodes
 	kubectl get pods
@@ -47,7 +53,6 @@ clean: ## Delete the cluster and cleanup local files
 	kind delete cluster --name $(CLUSTER_NAME)
 	rm -f *.tar
 
-.PHONY: nuke
 nuke: clean ## Remove everything: cluster, images, and podman cache
 	@echo "Deep cleaning Podman cache..."
 	podman builder prune -f
