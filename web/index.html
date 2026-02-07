@@ -21,7 +21,6 @@
         .main-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
         .main-btn:hover { opacity: 0.9; }
 
-        /* Search Styles */
         .results-list { background: #1e1e1e; border-radius: 8px; margin-top: 10px; max-height: 200px; overflow-y: auto; text-align: left; }
         .result-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; transition: 0.2s; }
         .result-item:hover { background: #2a2a2a; border-left: 4px solid var(--gold); }
@@ -77,83 +76,80 @@
     </div>
 
     <script>
-        const { createApp, ref } = Vue;
-        // DEFINIÇÃO DA CHAVE SECRETA DE STAFF
-        const STAFF_KEY = "brunch2026vip"; 
+    const { createApp, ref, onMounted } = Vue;
+    const STAFF_KEY = "brunch2026vip"; 
 
-        createApp({
-            setup() {
-                const tab = ref('new');
-                const form = ref({ first_name: '', last_name: '', email: '', phone: '', nif: '' });
-                const searchTerm = ref('');
-                const searchResults = ref([]);
-                const createdCard = ref(null);
+    createApp({
+        setup() {
+            const tab = ref('new');
+            const form = ref({ first_name: '', last_name: '', email: '', phone: '', nif: '' });
+            const searchTerm = ref('');
+            const searchResults = ref([]);
+            const createdCard = ref(null);
+            const activeSkin = ref('default'); 
 
-                const register = async () => {
-                    if (!form.value.first_name || !form.value.last_name) {
-                        return alert("Nome e Apelido são obrigatórios");
-                    }
-                    
-                    if (form.value.nif && !/^[0-9]{9}$/.test(form.value.nif)) {
-                        return alert("O NIF deve conter exatamente 9 dígitos numéricos.");
-                    }
-
-                    if (form.value.email && !form.value.email.includes('@')) {
-                        return alert("Por favor, insira um email válido.");
-                    }
-
-                    if (form.value.phone && !/^[0-9]+$/.test(form.value.phone)) {
-                        return alert("O telemóvel deve conter apenas números.");
-                    }
-
-                    try {
-                        const res = await fetch('/api/v1/cards', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                customer_id: form.value.first_name,
-                                last_name: form.value.last_name,
-                                email: form.value.email,
-                                phone: form.value.phone,
-                                nif: form.value.nif,
-                                design: 'modern'
-                            })
-                        });
-                        
-                        if (res.ok) {
-                            createdCard.value = await res.json();
-                            form.value = { first_name: '', last_name: '', email: '', phone: '', nif: '' };
-                        } else {
-                            const errorMsg = await res.text();
-                            alert("Erro ao criar cliente: " + errorMsg);
+            const detectActiveSkin = async () => {
+                try {
+                    const res = await fetch('/api/v1/admin/cards'); 
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.length > 0) {
+                            activeSkin.value = data[0].design || 'default';
+                            console.log("Skin activa detectada para novos registos:", activeSkin.value);
                         }
-                    } catch (err) {
-                        alert("Erro de conexão com o servidor.");
                     }
-                };
+                } catch (e) {
+                    console.error("Erro ao sincronizar skin:", e);
+                }
+            };
 
-                const doSearch = async () => {
-                    if (searchTerm.value.length < 2) {
-                        searchResults.value = [];
-                        return;
+            const register = async () => {
+                if (!form.value.first_name || !form.value.last_name) {
+                    return alert("Nome e Apelido são obrigatórios");
+                }
+
+                console.log("A criar cartão com a skin:", activeSkin.value);
+
+                try {
+                    const res = await fetch('/api/v1/cards', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            customer_id: form.value.first_name,
+                            last_name: form.value.last_name,
+                            email: form.value.email,
+                            phone: form.value.phone,
+                            nif: form.value.nif,
+                            design: activeSkin.value
+                        })
+                    });
+                    
+                    if (res.ok) {
+                        createdCard.value = await res.json();
+                        form.value = { first_name: '', last_name: '', email: '', phone: '', nif: '' };
+                    } else {
+                        const errorMsg = await res.text();
+                        alert("Erro: " + errorMsg);
                     }
-                    const res = await fetch(`/api/v1/cards/search?q=${encodeURIComponent(searchTerm.value)}`);
-                    if (res.ok) searchResults.value = await res.json();
-                };
+                } catch (err) {
+                    alert("Erro de conexão.");
+                }
+            };
 
-                // MODIFICADO: Abre na mesma aba com a chave de staff
-                const openCard = (id) => {
-                    window.open(`/card?id=${id}&staff=${STAFF_KEY}`, '_blank');
-                };
+            const doSearch = async () => {
+                if (searchTerm.value.length < 2) { searchResults.value = []; return; }
+                const res = await fetch(`/api/v1/cards/search?q=${encodeURIComponent(searchTerm.value)}`);
+                if (res.ok) searchResults.value = await res.json();
+            };
 
-                // MODIFICADO: Abre em nova aba com a chave de staff
-                const viewCreated = () => {
-                    window.open(`/card?id=${createdCard.value.id}&staff=${STAFF_KEY}`, '_blank');
-                };
+            const openCard = (id) => { window.open(`/card?id=${id}&staff=${STAFF_KEY}`, '_blank'); };
+            const viewCreated = () => { window.open(`/card?id=${createdCard.value.id}&staff=${STAFF_KEY}`, '_blank'); };
 
-                return { tab, form, searchTerm, searchResults, createdCard, register, doSearch, openCard, viewCreated };
-            }
-        }).mount('#app');
-    </script>
+            onMounted(detectActiveSkin);
+
+            return { tab, form, searchTerm, searchResults, createdCard, register, doSearch, openCard, viewCreated, activeSkin };
+        }
+    }).mount('#app');
+</script>
 </body>
 </html>

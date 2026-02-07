@@ -5,142 +5,44 @@
     <title>Brunch Admin - Gestão VIP</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        :root { 
-            --primary: #00a896; 
-            --dark-bg: #121212; 
-            --sidebar-bg: #1e1e1e; 
-            --gold: #ffd166; 
-            --red: #ff4444; 
-            --orange: #e67e22; 
-        }
-        
-        body { 
-            background: var(--dark-bg); 
-            color: white; 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
+        :root { --primary: #00a896; --dark-bg: #121212; --sidebar-bg: #1e1e1e; --gold: #ffd166; --red: #ff4444; --orange: #e67e22; }
+        body { background: var(--dark-bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar */
-        .sidebar { 
-            width: 260px; 
-            background: var(--sidebar-bg); 
-            border-right: 1px solid #333; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 20px 0; 
-        }
-        
-        .sidebar-header { 
-            padding: 0 20px 30px; 
-            border-bottom: 1px solid #333; 
-            margin-bottom: 20px; 
-        }
-        
-        .sidebar-header h2 { 
-            color: var(--primary); 
-            font-size: 1.2rem; 
-            margin: 0; 
-        }
+        .sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid #333; display: flex; flex-direction: column; padding: 20px 0; }
+        .sidebar-header { padding: 0 20px 30px; border-bottom: 1px solid #333; margin-bottom: 20px; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.2rem; margin: 0; }
 
-        .nav-item { 
-            padding: 15px 20px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            color: #888; 
-            transition: 0.3s; 
-            font-weight: bold; 
-        }
-        
-        .nav-item:hover { 
-            background: rgba(0, 168, 150, 0.1); 
-            color: white; 
-        }
-        
-        .nav-item.active { 
-            background: rgba(0, 168, 150, 0.2); 
-            color: var(--primary); 
-            border-left: 4px solid var(--primary); 
-        }
+        .nav-item { padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #888; transition: 0.3s; font-weight: bold; }
+        .nav-item:hover { background: rgba(0, 168, 150, 0.1); color: white; }
+        .nav-item.active { background: rgba(0, 168, 150, 0.2); color: var(--primary); border-left: 4px solid var(--primary); }
 
-        /* Main Content */
-        .main-content { 
-            flex: 1; 
-            padding: 40px; 
-            overflow-y: auto; 
-        }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
+        .page-header { margin-bottom: 30px; }
         
-        .page-header { 
-            margin-bottom: 30px; 
-        }
-        
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            background: #1e1e1e; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-        }
-        
-        th, td { 
-            padding: 12px 15px; 
-            text-align: left; 
-            border-bottom: 1px solid #333; 
-            font-size: 0.85rem; 
-        }
-        
-        th { 
-            background: var(--primary); 
-            color: white; 
-            text-transform: uppercase; 
-            font-size: 0.7rem; 
-            letter-spacing: 1px; 
-        }
-        
-        tr:hover { 
-            background: #252525; 
-        }
+        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #333; font-size: 0.85rem; }
+        th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; }
+        tr:hover { background: #252525; }
 
-        /* Botões */
-        .btn { 
-            padding: 8px 12px; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            margin-right: 5px; 
-            font-weight: bold; 
-            font-size: 0.75rem; 
-            transition: 0.2s; 
-        }
-        
+        .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
         .btn-view { background: var(--gold); color: #333; }
         .btn-stamp-direct { background: var(--orange); color: white; }
         .btn-redeem { background: var(--primary); color: white; }
-        .btn-redeem:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn-reset { background: var(--red); color: white; }
 
-        .member-badge { 
-            background: #333; 
-            color: var(--gold); 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            font-family: monospace; 
-        }
+        .member-badge { background: #333; color: var(--gold); padding: 4px 8px; border-radius: 4px; font-family: monospace; }
+        .redeemed-badge { background: rgba(255, 209, 102, 0.1); color: var(--gold); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(255, 209, 102, 0.3); font-weight: bold; }
+
+        /* MODAL PREVIEW */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal-content { background: #1e1e1e; padding: 40px; border-radius: 20px; text-align: center; position: relative; border: 1px solid #444; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; color: #666; }
         
-        .redeemed-badge { 
-            background: rgba(255, 209, 102, 0.1); 
-            color: var(--gold); 
-            padding: 2px 8px; 
-            border-radius: 10px; 
-            border: 1px solid rgba(255, 209, 102, 0.3); 
-            font-weight: bold; 
-        }
+        .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 20px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); }
+        .preview-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 0.8rem; }
+        .preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
+        .p-circle { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 1px dashed rgba(255,255,255,0.4); }
+        .p-circle.active { background: white; border: 1px solid var(--gold); }
     </style>
 </head>
 <body>
@@ -190,20 +92,85 @@
                 <div v-else v-html="skinsHtml"></div>
             </div>
         </main>
+
+        <div class="modal-overlay" v-if="showPreview" @click.self="showPreview = false">
+            <div class="modal-content">
+                <span class="close-modal" @click="showPreview = false">&times;</span>
+                <h2>Preview do Design</h2>
+                <div class="preview-card-shell" :style="{ backgroundColor: previewColors.bg, color: previewColors.text }">
+                    <div class="preview-header"><span>BRUNCH.CO VIP</span><span>🎁 2</span></div>
+                    <div class="preview-grid"><div v-for="n in 10" :key="n" class="p-circle" :class="{ active: n <= 6 }"></div></div>
+                    <div class="preview-footer"><div>CLIENTE EXEMPLO <br><span style="color: #ffd166">SÓCIO Nº 0000</span></div></div>
+                </div>
+                <button class="btn btn-view" style="width: 100%; padding: 15px;" @click="showPreview = false">FECHAR</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const { createApp, ref, onMounted } = Vue;
+        const { createApp, ref, onMounted, computed, watch, nextTick } = Vue;
         createApp({
             setup() {
                 const cards = ref([]);
                 const currentPage = ref('customers');
                 const skinsHtml = ref('');
                 const loadingSkins = ref(false);
+                const activeSkin = ref('default');
+                const showPreview = ref(false);
+                const previewDesign = ref('default');
+
+                const previewColors = computed(() => {
+                    const themes = {
+                        'default':   { bg: '#00a896', text: '#ffffff' },
+                        'loja':      { bg: '#1a1a1a', text: '#ffffff' },
+                        'valentine': { bg: '#ff4d6d', text: '#ffffff' },
+                        'holiday':   { bg: '#2d5a27', text: '#ffffff' }
+                    };
+                    return themes[previewDesign.value] || themes['default'];
+                });
+
+                const updateSkinUI = () => {
+                    const design = activeSkin.value || 'default';
+                    console.log("A aplicar UI para skin:", design);
+
+                    // Limpa tudo primeiro
+                    document.querySelectorAll('.skin-card').forEach(el => el.classList.remove('is-active'));
+                    document.querySelectorAll('.btn-skin-act').forEach(el => {
+                        el.innerText = 'ATIVAR';
+                        el.disabled = false;
+                        el.style.opacity = '1';
+                    });
+
+                    // Aplica ao correto
+                    const activeEl = document.getElementById(`skin-${design}`);
+                    const activeBtn = document.getElementById(`btn-${design}`);
+
+                    if (activeEl) activeEl.classList.add('is-active');
+                    if (activeBtn) {
+                        activeBtn.innerText = 'ACTIVA';
+                        activeBtn.disabled = true;
+                        activeBtn.style.opacity = '0.5';
+                    }
+                };
+
+                // WATCHER CRÍTICO: Sempre que o HTML das skins mudar ou a aba for aberta, 
+                // o Vue espera o DOM renderizar (nextTick) e pinta a UI.
+                watch([skinsHtml, currentPage], async () => {
+                    if (currentPage.value === 'skins') {
+                        await nextTick();
+                        updateSkinUI();
+                    }
+                });
 
                 const fetchCards = async () => {
                     const res = await fetch('/api/v1/admin/cards');
-                    if (res.ok) cards.value = await res.json();
+                    if (res.ok) {
+                        const data = await res.json();
+                        cards.value = data;
+                        if (data.length > 0) {
+                            activeSkin.value = data[0].design || 'default';
+                        }
+                    }
                 };
 
                 const changePage = async (page) => {
@@ -211,19 +178,27 @@
                     if (page === 'skins' && !skinsHtml.value) {
                         loadingSkins.value = true;
                         const res = await fetch('/skins.html');
-                        skinsHtml.value = res.ok ? await res.text() : '<h3>Erro ao carregar skins.html</h3>';
+                        skinsHtml.value = await res.text();
                         loadingSkins.value = false;
                     }
                 };
 
                 window.updateGlobalSkin = async (skinName) => {
-                    if (!confirm(`Desejas aplicar a skin "${skinName}" a todos?`)) return;
+                    if (!confirm(`Aplicar design "${skinName}"?`)) return;
                     const res = await fetch('/api/v1/admin/update-skin', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ design: skinName })
                     });
-                    if (res.ok) alert("Sucesso!"); else alert("Erro!");
+                    if (res.ok) {
+                        activeSkin.value = skinName;
+                        updateSkinUI();
+                    }
+                };
+
+                window.openPreview = (design) => {
+                    previewDesign.value = design;
+                    showPreview.value = true;
                 };
 
                 const calculateAvailable = (card) => {
@@ -250,7 +225,12 @@
                 };
 
                 onMounted(fetchCards);
-                return { cards, currentPage, skinsHtml, loadingSkins, changePage, calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, resetCard };
+
+                return { 
+                    cards, currentPage, skinsHtml, loadingSkins, activeSkin,
+                    showPreview, previewColors, changePage, calculateAvailable, 
+                    addStampFromAdmin, redeemFromAdmin, viewCard, resetCard 
+                };
             }
         }).mount('#app');
     </script>

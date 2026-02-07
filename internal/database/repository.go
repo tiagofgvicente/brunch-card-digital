@@ -78,7 +78,10 @@ func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 
 // GetAllCards
 func (r *CardRepository) GetAllCards() ([]models.BrunchCard, error) {
-	query := `SELECT id, member_number, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready FROM brunch_cards ORDER BY member_number DESC`
+	query := `SELECT id, member_number, customer_id, last_name, email, phone, nif, 
+              stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, design 
+              FROM brunch_cards ORDER BY member_number DESC`
+
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -88,13 +91,23 @@ func (r *CardRepository) GetAllCards() ([]models.BrunchCard, error) {
 	var cards []models.BrunchCard
 	for rows.Next() {
 		var c models.BrunchCard
-		var email, phone, nif sql.NullString
-		err := rows.Scan(&c.ID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif, &c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready)
+		var email, phone, nif, design sql.NullString 
+
+		err := rows.Scan(
+			&c.ID, &c.MemberNumber, &c.CustomerID, &c.LastName,
+			&email, &phone, &nif, &c.StampsCount, &c.TotalStamps,
+			&c.TotalRedeemedBonuses, &c.Is_reward_ready, &design, 
+		)
 		if err != nil {
 			log.Printf("Scan error: %v", err)
 			continue
 		}
-		c.Email, c.Phone, c.NIF = email.String, phone.String, nif.String
+
+		c.Email = email.String
+		c.Phone = phone.String
+		c.NIF = nif.String
+		c.Design = design.String 
+
 		cards = append(cards, c)
 	}
 	return cards, nil
@@ -102,7 +115,15 @@ func (r *CardRepository) GetAllCards() ([]models.BrunchCard, error) {
 
 // SaveCard
 func (r *CardRepository) SaveCard(card models.BrunchCard) error {
-	query := `
+    if card.Design == "" || card.Design == "modern" || card.Design == "default" {
+        var activeDesign string
+        err := r.db.QueryRow("SELECT design FROM brunch_cards WHERE design IS NOT NULL AND design != '' ORDER BY updated_at DESC LIMIT 1").Scan(&activeDesign)
+        if err == nil && activeDesign != "" {
+            card.Design = activeDesign
+        }
+    }
+
+    query := `
         INSERT INTO brunch_cards (
             id, customer_id, last_name, email, phone, 
             nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, design, 
@@ -110,22 +131,23 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, $9, $10, NOW())
     `
-	toNull := func(s string) interface{} {
-		if s == "" {
-			return nil
-		}
-		return s
-	}
+    
+    toNull := func(s string) interface{} {
+        if s == "" {
+            return nil
+        }
+        return s
+    }
 
-	_, err := r.db.Exec(query,
-		card.ID, card.CustomerID, card.LastName,
-		toNull(card.Email), toNull(card.Phone), toNull(card.NIF),
-		card.StampsCount, card.TotalStamps, card.Is_reward_ready, card.Design,
-	)
-	return err
+    _, err := r.db.Exec(query,
+        card.ID, card.CustomerID, card.LastName,
+        toNull(card.Email), toNull(card.Phone), toNull(card.NIF),
+        card.StampsCount, card.TotalStamps, card.Is_reward_ready, card.Design,
+    )
+    return err
 }
 
-// UpdateCard 
+// UpdateCard
 func (r *CardRepository) UpdateCard(card models.BrunchCard) error {
 	query := `
         UPDATE brunch_cards 

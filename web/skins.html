@@ -1,66 +1,66 @@
 <div class="skins-container">
     <div class="page-header">
-        <h1 style="color: white; margin-bottom: 10px;">Configuração de Skins</h1>
-        <p style="color: #888;">Gere o visual global. A skin 'Default' é aplicada automaticamente a novos cartões.</p>
+        <h1>Configuração de Skins</h1>
+        <p>A skin com a borda iluminada é a que os clientes vêem agora.</p>
     </div>
 
     <div class="skins-grid">
-        <div class="skin-card">
-            <div class="skin-preview default-skin">
-                <div class="mini-card-mock"></div>
-            </div>
+        <div id="skin-default" class="skin-card">
+            <div class="active-badge">EM USO</div>
+            <div class="skin-preview default-skin"><div class="mini-card-mock"></div></div>
             <div class="skin-body">
                 <h3>Default Design</h3>
-                <p>O visual padrão do sistema Brunch.co.</p>
-                <button class="btn-skin-act" onclick="updateGlobalSkin('default')">ACTIVA</button>
+                <div class="skin-actions">
+                    <button class="btn-skin-preview" onclick="openPreview('default')">Preview</button>
+                    <button id="btn-default" class="btn-skin-act" onclick="updateGlobalSkin('default')">ATIVAR</button>
+                </div>
             </div>
         </div>
 
-        <div class="skin-card" style="border: 2px solid var(--gold);">
-            <div class="skin-preview loja-skin">
-                <div class="mini-card-mock gold-border"></div>
-            </div>
+        <div id="skin-loja" class="skin-card">
+            <div class="active-badge">EM USO</div>
+            <div class="skin-preview loja-skin"><div class="mini-card-mock gold-border"></div></div>
             <div class="skin-body">
                 <h3>LOJA (Personalizado)</h3>
-                <p>Skin exclusiva adaptada à identidade visual da loja.</p>
-                <button class="btn-skin-act" style="background: var(--gold); color: #000;" onclick="updateGlobalSkin('loja')">ATIVAR</button>
+                <div class="skin-actions">
+                    <button class="btn-skin-preview" onclick="openPreview('loja')">Preview</button>
+                    <button id="btn-loja" class="btn-skin-act" onclick="updateGlobalSkin('loja')">ATIVAR</button>
+                </div>
             </div>
         </div>
 
-        <div class="skin-card">
+        <div id="skin-valentine" class="skin-card">
+            <div class="active-badge">EM USO</div>
             <div class="skin-preview valentine">❤️</div>
             <div class="skin-body">
                 <h3>Valentine's Edition</h3>
-                <p>Design especial para épocas românticas.</p>
-                <button class="btn-skin-act" style="background: #ff4d6d;" onclick="updateGlobalSkin('valentine')">ATIVAR</button>
+                <div class="skin-actions">
+                    <button class="btn-skin-preview" onclick="openPreview('valentine')">Preview</button>
+                    <button id="btn-valentine" class="btn-skin-act" onclick="updateGlobalSkin('valentine')">ATIVAR</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .skins-container { animation: fadeInUp 0.4s ease; color: white; }
-    .skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
-    .skin-card { background: #252525; border-radius: 15px; border: 2px solid transparent; overflow: hidden; transition: 0.3s; }
+    .skins-grid { display: flex; gap: 20px; margin-top: 20px; }
+    .skin-card { background: #1e1e1e; border-radius: 15px; border: 2px solid transparent; overflow: hidden; position: relative; width: 300px; transition: 0.3s; }
     
-    /* Previews */
-    .skin-preview { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 40px; }
-    .skin-preview.default-skin { background: linear-gradient(135deg, #00a896, #007d70); }
+    /* ESTADO ATIVO (Borda iluminada e Badge) */
+    .skin-card.is-active { border-color: #00a896; box-shadow: 0 0 15px rgba(0, 168, 150, 0.5); transform: translateY(-5px); }
+    .skin-card .active-badge { display: none; position: absolute; top: 10px; right: 10px; background: #00a896; color: white; padding: 4px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
+    .skin-card.is-active .active-badge { display: block; }
+
+    .skin-preview { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+    .skin-preview.default-skin { background: #00a896; }
+    .skin-preview.loja-skin { background: #111; border-bottom: 2px solid #ffd166; }
+    .skin-preview.valentine { background: #ff4d6d; }
     
-    /* Skin LOJA: Aqui podes mudar as cores para as cores reais da loja depois */
-    .skin-preview.loja-skin { background: #1a1a1a; border-bottom: 3px solid var(--gold); }
-    
-    .skin-preview.valentine { background: linear-gradient(135deg, #ff4d6d, #c9184a); }
-
-    .mini-card-mock { width: 80px; height: 50px; border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; }
-    .mini-card-mock.gold-border { border-color: #ffd166; }
-
-    .skin-body { padding: 20px; }
-    .skin-body h3 { margin: 0 0 10px; font-size: 1.1rem; color: white; }
-    .skin-body p { font-size: 0.8rem; color: #aaa; margin-bottom: 20px; min-height: 40px; }
-
-    .btn-skin-act { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; background: #444; color: white; transition: 0.2s; }
-    .btn-skin-act:hover { opacity: 0.8; transform: scale(1.02); }
-
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .skin-body { padding: 15px; color: white; }
+    .skin-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-skin-preview, .btn-skin-act { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+    .btn-skin-preview { background: #333; color: white; }
+    .btn-skin-act { background: #00a896; color: white; }
+    .btn-skin-act:disabled { background: #121212; color: #555; cursor: default; }
 </style>
