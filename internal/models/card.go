@@ -9,6 +9,10 @@ const (
 	Minimalist CardDesign = "minimalist"
 	Tropical   CardDesign = "tropical"
 	Retro      CardDesign = "retro"
+	Modern     CardDesign = "modern"
+	Classic    CardDesign = "classic"
+	Holiday    CardDesign = "holiday"
+	Valentine CardDesign = "valentine"
 )
 
 // BrunchCard represents the customer's digital loyalty card

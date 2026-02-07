@@ -16,7 +16,7 @@ func NewCardRepository(db *sql.DB) *CardRepository {
 	return &CardRepository{db: db}
 }
 
-// GetCardByID - Garante que lê todos os campos, incluindo os bónus resgatados
+// GetCardByID
 func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {
 	var c models.BrunchCard
 	var email, phone, nif, design sql.NullString
@@ -37,10 +37,8 @@ func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {
 	return &c, nil
 }
 
-// UseReward CORRIGIDO: Esta é a chave! Ela incrementa o total_redeemed_bonuses
+// UseReward
 func (r *CardRepository) UseReward(id string) error {
-	// Só permite o update se o cliente tiver bónus por gastar
-	// Lógica: (Total Visitas / 10) > Bónus Já Gastos
 	query := `
 		UPDATE brunch_cards 
 		SET total_redeemed_bonuses = total_redeemed_bonuses + 1,
@@ -60,7 +58,7 @@ func (r *CardRepository) UseReward(id string) error {
 	return nil
 }
 
-// AddStamp - Incrementa visitas e marca bónus pronto se chegar a múltiplo de 10
+// AddStamp
 func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 	query := `
 		UPDATE brunch_cards 
@@ -78,7 +76,7 @@ func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 	return r.GetCardByID(id)
 }
 
-// GetAllCards - Importante para o Admin Dashboard
+// GetAllCards
 func (r *CardRepository) GetAllCards() ([]models.BrunchCard, error) {
 	query := `SELECT id, member_number, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready FROM brunch_cards ORDER BY member_number DESC`
 	rows, err := r.db.Query(query)
@@ -102,7 +100,7 @@ func (r *CardRepository) GetAllCards() ([]models.BrunchCard, error) {
 	return cards, nil
 }
 
-// SaveCard - Para novos registos
+// SaveCard
 func (r *CardRepository) SaveCard(card models.BrunchCard) error {
 	query := `
         INSERT INTO brunch_cards (
@@ -127,7 +125,7 @@ func (r *CardRepository) SaveCard(card models.BrunchCard) error {
 	return err
 }
 
-// UpdateCard - Para o Modal de Edição
+// UpdateCard 
 func (r *CardRepository) UpdateCard(card models.BrunchCard) error {
 	query := `
         UPDATE brunch_cards 
@@ -177,4 +175,10 @@ func (r *CardRepository) SearchCards(term string) ([]models.BrunchCard, error) {
 		cards = append(cards, c)
 	}
 	return cards, nil
+}
+
+func (r *CardRepository) UpdateGlobalDesign(design string) error {
+	query := `UPDATE brunch_cards SET design = $1, updated_at = NOW()`
+	_, err := r.db.Exec(query, design)
+	return err
 }

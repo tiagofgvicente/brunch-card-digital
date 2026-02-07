@@ -12,9 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// CreateCardHandler gere a criação de novos cartões de sócio
+// CreateCardHandler generates a new loyalty card for a customer
 func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	// Usamos o modelo definido em models para manter a consistência
 	var req models.CreateCardRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -23,12 +22,10 @@ func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 		return
 	}
 
-	// Criamos o modelo final.
-	// Nota: MemberNumber é gerado automaticamente pelo Postgres (SERIAL)
 	newCard := models.BrunchCard{
 		ID:                   uuid.New().String(),
-		CustomerID:           req.CustomerID, // Primeiro Nome
-		LastName:             req.LastName,   // Apelido
+		CustomerID:           req.CustomerID, // Fisrt Name
+		LastName:             req.LastName,  
 		Email:                req.Email,
 		Phone:                req.Phone,
 		NIF:                  req.NIF,
@@ -45,11 +42,8 @@ func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 		return
 	}
 
-	// Após salvar, o Postgres gera o MemberNumber.
-	// Para devolvermos o número real, fazemos um fetch rápido.
 	savedCard, err := repo.GetCardByID(newCard.ID)
 	if err != nil {
-		// Se falhar o fetch, devolvemos o que temos mas o ideal é o salvo
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(newCard)
 		return
@@ -59,7 +53,7 @@ func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 	json.NewEncoder(w).Encode(savedCard)
 }
 
-// UpdateCardHandler permite editar os dados de contacto do sócio
+// UpdateCardHandler edits existing card details (except stamps) - for Admin Dashboard
 func UpdateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	var req models.BrunchCard
 
@@ -84,7 +78,7 @@ func UpdateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 	fmt.Fprint(w, "Cliente atualizado com sucesso")
 }
 
-// ListCardsHandler para o Dashboard Admin
+// ListCardsHandler list all cards - for Admin Dashboard
 func ListCardsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	cards, err := repo.GetAllCards()
 	if err != nil {
@@ -95,4 +89,34 @@ func ListCardsHandler(w http.ResponseWriter, r *http.Request, repo *database.Car
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(cards)
+}
+
+func UpdateSkinHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Design string `json:"design"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Design == "" {
+		http.Error(w, "Design is required", http.StatusBadRequest)
+		return
+	}
+
+	err := repo.UpdateGlobalDesign(req.Design)
+	if err != nil {
+		http.Error(w, "Error updating global skin: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Skin updated successfully"))
 }

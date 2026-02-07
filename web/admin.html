@@ -2,89 +2,194 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Brunch Admin Dashboard</title>
+    <title>Brunch Admin - Gestão VIP</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        :root { --primary: #00a896; --dark: #121212; --gold: #ffd166; --red: #ff4444; --orange: #e67e22; }
-        body { background: var(--dark); color: white; font-family: sans-serif; padding: 40px; margin: 0; }
-        .container { max-width: 1450px; margin: auto; }
-        h1 { border-left: 5px solid var(--primary); padding-left: 15px; margin-bottom: 30px; }
-        table { width: 100%; border-collapse: collapse; background: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); table-layout: fixed; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #333; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; }
-        tr:hover { background: #252525; }
-        .member-badge { background: #333; color: var(--gold); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; }
+        :root { 
+            --primary: #00a896; 
+            --dark-bg: #121212; 
+            --sidebar-bg: #1e1e1e; 
+            --gold: #ffd166; 
+            --red: #ff4444; 
+            --orange: #e67e22; 
+        }
         
+        body { 
+            background: var(--dark-bg); 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* Sidebar */
+        .sidebar { 
+            width: 260px; 
+            background: var(--sidebar-bg); 
+            border-right: 1px solid #333; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px 0; 
+        }
+        
+        .sidebar-header { 
+            padding: 0 20px 30px; 
+            border-bottom: 1px solid #333; 
+            margin-bottom: 20px; 
+        }
+        
+        .sidebar-header h2 { 
+            color: var(--primary); 
+            font-size: 1.2rem; 
+            margin: 0; 
+        }
+
+        .nav-item { 
+            padding: 15px 20px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            color: #888; 
+            transition: 0.3s; 
+            font-weight: bold; 
+        }
+        
+        .nav-item:hover { 
+            background: rgba(0, 168, 150, 0.1); 
+            color: white; 
+        }
+        
+        .nav-item.active { 
+            background: rgba(0, 168, 150, 0.2); 
+            color: var(--primary); 
+            border-left: 4px solid var(--primary); 
+        }
+
+        /* Main Content */
+        .main-content { 
+            flex: 1; 
+            padding: 40px; 
+            overflow-y: auto; 
+        }
+        
+        .page-header { 
+            margin-bottom: 30px; 
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            background: #1e1e1e; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
+        
+        th, td { 
+            padding: 12px 15px; 
+            text-align: left; 
+            border-bottom: 1px solid #333; 
+            font-size: 0.85rem; 
+        }
+        
+        th { 
+            background: var(--primary); 
+            color: white; 
+            text-transform: uppercase; 
+            font-size: 0.7rem; 
+            letter-spacing: 1px; 
+        }
+        
+        tr:hover { 
+            background: #252525; 
+        }
+
         /* Botões */
-        .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
-        .btn-reset { background: var(--red); color: white; }
+        .btn { 
+            padding: 8px 12px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin-right: 5px; 
+            font-weight: bold; 
+            font-size: 0.75rem; 
+            transition: 0.2s; 
+        }
+        
         .btn-view { background: var(--gold); color: #333; }
         .btn-stamp-direct { background: var(--orange); color: white; }
-        .btn-edit { background: #444; color: white; }
-        .btn-redeem { background: var(--primary); color: white; border: 1px solid rgba(255,255,255,0.3); }
-        .btn-redeem:disabled { background: #333; color: #666; border: 1px solid #444; cursor: not-allowed; opacity: 0.4; }
-        .btn:hover:not(:disabled) { opacity: 0.8; transform: translateY(-1px); }
+        .btn-redeem { background: var(--primary); color: white; }
+        .btn-redeem:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-reset { background: var(--red); color: white; }
 
-        .bonus-token { font-size: 1.2rem; margin-right: 2px; }
-        .redeemed-badge { background: rgba(255, 209, 102, 0.1); color: var(--gold); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(255, 209, 102, 0.3); font-weight: bold; }
+        .member-badge { 
+            background: #333; 
+            color: var(--gold); 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+        }
+        
+        .redeemed-badge { 
+            background: rgba(255, 209, 102, 0.1); 
+            color: var(--gold); 
+            padding: 2px 8px; 
+            border-radius: 10px; 
+            border: 1px solid rgba(255, 209, 102, 0.3); 
+            font-weight: bold; 
+        }
     </style>
 </head>
 <body>
-    <div id="app" class="container">
-        <h1>Dashboard de Gestão - Brunch.co</h1>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 80px;">Nº Sócio</th>
-                    <th>Nome</th>
-                    <th>Apelido</th>
-                    <th style="width: 140px;">Telemóvel</th>
-                    <th style="width: 150px;">Bónus em Carteira</th>
-                    <th style="width: 130px;">Bónus Gastos</th>
-                    <th style="width: 100px;">Visitas Reais</th>
-                    <th style="width: 330px;">Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="card in cards" :key="card.id">
-                    <td><span class="member-badge">#{{ card.member_number }}</span></td>
-                    <td style="font-weight: bold;">{{ card.customer_id }}</td>
-                    <td>{{ card.last_name }}</td>
-                    <td>{{ card.phone || '-' }}</td>
-                    
-                    <td style="text-align: center;">
-                        <div v-if="calculateAvailable(card) > 0">
-                            <span v-for="n in calculateAvailable(card)" :key="n" class="bonus-token">🎁</span>
-                            <div style="font-size: 0.6rem; color: var(--primary); font-weight: bold;">{{ calculateAvailable(card) }} DISPONÍVEIS</div>
-                        </div>
-                        <span v-else style="color: #555;">{{ card.stamps_count }}/10</span>
-                    </td>
+    <div id="app" style="display: contents;">
+        <aside class="sidebar">
+            <div class="sidebar-header"><h2>Brunch.co Admin</h2></div>
+            <nav>
+                <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="currentPage = 'customers'">👥 Gestão de Clientes</div>
+                <div class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 Skins de Cartões</div>
+            </nav>
+        </aside>
 
-                    <td style="text-align: center;">
-                        <span class="redeemed-badge">🏆 {{ card.total_redeemed_bonuses || 0 }}</span>
-                    </td>
+        <main class="main-content">
+            <div v-if="currentPage === 'customers'">
+                <div class="page-header"><h1>Gestão de Clientes</h1></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Nº Sócio</th>
+                            <th>Nome</th>
+                            <th>Bónus</th>
+                            <th>Gastos</th>
+                            <th>Visitas</th>
+                            <th style="width: 320px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="card in cards" :key="card.id">
+                            <td><span class="member-badge">#{{ card.member_number }}</span></td>
+                            <td>{{ card.customer_id }} {{ card.last_name }}</td>
+                            <td>{{ calculateAvailable(card) }} 🎁</td>
+                            <td><span class="redeemed-badge">🏆 {{ card.total_redeemed_bonuses || 0 }}</span></td>
+                            <td><strong>{{ card.total_stamps }}</strong></td>
+                            <td>
+                                <button class="btn btn-view" @click="viewCard(card.id)">Ver</button>
+                                <button class="btn btn-stamp-direct" @click="addStampFromAdmin(card)">🍳 Stamp</button>
+                                <button class="btn btn-redeem" :disabled="calculateAvailable(card) === 0" @click="redeemFromAdmin(card)">Redeem</button>
+                                <button class="btn btn-reset" @click="resetCard(card.id)">Reset</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-                    <td><strong>{{ card.total_stamps }}</strong></td>
-                    <td>
-                        <div style="display: flex;">
-                            <button class="btn btn-view" @click="viewCard(card.id)">Ver</button>
-                            
-                            <button class="btn btn-stamp-direct" @click="addStampFromAdmin(card)">🍳 Stamp</button>
-
-                            <button class="btn btn-redeem" 
-                                    :disabled="calculateAvailable(card) === 0" 
-                                    @click="redeemFromAdmin(card)">
-                                Redeem
-                            </button>
-                            
-                            <button class="btn btn-edit" @click="openEdit(card)">Edit</button>
-                            <button class="btn btn-reset" @click="resetCard(card.id)">Reset</button>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+            <div v-if="currentPage === 'skins'">
+                <div v-if="loadingSkins" style="text-align: center; padding: 50px;"><p>A carregar skins...</p></div>
+                <div v-else v-html="skinsHtml"></div>
+            </div>
+        </main>
     </div>
 
     <script>
@@ -92,47 +197,60 @@
         createApp({
             setup() {
                 const cards = ref([]);
-
-                const calculateAvailable = (card) => {
-                    const earned = Math.floor(card.total_stamps / 10);
-                    const available = earned - (card.total_redeemed_bonuses || 0);
-                    return available > 0 ? available : 0;
-                };
+                const currentPage = ref('customers');
+                const skinsHtml = ref('');
+                const loadingSkins = ref(false);
 
                 const fetchCards = async () => {
                     const res = await fetch('/api/v1/admin/cards');
                     if (res.ok) cards.value = await res.json();
                 };
 
-                const addStampFromAdmin = async (card) => {
-                    if (!confirm(`Validar visita para ${card.customer_id}?`)) return;
-                    const res = await fetch(`/api/v1/cards/stamp?id=${card.id}`, { method: 'POST' });
-                    if (res.ok) fetchCards();
-                };
-
-                const redeemFromAdmin = async (card) => {
-                    const available = calculateAvailable(card);
-                    if (confirm(`Resgatar 1 bónus para ${card.customer_id}?`)) {
-                        const res = await fetch(`/api/v1/cards/use-reward?id=${card.id}`, { method: 'POST' });
-                        if (res.ok) fetchCards();
+                const changePage = async (page) => {
+                    currentPage.value = page;
+                    if (page === 'skins' && !skinsHtml.value) {
+                        loadingSkins.value = true;
+                        const res = await fetch('/skins.html');
+                        skinsHtml.value = res.ok ? await res.text() : '<h3>Erro ao carregar skins.html</h3>';
+                        loadingSkins.value = false;
                     }
                 };
 
-                const viewCard = (id) => { window.open(`/card?id=${id}`, '_blank'); };
+                window.updateGlobalSkin = async (skinName) => {
+                    if (!confirm(`Desejas aplicar a skin "${skinName}" a todos?`)) return;
+                    const res = await fetch('/api/v1/admin/update-skin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ design: skinName })
+                    });
+                    if (res.ok) alert("Sucesso!"); else alert("Erro!");
+                };
 
+                const calculateAvailable = (card) => {
+                    const earned = Math.floor(card.total_stamps / 10);
+                    return Math.max(0, earned - (card.total_redeemed_bonuses || 0));
+                };
+
+                const addStampFromAdmin = async (card) => {
+                    await fetch(`/api/v1/cards/stamp?id=${card.id}`, { method: 'POST' });
+                    fetchCards();
+                };
+
+                const redeemFromAdmin = async (card) => {
+                    await fetch(`/api/v1/cards/use-reward?id=${card.id}`, { method: 'POST' });
+                    fetchCards();
+                };
+
+                const viewCard = (id) => { window.open(`/card?id=${id}`, '_blank'); };
                 const resetCard = async (id) => {
-                    if (confirm("Tens a certeza? Isto apagará TODO o histórico do cliente!")) {
+                    if (confirm("Reset total?")) {
                         await fetch(`/api/v1/admin/reset?id=${id}`, { method: 'POST' });
                         fetchCards();
                     }
                 };
 
                 onMounted(fetchCards);
-
-                return { 
-                    cards, calculateAvailable, addStampFromAdmin, 
-                    redeemFromAdmin, viewCard, resetCard 
-                };
+                return { cards, currentPage, skinsHtml, loadingSkins, changePage, calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, resetCard };
             }
         }).mount('#app');
     </script>
