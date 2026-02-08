@@ -5,7 +5,7 @@
     <title>Brunch Admin - Gestão VIP</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        /* VARIÁVEIS DINÂMICAS - Controladas pelo Vue */
+        /* DYNAMIC VARIABLES - Managed by Vue applyTheme() */
         :root { 
             --primary: #00a896; 
             --bg-main: #121212; 
@@ -20,108 +20,126 @@
         
         body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
 
-        /* Sidebar */
-        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; transition: background 0.3s; }
+        /* Sidebar Styling */
+        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; transition: background 0.3s; z-index: 100; }
         .sidebar-header { padding: 0 20px 30px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .sidebar-header img { width: 35px; height: 35px; border-radius: 5px; object-fit: cover; }
-        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; margin: 0; }
+        .sidebar-header img { width: 35px; height: 35px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-color); background: white; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; margin: 0; font-weight: 800; }
 
         .nav-item { padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-sub); transition: 0.3s; font-weight: bold; }
         .nav-item:hover { background: rgba(0, 168, 150, 0.1); color: var(--text-main); }
         .nav-item.active { background: rgba(0, 168, 150, 0.2); color: var(--primary); border-left: 4px solid var(--primary); }
 
-        /* Main Content */
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
+        /* Content Area */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; position: relative; scroll-behavior: smooth; }
         .page-header { margin-bottom: 30px; }
+        .page-header h1 { font-size: 1.8rem; margin: 0; font-weight: 800; }
         
-        table { width: 100%; border-collapse: collapse; background: var(--bg-side); border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; }
-        th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; }
-        tr:hover { background: rgba(255,255,255,0.05); }
+        /* Table Adaptive Styling */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-side); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.1); transition: background 0.3s; }
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; }
+        th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1.5px; font-weight: 800; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: rgba(0, 168, 150, 0.03); }
 
-        .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; margin-right: 5px; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
+        /* Action Buttons */
+        .btn { padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; margin-right: 5px; font-weight: 800; font-size: 0.7rem; transition: 0.2s; text-transform: uppercase; }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
         .btn-view { background: var(--gold); color: #333; }
         .btn-stamp-direct { background: var(--orange); color: white; }
         .btn-redeem { background: var(--primary); color: white; }
+        .btn-redeem:disabled { background: var(--border-color); color: var(--text-sub); cursor: not-allowed; transform: none; filter: none; }
         .btn-reset { background: var(--red); color: white; }
 
-        .member-badge { background: rgba(0,0,0,0.2); color: var(--gold); padding: 4px 8px; border-radius: 4px; font-family: monospace; border: 1px solid var(--border-color); }
-        .redeemed-badge { background: rgba(255, 209, 102, 0.1); color: var(--gold); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(255, 209, 102, 0.3); font-weight: bold; }
+        .member-badge { background: var(--bg-main); color: var(--gold); padding: 4px 8px; border-radius: 6px; font-family: 'Courier New', monospace; border: 1px solid var(--border-color); font-weight: bold; }
+        .redeemed-badge { background: rgba(255, 209, 102, 0.1); color: var(--gold); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255, 209, 102, 0.3); font-weight: 800; font-size: 0.7rem; }
 
-        /* MODAL PREVIEW */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-content { background: var(--bg-side); padding: 40px; border-radius: 20px; text-align: center; position: relative; border: 1px solid var(--border-color); box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
-        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; color: var(--text-sub); }
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(5px); }
+        .modal-content { background: var(--bg-side); padding: 40px; border-radius: 24px; text-align: center; position: relative; border: 1px solid var(--border-color); box-shadow: 0 20px 60px rgba(0,0,0,0.5); width: 450px; }
+        .close-modal { position: absolute; top: 20px; right: 25px; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); transition: 0.2s; }
+        .close-modal:hover { color: var(--red); }
         
-        .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 20px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); }
-        .preview-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 0.8rem; }
-        .preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
-        .p-circle { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 1px dashed rgba(255,255,255,0.4); }
-        .p-circle.active { background: white; border: 1px solid var(--gold); }
+        .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 25px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
     <div id="app" style="display: contents;">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img v-if="storeConfig.logo" :src="storeConfig.logo" alt="Logo">
+                <img v-if="storeConfig.logo" :src="storeConfig.logo" alt="Store Logo">
+                <img v-else src="https://via.placeholder.com/35?text=B" alt="Default Logo">
                 <h2>{{ storeConfig.name }}</h2>
             </div>
             <nav>
-                <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 Gestão de Clientes</div>
-                <div class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 Skins de Cartões</div>
-                <div class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ Gestão de Sistema</div>
+                <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 Customers</div>
+                <div class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 Card Skins</div>
+                <div class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ Settings</div>
             </nav>
         </aside>
 
         <main class="main-content">
             <div v-if="currentPage === 'customers'">
-                <div class="page-header"><h1>Gestão de Clientes</h1></div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;">Nº Sócio</th>
-                            <th>Nome</th>
-                            <th>Bónus</th>
-                            <th>Gastos</th>
-                            <th>Visitas</th>
-                            <th style="width: 320px;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="card in cards" :key="card.id">
-                            <td><span class="member-badge">#{{ card.member_number }}</span></td>
-                            <td>{{ card.customer_id }} {{ card.last_name }}</td>
-                            <td>{{ calculateAvailable(card) }} 🎁</td>
-                            <td><span class="redeemed-badge">🏆 {{ card.total_redeemed_bonuses || 0 }}</span></td>
-                            <td><strong>{{ card.total_stamps }}</strong></td>
-                            <td>
-                                <button class="btn btn-view" @click="viewCard(card.id)">Ver</button>
-                                <button class="btn btn-stamp-direct" @click="addStampFromAdmin(card)">🍳 Stamp</button>
-                                <button class="btn btn-redeem" :disabled="calculateAvailable(card) === 0" @click="redeemFromAdmin(card)">Redeem</button>
-                                <button class="btn btn-reset" @click="resetCard(card.id)">Reset</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="page-header"><h1>Customer Management</h1></div>
+                <div style="margin-top: 20px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 100px;">Socio Nº</th>
+                                <th>Name</th>
+                                <th>Available Bonus</th>
+                                <th>Total Redeemed</th>
+                                <th>Total Visits</th>
+                                <th style="width: 350px; text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="card in cards" :key="card.id">
+                                <td><span class="member-badge">#{{ card.member_number }}</span></td>
+                                <td style="font-weight: 700;">{{ card.customer_id }} {{ card.last_name }}</td>
+                                <td style="font-weight: 800; color: var(--primary);">{{ calculateAvailable(card) }} 🎁</td>
+                                <td><span class="redeemed-badge">🏆 {{ card.total_redeemed_bonuses || 0 }}</span></td>
+                                <td><strong>{{ card.total_stamps }}</strong></td>
+                                <td style="text-align: center;">
+                                    <button class="btn btn-view" @click="viewCard(card.id)">View</button>
+                                    <button class="btn btn-stamp-direct" @click="addStampFromAdmin(card)">🍳 Stamp</button>
+                                    <button class="btn btn-redeem" :disabled="calculateAvailable(card) === 0" @click="redeemFromAdmin(card)">Redeem</button>
+                                    <button class="btn btn-reset" @click="resetCard(card.id)">Reset</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div v-if="currentPage === 'skins' || currentPage === 'settings'">
-                <div v-if="loadingSubPage" style="text-align: center; padding: 50px;"><p>A carregar...</p></div>
+                <div v-if="loadingSubPage" style="text-align: center; padding: 50px;">
+                    <p style="color: var(--primary); font-weight: bold;">Loading Workspace...</p>
+                </div>
                 <div v-else v-html="subPageHtml"></div>
             </div>
         </main>
 
         <div class="modal-overlay" v-if="showPreview" @click.self="showPreview = false">
             <div class="modal-content">
-                <span class="close-modal" @click="showPreview = false">&times;</span>
-                <h2>Preview do Design</h2>
+                <span class="close-modal" @click="showPreview = false">✕</span>
+                <h2 style="margin: 0; font-weight: 800; text-transform: uppercase; font-size: 1rem; color: var(--primary);">Card Preview</h2>
                 <div class="preview-card-shell" :style="{ backgroundColor: previewColors.bg, color: previewColors.text }">
-                    <div class="preview-header"><span>{{ storeConfig.name }} VIP</span><span>🎁 2</span></div>
-                    <div class="preview-grid"><div v-for="n in 10" :key="n" class="p-circle" :class="{ active: n <= 6 }"></div></div>
-                    <div class="preview-footer"><div>CLIENTE EXEMPLO <br><span style="color: #ffd166">SÓCIO Nº 0000</span></div></div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
+                        <span>{{ storeConfig.name }} VIP</span>
+                        <span style="color: var(--gold)">🎁 2</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0;">
+                        <div v-for="n in 10" :key="n" style="width: 35px; height: 35px; border-radius: 50%;" 
+                             :style="{ background: n <= 6 ? 'white' : 'rgba(255,255,255,0.2)', border: n <= 6 ? '1px solid gold' : '1px dashed rgba(255,255,255,0.4)' }">
+                        </div>
+                    </div>
+                    <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">
+                        JOHN DOE <br>
+                        <span style="color: var(--gold); font-size: 0.6rem;">MEMBER Nº 0000</span>
+                    </div>
                 </div>
-                <button class="btn btn-view" style="width: 100%; padding: 15px;" @click="showPreview = false">FECHAR</button>
+                <button class="btn btn-view" style="width: 100%; padding: 15px; margin: 0;" @click="showPreview = false">CLOSE</button>
             </div>
         </div>
     </div>
@@ -137,71 +155,92 @@
                 const activeSkin = ref('default');
                 const showPreview = ref(false);
                 const previewDesign = ref('default');
+                const storeConfig = ref({ name: 'Brunch.co', logo: '', themeMode: 'dark', primaryColor: '#00a896' });
 
-                // Configuração Global da Loja
-                const storeConfig = ref({
-                    name: 'Brunch.co',
-                    logo: '',
-                    themeMode: 'dark', // 'light', 'dark', 'custom'
-                    primaryColor: '#00a896'
-                });
-
-                // Lógica de Temas do Site
                 const applyTheme = () => {
                     const root = document.documentElement;
-                    if (storeConfig.value.themeMode === 'light') {
-                        root.style.setProperty('--bg-main', '#f5f5f5');
-                        root.style.setProperty('--bg-side', '#ffffff');
-                        root.style.setProperty('--text-main', '#1a1a1a');
-                        root.style.setProperty('--text-sub', '#666666');
-                        root.style.setProperty('--border-color', '#dddddd');
-                    } else if (storeConfig.value.themeMode === 'dark') {
-                        root.style.setProperty('--bg-main', '#121212');
-                        root.style.setProperty('--bg-side', '#1e1e1e');
-                        root.style.setProperty('--text-main', '#ffffff');
-                        root.style.setProperty('--text-sub', '#888888');
-                        root.style.setProperty('--border-color', '#333333');
+                    const mode = storeConfig.value.themeMode;
+                    if (mode === 'light') {
+                        root.style.setProperty('--bg-main', '#f8f9fa'); root.style.setProperty('--bg-side', '#ffffff'); root.style.setProperty('--text-main', '#212529'); root.style.setProperty('--text-sub', '#6c757d'); root.style.setProperty('--border-color', '#dee2e6'); 
+                    } else {
+                        root.style.setProperty('--bg-main', '#121212'); root.style.setProperty('--bg-side', '#1e1e1e'); root.style.setProperty('--text-main', '#ffffff'); root.style.setProperty('--text-sub', '#888888'); root.style.setProperty('--border-color', '#333333');
                     }
-                    root.style.setProperty('--primary', storeConfig.value.primaryColor);
+                    root.style.setProperty('--primary', '#00a896');
+                    
+                    nextTick(() => {
+                        const btnLight = document.getElementById('theme-btn-light');
+                        const btnDark = document.getElementById('theme-btn-dark');
+                        if (btnLight && btnDark) {
+                            btnLight.classList.toggle('is-active', mode === 'light');
+                            btnDark.classList.toggle('is-active', mode === 'dark');
+                        }
+                    });
                 };
-
-                const previewColors = computed(() => {
-                    const themes = {
-                        'default':   { bg: '#00a896', text: '#ffffff' },
-                        'loja':      { bg: storeConfig.value.primaryColor, text: '#ffffff' },
-                        'valentine': { bg: '#ff4d6d', text: '#ffffff' },
-                        'holiday':   { bg: '#2d5a27', text: '#ffffff' }
-                    };
-                    return themes[previewDesign.value] || themes['default'];
-                });
 
                 const updateSkinUI = () => {
                     if (currentPage.value !== 'skins') return;
-                    const design = activeSkin.value || 'default';
-                    document.querySelectorAll('.skin-card').forEach(el => el.classList.remove('is-active'));
-                    document.querySelectorAll('.btn-skin-act').forEach(el => {
-                        el.innerText = 'ATIVAR'; el.disabled = false; el.style.opacity = '1';
+                    nextTick(() => {
+                        document.querySelectorAll('.skin-card').forEach(el => el.classList.remove('is-active'));
+                        document.querySelectorAll('.btn-skin-act').forEach(btn => { btn.innerText = 'ACTIVATE'; btn.disabled = false; });
+                        const activeEl = document.getElementById(`skin-${activeSkin.value}`);
+                        const activeBtn = document.getElementById(`btn-${activeSkin.value}`);
+                        if (activeEl) activeEl.classList.add('is-active');
+                        if (activeBtn) { activeBtn.innerText = 'ACTIVE'; activeBtn.disabled = true; }
                     });
-                    const activeEl = document.getElementById(`skin-${design}`);
-                    const activeBtn = document.getElementById(`btn-${design}`);
-                    if (activeEl) activeEl.classList.add('is-active');
-                    if (activeBtn) { activeBtn.innerText = 'ACTIVA'; activeBtn.disabled = true; activeBtn.style.opacity = '0.5'; }
                 };
 
-                watch([subPageHtml, currentPage], async () => {
-                    await nextTick();
-                    if (currentPage.value === 'skins') updateSkinUI();
-                    applyTheme();
-                });
-
-                const fetchCards = async () => {
-                    const res = await fetch('/api/v1/admin/cards');
-                    if (res.ok) {
-                        const data = await res.json();
-                        cards.value = data;
-                        if (data.length > 0) activeSkin.value = data[0].design || 'default';
+                // GLOBAL FUNCTIONS FOR DYNAMIC HTML
+                window.setTheme = (mode) => { storeConfig.value.themeMode = mode; applyTheme(); };
+                window.openPreview = (design) => { previewDesign.value = design; showPreview.value = true; };
+                window.updateGlobalSkin = async (skinName) => {
+                    const res = await fetch('/api/v1/admin/update-skin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ design: skinName }) });
+                    if (res.ok) { activeSkin.value = skinName; updateSkinUI(); }
+                };
+                window.saveSettings = async () => {
+                    const nameIn = document.getElementById('store-name-input');
+                    const logoIn = document.getElementById('store-logo-url');
+                    if (nameIn) storeConfig.value.name = nameIn.value;
+                    if (logoIn) storeConfig.value.logo = logoIn.value;
+                    const res = await fetch('/api/v1/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) });
+                    if (res.ok) alert("Settings saved!");
+                };
+                window.handleLogoUpload = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => { storeConfig.value.logo = ev.target.result; updateLogoPreview(); };
+                        reader.readAsDataURL(file);
                     }
                 };
+                window.removeLogo = () => { storeConfig.value.logo = ''; updateLogoPreview(); };
+
+                const updateLogoPreview = () => {
+                    const container = document.getElementById('logo-preview-container');
+                    if (container) {
+                        if (storeConfig.value.logo) {
+                            container.innerHTML = `<img src="${storeConfig.value.logo}"><button class="remove-btn" onclick="window.removeLogo()">✕</button>`;
+                            container.classList.add('has-logo');
+                        } else { container.innerHTML = ''; container.classList.remove('has-logo'); }
+                    }
+                };
+
+                const syncSettingsUI = () => {
+                    if (currentPage.value !== 'settings') return;
+                    nextTick(() => {
+                        const nameIn = document.getElementById('store-name-input');
+                        const logoIn = document.getElementById('store-logo-url');
+                        if (nameIn) nameIn.value = storeConfig.value.name;
+                        if (logoIn) logoIn.value = storeConfig.value.logo;
+                        updateLogoPreview();
+                        applyTheme();
+                    });
+                };
+
+                watch([subPageHtml, currentPage], () => {
+                    if (currentPage.value === 'skins') setTimeout(updateSkinUI, 50);
+                    if (currentPage.value === 'settings') setTimeout(syncSettingsUI, 50);
+                    applyTheme();
+                });
 
                 const changePage = async (page) => {
                     currentPage.value = page;
@@ -214,61 +253,30 @@
                     }
                 };
 
-                // Funções Globais expostas para os ficheiros segregados
-                window.updateGlobalSkin = async (skinName) => {
-                    if (!confirm(`Aplicar design "${skinName}"?`)) return;
-                    const res = await fetch('/api/v1/admin/update-skin', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ design: skinName })
-                    });
-                    if (res.ok) { activeSkin.value = skinName; updateSkinUI(); }
-                };
-
-                window.openPreview = (design) => { previewDesign.value = design; showPreview.value = true; };
-
-                window.setTheme = (mode) => { 
-                    storeConfig.value.themeMode = mode; 
-                    applyTheme(); 
-                };
-
-                window.saveSettings = () => {
-                    alert("Configurações guardadas com sucesso (Simulado)");
-                    // Aqui farias o POST para a tua API de settings
-                };
-
-                const calculateAvailable = (card) => {
-                    const earned = Math.floor(card.total_stamps / 10);
-                    return Math.max(0, earned - (card.total_redeemed_bonuses || 0));
-                };
-
-                const addStampFromAdmin = async (card) => {
-                    await fetch(`/api/v1/cards/stamp?id=${card.id}`, { method: 'POST' });
-                    fetchCards();
-                };
-
-                const redeemFromAdmin = async (card) => {
-                    await fetch(`/api/v1/cards/use-reward?id=${card.id}`, { method: 'POST' });
-                    fetchCards();
-                };
-
-                const viewCard = (id) => { window.open(`/card?id=${id}`, '_blank'); };
-                const resetCard = async (id) => {
-                    if (confirm("Reset total?")) {
-                        await fetch(`/api/v1/admin/reset?id=${id}`, { method: 'POST' });
-                        fetchCards();
+                const fetchCards = async () => {
+                    const res = await fetch('/api/v1/admin/cards');
+                    if (res.ok) {
+                        const data = await res.json();
+                        cards.value = data;
+                        if (data.length > 0) activeSkin.value = data[0].design || 'default';
                     }
                 };
 
-                onMounted(() => {
-                    fetchCards();
-                    applyTheme();
-                });
+                const fetchSettings = async () => {
+                    const res = await fetch('/api/v1/system/config');
+                    if (res.ok) { storeConfig.value = await res.json(); applyTheme(); }
+                };
+
+                onMounted(() => { fetchCards(); fetchSettings(); });
 
                 return { 
-                    cards, currentPage, subPageHtml, loadingSubPage, activeSkin,
-                    showPreview, previewColors, storeConfig, changePage, calculateAvailable, 
-                    addStampFromAdmin, redeemFromAdmin, viewCard, resetCard 
+                    cards, currentPage, subPageHtml, loadingSubPage, activeSkin, showPreview, storeConfig, changePage,
+                    calculateAvailable: (card) => Math.max(0, Math.floor(card.total_stamps / 10) - (card.total_redeemed_bonuses || 0)),
+                    addStampFromAdmin: async (c) => { await fetch(`/api/v1/cards/stamp?id=${c.id}`, { method: 'POST' }); fetchCards(); },
+                    redeemFromAdmin: async (c) => { await fetch(`/api/v1/cards/use-reward?id=${c.id}`, { method: 'POST' }); fetchCards(); },
+                    resetCard: async (id) => { if (confirm("Reset?")) { await fetch(`/api/v1/admin/reset?id=${id}`, { method: 'POST' }); fetchCards(); } },
+                    viewCard: (id) => window.open(`/card?id=${id}`, '_blank'),
+                    previewColors: computed(() => ({ 'default': { bg: '#00a896', text: '#ffffff' }, 'loja': { bg: '#1a1a1a', text: '#ffffff' }, 'valentine': { bg: '#ff4d6d', text: '#ffffff' } }[previewDesign.value] || { bg: '#00a896', text: '#ffffff' }))
                 };
             }
         }).mount('#app');

@@ -11,8 +11,8 @@
             <div class="skin-body">
                 <h3>Default Design</h3>
                 <div class="skin-actions">
-                    <button class="btn-skin-preview" onclick="openPreview('default')">Preview</button>
-                    <button id="btn-default" class="btn-skin-act" onclick="updateGlobalSkin('default')">ATIVAR</button>
+                    <button class="btn-skin-preview" onclick="window.openPreview('default')">Preview</button>
+                    <button id="btn-default" class="btn-skin-act" onclick="window.updateGlobalSkin('default')">ACTIVATE</button>
                 </div>
             </div>
         </div>
@@ -23,8 +23,8 @@
             <div class="skin-body">
                 <h3>LOJA (Personalizado)</h3>
                 <div class="skin-actions">
-                    <button class="btn-skin-preview" onclick="openPreview('loja')">Preview</button>
-                    <button id="btn-loja" class="btn-skin-act" onclick="updateGlobalSkin('loja')">ATIVAR</button>
+                    <button class="btn-skin-preview" onclick="window.openPreview('loja')">Preview</button>
+                    <button id="btn-loja" class="btn-skin-act" onclick="window.updateGlobalSkin('loja')">ACTIVATE</button>
                 </div>
             </div>
         </div>
@@ -35,8 +35,8 @@
             <div class="skin-body">
                 <h3>Valentine's Edition</h3>
                 <div class="skin-actions">
-                    <button class="btn-skin-preview" onclick="openPreview('valentine')">Preview</button>
-                    <button id="btn-valentine" class="btn-skin-act" onclick="updateGlobalSkin('valentine')">ATIVAR</button>
+                    <button class="btn-skin-preview" onclick="window.openPreview('valentine')">Preview</button>
+                    <button id="btn-valentine" class="btn-skin-act" onclick="window.updateGlobalSkin('valentine')">ACTIVATE</button>
                 </div>
             </div>
         </div>
@@ -44,23 +44,29 @@
 </div>
 
 <style>
-    .skins-grid { display: flex; gap: 20px; margin-top: 20px; }
-    .skin-card { background: #1e1e1e; border-radius: 15px; border: 2px solid transparent; overflow: hidden; position: relative; width: 300px; transition: 0.3s; }
+    .skins-grid { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+    .skin-card { background: var(--bg-side); border-radius: 15px; border: 2px solid var(--border-color); overflow: hidden; position: relative; width: 300px; transition: 0.3s; }
     
-    /* ESTADO ATIVO (Borda iluminada e Badge) */
-    .skin-card.is-active { border-color: #00a896; box-shadow: 0 0 15px rgba(0, 168, 150, 0.5); transform: translateY(-5px); }
-    .skin-card .active-badge { display: none; position: absolute; top: 10px; right: 10px; background: #00a896; color: white; padding: 4px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
+    /* ESTADO ATIVO */
+    .skin-card.is-active { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 168, 150, 0.4); transform: translateY(-5px); }
+    .skin-card .active-badge { display: none; position: absolute; top: 10px; right: 10px; background: var(--primary); color: white; padding: 4px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; z-index: 10; }
     .skin-card.is-active .active-badge { display: block; }
 
     .skin-preview { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
     .skin-preview.default-skin { background: #00a896; }
-    .skin-preview.loja-skin { background: #111; border-bottom: 2px solid #ffd166; }
+    .skin-preview.loja-skin { background: #1a1a1a; border-bottom: 2px solid #ffd166; }
     .skin-preview.valentine { background: #ff4d6d; }
     
-    .skin-body { padding: 15px; color: white; }
-    .skin-actions { display: flex; gap: 10px; margin-top: 10px; }
-    .btn-skin-preview, .btn-skin-act { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-    .btn-skin-preview { background: #333; color: white; }
-    .btn-skin-act { background: #00a896; color: white; }
-    .btn-skin-act:disabled { background: #121212; color: #555; cursor: default; }
+    .skin-body { padding: 15px; color: var(--text-main); }
+    .skin-body h3 { margin: 0; font-size: 1.1rem; }
+    .skin-actions { display: flex; gap: 10px; margin-top: 15px; }
+    
+    .btn-skin-preview, .btn-skin-act { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 0.8rem; transition: 0.2s; }
+    .btn-skin-preview { background: var(--border-color); color: var(--text-main); }
+    
+    .btn-skin-act { background: var(--primary); color: white; }
+    .btn-skin-act:disabled { background: var(--bg-main) !important; color: var(--text-sub) !important; cursor: default; opacity: 0.6; }
+
+    .mini-card-mock { width: 40px; height: 25px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; }
+    .gold-border { border-color: #ffd166; }
 </style>

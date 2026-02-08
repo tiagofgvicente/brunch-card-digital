@@ -40,3 +40,11 @@ type CreateCardRequest struct {
 	NIF        string `json:"nif"`
 	Design     string `json:"design"`
 }
+
+// StoreConfig represents the global system settings
+type StoreConfig struct {
+	Name         string `json:"name"`
+	Logo         string `json:"logo"`
+	ThemeMode    string `json:"themeMode"`
+	PrimaryColor string `json:"primaryColor"`
+}

@@ -1,65 +1,92 @@
-<div class="settings-container">
+<div class="settings-wrapper">
     <div class="page-header">
-        <h1 style="color: var(--text-main);">Gestão de Sistema</h1>
-        <p style="color: var(--text-sub);">Configura a identidade visual e as definições globais da tua loja.</p>
+        <h1>System Settings</h1>
+        <p>Manage your store identity and dashboard appearance.</p>
     </div>
 
-    <div class="settings-grid">
-        <div class="settings-card">
-            <h3>Identidade da Loja</h3>
-            <div class="form-group">
-                <label>Nome da Loja</label>
-                <input type="text" v-model="storeConfig.name" placeholder="Ex: Brunch Café">
+    <div class="settings-container">
+        <div class="settings-section">
+            <h3 class="section-label">Branding</h3>
+            
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>Store Name</label>
+                    <span>How your brand appears across the platform.</span>
+                </div>
+                <div class="setting-control">
+                    <input type="text" id="store-name-input" placeholder="e.g. Brunch Café" class="custom-input">
+                </div>
             </div>
-            <div class="form-group">
-                <label>Logótipo (URL)</label>
-                <input type="text" v-model="storeConfig.logo" placeholder="https://link-da-imagem.png">
-                <div class="logo-preview" v-if="storeConfig.logo">
-                    <img :src="storeConfig.logo" alt="Preview">
+
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>Store Logo</label>
+                    <span>Upload a file or provide an image URL.</span>
+                </div>
+                <div class="setting-control logo-management-v2">
+                    <div class="logo-preview-box" id="logo-preview-container">
+                        </div>
+                    <div class="logo-actions">
+                        <input type="text" id="store-logo-url" placeholder="https://..." class="custom-input mb-10">
+                        <label class="upload-btn-styled">
+                            <input type="file" onchange="window.handleLogoUpload(event)" accept="image/*" hidden>
+                            <span>ADD IMAGE FILE</span>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="settings-card">
-            <h3>Tema do Dashboard</h3>
-            <p style="font-size: 0.8rem; color: var(--text-sub);">Escolha como deseja visualizar este painel.</p>
-            <div class="theme-options">
-                <button class="theme-btn" :class="{active: storeConfig.themeMode === 'light'}" onclick="setTheme('light')">☀️ Claro</button>
-                <button class="theme-btn" :class="{active: storeConfig.themeMode === 'dark'}" onclick="setTheme('dark')">🌙 Escuro</button>
-                <button class="theme-btn" :class="{active: storeConfig.themeMode === 'custom'}" onclick="setTheme('custom')">🎨 Loja</button>
-            </div>
+        <div class="divider"></div>
+
+        <div class="settings-section">
+            <h3 class="section-label">Appearance</h3>
             
-            <div class="form-group" v-if="storeConfig.themeMode === 'custom'">
-                <label>Cor de Identidade (Primária)</label>
-                <input type="color" v-model="storeConfig.primaryColor" style="height: 40px; cursor: pointer;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>Global Interface Theme</label>
+                    <span>Switch between a high-contrast dark or soft light mode.</span>
+                </div>
+                <div class="setting-control">
+                    <div class="theme-switch-ui">
+                        <button id="theme-btn-light" onclick="window.setTheme('light')">☀️ Light Mode</button>
+                        <button id="theme-btn-dark" onclick="window.setTheme('dark')">🌙 Dark Mode</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="save-bar">
-        <button class="btn-save" onclick="saveSettings()">Guardar Alterações</button>
+    <div class="footer-actions">
+        <button class="save-master-btn" onclick="window.saveSettings()">SAVE CONFIGURATION</button>
     </div>
 </div>
 
 <style>
-    .settings-container { animation: fadeIn 0.3s ease; }
-    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; }
-    .settings-card { background: var(--bg-side); padding: 25px; border-radius: 15px; border: 1px solid var(--border-color); }
-    .settings-card h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; }
+    .settings-wrapper { max-width: 900px; animation: fadeIn 0.3s ease; }
+    .settings-container { background: var(--bg-side); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; }
+    .settings-section { padding: 30px; }
+    .section-label { font-size: 0.75rem; text-transform: uppercase; color: var(--primary); letter-spacing: 1.5px; margin-bottom: 25px; font-weight: 800; }
+    .setting-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 30px; gap: 40px; }
+    .setting-info label { display: block; font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 4px; }
+    .setting-info span { font-size: 0.85rem; color: var(--text-sub); display: block; line-height: 1.4; }
+    .setting-control { width: 400px; }
+    .custom-input { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 0.95rem; }
     
-    .form-group { margin-bottom: 20px; text-align: left; }
-    .form-group label { display: block; font-size: 0.8rem; margin-bottom: 8px; color: var(--text-sub); font-weight: bold; }
-    .form-group input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); box-sizing: border-box; }
+    /* Branding UI */
+    .logo-management-v2 { display: flex; gap: 20px; align-items: center; }
+    .logo-preview-box { position: relative; width: 80px; height: 80px; border-radius: 12px; background: white; border: 2px solid var(--border-color); padding: 5px; flex-shrink: 0; display: none; }
+    .logo-preview-box.has-logo { display: block; }
+    .logo-preview-box img { width: 100%; height: 100%; object-fit: contain; }
+    .remove-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: #ff4444; color: white; border: none; cursor: pointer; font-weight: bold; }
     
-    .theme-options { display: flex; gap: 10px; margin: 20px 0; }
-    .theme-btn { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); cursor: pointer; font-weight: bold; transition: 0.2s; }
-    .theme-btn.active { border-color: var(--primary); background: rgba(0, 168, 150, 0.1); color: var(--primary); }
+    .upload-btn-styled { display: block; width: 100%; padding: 12px; text-align: center; border-radius: 8px; background: var(--border-color); color: var(--text-main); cursor: pointer; font-weight: 800; font-size: 0.8rem; transition: 0.2s; border: 1px solid transparent; }
+    .upload-btn-styled:hover { border-color: var(--primary); background: var(--bg-main); }
 
-    .logo-preview { margin-top: 15px; width: 80px; height: 80px; border-radius: 10px; border: 1px solid var(--border-color); overflow: hidden; background: white; padding: 5px; }
-    .logo-preview img { width: 100%; height: 100%; object-fit: contain; }
-
-    .save-bar { margin-top: 40px; border-top: 1px solid var(--border-color); padding-top: 25px; text-align: right; }
-    .btn-save { background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-    
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .theme-switch-ui { display: flex; background: var(--bg-main); padding: 5px; border-radius: 12px; border: 1px solid var(--border-color); }
+    .theme-switch-ui button { flex: 1; padding: 12px; border: none; background: transparent; color: var(--text-sub); cursor: pointer; font-weight: 800; border-radius: 8px; transition: 0.3s; font-size: 0.85rem; }
+    .theme-switch-ui button.is-active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(0, 168, 150, 0.3); }
+    .divider { height: 1px; background: var(--border-color); margin: 0 30px; }
+    .footer-actions { margin-top: 40px; text-align: right; }
+    .save-master-btn { background: var(--primary); color: white; border: none; padding: 16px 45px; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; text-transform: uppercase; }
 </style>

@@ -54,18 +54,19 @@ func main() {
 		http.ServeFile(w, r, "web/card.html")
 	})
 
-	// NOVO: Rota para servir o fragmento das skins
+	// Serve the skin management fragment
 	mux.HandleFunc("/skins.html", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/skins.html")
+	})
+
+	// Serve the system settings fragment
+	mux.HandleFunc("/settings.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/settings.html")
 	})
 
 	mux.HandleFunc("/admin", basicAuth(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/admin.html")
 	}))
-
-	mux.HandleFunc("/settings.html", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/settings.html")
-	})
 
 	// --- API ENDPOINTS (Backend) ---
 	mux.HandleFunc("/health", healthHandler)
@@ -77,14 +78,18 @@ func main() {
 	mux.HandleFunc("/api/v1/cards/use-reward", makeHandler(api.UseRewardHandler, repo))
 	mux.HandleFunc("/api/v1/qrcode", makeHandler(api.GetQRCodeHandler, repo))
 	mux.HandleFunc("/api/v1/cards/search", makeHandler(api.SearchHandler, repo))
+	
+	// Global System Config (Public View)
+	mux.HandleFunc("/api/v1/system/config", makeHandler(api.GetSettingsHandler, repo))
 
 	// Protected Admin API
 	mux.HandleFunc("/api/v1/admin/cards", basicAuth(makeHandler(api.ListAllCardsHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/reset", basicAuth(makeHandler(api.AdminResetHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/update", basicAuth(makeHandler(api.UpdateCardHandler, repo)))
-
-	// Skins API
 	mux.HandleFunc("/api/v1/admin/update-skin", basicAuth(makeHandler(api.UpdateSkinHandler, repo)))
+	
+	// System Settings API (Protected)
+	mux.HandleFunc("/api/v1/admin/settings", basicAuth(makeHandler(api.UpdateSettingsHandler, repo)))
 
 	// 6. SERVER CONFIGURATION
 	server := &http.Server{
