@@ -41,7 +41,7 @@
         }
         
         .card-front { 
-            background: var(--primary); 
+            background: var(--primary); /* Fallback */
             color: white; padding: 20px; 
             display: flex; flex-direction: column; justify-content: space-between; 
             transition: background 0.5s ease;
@@ -66,12 +66,10 @@
         
         .stamp-img { width: 80%; height: 80%; object-fit: contain; }
 
-        /* Footer Container */
         .card-footer { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
         .client-info { text-transform: uppercase; font-weight: bold; font-size: 0.8rem; line-height: 1.2; text-align: left; }
         .member-number-sub { display: block; font-size: 0.6rem; color: var(--gold); opacity: 0.9; margin-top: 2px; }
 
-        /* Stats Horizontal Row */
         .stats-row { display: flex; align-items: center; gap: 12px; font-weight: bold; font-size: 0.85rem; }
         .stat-item { display: flex; align-items: center; gap: 4px; }
         .stat-item span { color: var(--gold); }
@@ -163,11 +161,7 @@
                 });
 
                 const applyTheme = () => {
-                    if (storeConfig.value.themeMode === 'light') {
-                        document.documentElement.style.setProperty('--page-bg', '#f0f2f5');
-                    } else {
-                        document.documentElement.style.setProperty('--page-bg', '#1a1a1a');
-                    }
+                    document.documentElement.style.setProperty('--page-bg', storeConfig.value.themeMode === 'light' ? '#f0f2f5' : '#1a1a1a');
                 };
 
                 const fetchSettings = async () => {
@@ -181,12 +175,16 @@
                 const themeStyles = computed(() => {
                     const themes = {
                         'default':   { primary: '#00a896', gold: '#ffd166' },
-                        'loja':      { primary: storeConfig.value.primaryColor, gold: '#ffd166' },
+                        'loja':      { primary: '#1a1a1a', gold: '#ffd166' }, // COR FIXA ESCURA
                         'valentine': { primary: '#ff4d6d', gold: '#ffffff' },
                         'holiday':   { primary: '#2d5a27', gold: '#ff4444' }
                     };
                     const active = themes[card.value.design] || themes['default'];
-                    return { '--primary': active.primary, '--gold': active.gold };
+                    return { 
+                        'backgroundColor': active.primary, // Força a cor de fundo
+                        '--primary': active.primary, 
+                        '--gold': active.gold 
+                    };
                 });
 
                 const availableRewards = computed(() => {
