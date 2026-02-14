@@ -1,7 +1,7 @@
 <div class="settings-wrapper">
     <div class="page-header">
         <h1>System Settings</h1>
-        <p>Manage your store identity and loyalty program thresholds.</p>
+        <p>Manage your store identity and dashboard appearance.</p>
     </div>
 
     <div class="settings-container">
@@ -24,7 +24,8 @@
                     <span>Upload a file or provide an image URL.</span>
                 </div>
                 <div class="setting-control logo-management-v2">
-                    <div class="logo-preview-box" id="logo-preview-container"></div>
+                    <div class="logo-preview-box" id="logo-preview-container">
+                        </div>
                     <div class="logo-actions">
                         <input type="text" id="store-logo-url" placeholder="https://..." class="custom-input mb-10">
                         <label class="upload-btn-styled">
@@ -40,8 +41,6 @@
 
         <div class="settings-section">
             <h3 class="section-label">Loyalty Tiers Thresholds</h3>
-            <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 20px;">Define visits needed for each status.</p>
-            
             <div class="threshold-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
                 <div class="tier-input">
                     <label style="display:block; font-size:0.7rem; font-weight:900; color:var(--bronze); margin-bottom:5px;">BRONZE</label>
@@ -54,6 +53,23 @@
                 <div class="tier-input">
                     <label style="display:block; font-size:0.7rem; font-weight:900; color:var(--gold); margin-bottom:5px;">GOLD</label>
                     <input type="number" id="threshold-gold" class="custom-input" min="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="settings-section">
+            <h3 class="section-label">Security</h3>
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>Change Staff Access Key</label>
+                    <span>Update the password used to access admin.</span>
+                </div>
+                <div class="setting-control">
+                    <input type="password" id="pass-old" placeholder="Current Password" class="custom-input mb-10">
+                    <input type="password" id="pass-new" placeholder="New Password" class="custom-input">
+                    <button class="main-btn" style="margin-top:10px; padding:10px; font-size:0.7rem;" onclick="window.updatePassword()">Update Password</button>
                 </div>
             </div>
         </div>
@@ -92,7 +108,8 @@
     .setting-info label { display: block; font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 4px; }
     .setting-info span { font-size: 0.85rem; color: var(--text-sub); display: block; line-height: 1.4; }
     .setting-control { width: 400px; }
-    .custom-input { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 0.95rem; }
+    .custom-input { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 0.95rem; transition: 0.2s; }
+    .mb-10 { margin-bottom: 10px; }
     .logo-management-v2 { display: flex; gap: 20px; align-items: center; }
     .logo-preview-box { position: relative; width: 80px; height: 80px; border-radius: 12px; background: white; border: 2px solid var(--border-color); padding: 5px; flex-shrink: 0; display: none; }
     .logo-preview-box.has-logo { display: block; }
@@ -105,4 +122,5 @@
     .divider { height: 1px; background: var(--border-color); margin: 0 30px; }
     .footer-actions { margin-top: 40px; text-align: right; }
     .save-master-btn { background: var(--primary); color: white; border: none; padding: 16px 45px; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; text-transform: uppercase; }
+    .main-btn { background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; transition: 0.2s; }
 </style>

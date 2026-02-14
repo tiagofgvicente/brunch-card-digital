@@ -2,54 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Brunch Admin - Gestão VIP</title>
+    <title>Management Panel</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         :root { --primary: #00a896; --bg-main: #121212; --bg-side: #1e1e1e; --text-main: #ffffff; --text-sub: #888888; --border-color: #333333; --gold: #ffd166; --silver: #bdc3c7; --bronze: #cd7f32; --red: #ff4444; --orange: #e67e22; }
         body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
         
-        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; transition: background 0.3s; z-index: 100; }
-        .sidebar-header { padding: 0 20px 30px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .sidebar-header img { width: 35px; height: 35px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-color); background: white; }
-        .sidebar-header h2 { color: var(--primary); font-size: 1.1rem; margin: 0; font-weight: 800; }
-
-        .nav-item { padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-sub); transition: 0.3s; font-weight: bold; }
+        /* Layout */
+        .sidebar { width: 240px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; z-index: 100; }
+        .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .sidebar-header img { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; background: white; }
+        .sidebar-header h2 { color: var(--primary); font-size: 1rem; margin: 0; font-weight: 800; }
+        .nav-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-sub); transition: 0.2s; font-weight: bold; font-size: 0.9rem; }
         .nav-item:hover { background: rgba(0, 168, 150, 0.1); color: var(--text-main); }
-        .nav-item.active { background: rgba(0, 168, 150, 0.2); color: var(--primary); border-left: 4px solid var(--primary); }
-
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; position: relative; scroll-behavior: smooth; }
-        .page-header { margin-bottom: 30px; }
-        .page-header h1 { font-size: 1.8rem; margin: 0; font-weight: 800; }
+        .nav-item.active { background: rgba(0, 168, 150, 0.2); color: var(--primary); border-left: 3px solid var(--primary); }
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .page-header h1 { font-size: 1.5rem; margin: 0 0 20px 0; font-weight: 800; }
         
-        table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-side); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.1); transition: background 0.3s; }
-        th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; }
-        th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1.5px; font-weight: 800; }
-        tr:last-child td { border-bottom: none; }
+        /* Table */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-side); border-radius: 8px; border: 1px solid var(--border-color); }
+        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.8rem; vertical-align: middle; }
+        th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 1px; font-weight: 800; height: 30px; }
         tr:hover { background: rgba(0, 168, 150, 0.03); }
+        tr:last-child td { border-bottom: none; }
 
-        /* Status Pills & Badges */
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; }
+        /* Elements */
+        .contact-info { display: flex; flex-direction: column; font-size: 0.7rem; color: var(--text-sub); margin-top: 2px; gap: 2px; }
+        .status-pill { padding: 2px 8px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; border: 1px solid transparent; display: inline-block; }
         .pill-bronze { background: rgba(205, 127, 50, 0.1); color: var(--bronze); border-color: rgba(205, 127, 50, 0.3); }
         .pill-silver { background: rgba(189, 195, 199, 0.1); color: var(--silver); border-color: rgba(189, 195, 199, 0.3); }
         .pill-gold { background: rgba(255, 209, 102, 0.1); color: var(--gold); border-color: rgba(255, 209, 102, 0.3); }
         .pill-new { background: rgba(255, 255, 255, 0.05); color: var(--text-sub); border-color: var(--border-color); }
+        .member-badge { background: var(--bg-main); color: var(--gold); padding: 2px 6px; border-radius: 4px; font-family: monospace; border: 1px solid var(--border-color); font-weight: bold; font-size: 0.75rem; }
+        .stat-cell { font-weight: 700; font-size: 0.85rem; }
         
-        .member-badge { background: var(--bg-main); color: var(--gold); padding: 4px 8px; border-radius: 6px; font-family: 'Courier New', monospace; border: 1px solid var(--border-color); font-weight: bold; }
-        .redeemed-badge { background: rgba(255, 209, 102, 0.1); color: var(--gold); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255, 209, 102, 0.3); font-weight: 800; font-size: 0.7rem; }
+        /* Toggles */
+        .consent-toggles { display: flex; gap: 4px; margin-top: 4px; }
+        .toggle-btn { cursor: pointer; padding: 1px 5px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; border: 1px solid var(--border-color); color: var(--text-sub); opacity: 0.5; transition: 0.2s; }
+        .toggle-btn:hover { opacity: 1; }
+        .toggle-btn.is-active-rgpd { border-color: var(--primary); color: var(--primary); background: rgba(0, 168, 150, 0.1); opacity: 1; }
+        .toggle-btn.is-active-mkt { border-color: var(--gold); color: var(--gold); background: rgba(255, 209, 102, 0.1); opacity: 1; }
 
-        .btn { padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; margin-right: 5px; font-weight: 800; font-size: 0.7rem; transition: 0.2s; text-transform: uppercase; }
-        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
-        .btn-view { background: var(--gold); color: #333; }
-        .btn-stamp-direct { background: var(--orange); color: white; }
-        .btn-redeem { background: var(--primary); color: white; }
-        .btn-redeem:disabled { background: var(--border-color); color: var(--text-sub); cursor: not-allowed; transform: none; filter: none; }
-        .btn-reset { background: var(--red); color: white; }
+        /* VERTICAL ACTIONS STACK (O que pediste) */
+        .action-stack { display: flex; flex-direction: column; gap: 4px; }
+        .btn-action { 
+            width: 100%; border: none; border-radius: 4px; cursor: pointer; 
+            font-weight: 700; font-size: 0.65rem; padding: 4px 0; text-transform: uppercase; 
+            transition: 0.2s; color: white;
+        }
+        .btn-action:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        .btn-edit { background: #555; }
+        .btn-view { background: var(--gold); color: #222; }
+        .btn-stamp { background: var(--orange); }
+        .btn-redeem { background: var(--primary); }
+        .btn-reset { background: var(--red); }
+        .btn-action:hover { filter: brightness(1.1); transform: translateX(2px); }
 
+        /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--bg-side); padding: 40px; border-radius: 24px; text-align: center; position: relative; border: 1px solid var(--border-color); box-shadow: 0 20px 60px rgba(0,0,0,0.5); width: 450px; }
-        .close-modal { position: absolute; top: 20px; right: 25px; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); transition: 0.2s; }
-        .close-modal:hover { color: var(--red); }
-        .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 25px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-content { background: var(--bg-side); padding: 30px; border-radius: 16px; border: 1px solid var(--border-color); width: 400px; text-align: left; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 15px; cursor: pointer; color: var(--text-sub); }
+        .modal-form label { display: block; font-size: 0.7rem; color: var(--text-sub); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; }
+        .modal-form input { width: 100%; padding: 10px; margin-bottom: 12px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; box-sizing: border-box; }
+        .save-btn { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 25px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); }
     </style>
 </head>
 <body>
@@ -57,7 +73,6 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <img v-if="storeConfig.logo" :src="storeConfig.logo" alt="Store Logo">
-                <img v-else src="https://via.placeholder.com/35?text=B" alt="Default Logo">
                 <h2>{{ storeConfig.name }}</h2>
             </div>
             <nav>
@@ -70,71 +85,101 @@
         <main class="main-content">
             <div v-if="currentPage === 'customers'">
                 <div class="page-header"><h1>Customer Management</h1></div>
-                <div style="margin-top: 20px;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 80px;">Socio</th>
-                                <th>Name</th>
-                                <th>Tier Status</th>
-                                <th>Available</th>
-                                <th>Redeemed</th>
-                                <th>Visits</th>
-                                <th style="width: 320px; text-align: center;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="card in cards" :key="card.id">
-                                <td><span class="member-badge">#{{ card.member_number }}</span></td>
-                                <td style="font-weight: 700;">{{ card.customer_id }} {{ card.last_name }}</td>
-                                <td>
-                                    <span v-if="card.total_stamps >= storeConfig.goldThreshold" class="status-pill pill-gold">Gold</span>
-                                    <span v-else-if="card.total_stamps >= storeConfig.silverThreshold" class="status-pill pill-silver">Silver</span>
-                                    <span v-else-if="card.total_stamps >= storeConfig.bronzeThreshold" class="status-pill pill-bronze">Bronze</span>
-                                    <span v-else class="status-pill pill-new">New</span>
-                                </td>
-                                <td style="font-weight: 800; color: var(--primary);">{{ calculateAvailable(card) }} 🎁</td>
-                                <td><span class="redeemed-badge">🏆 {{ card.total_redeemed_bonuses || 0 }}</span></td>
-                                <td><strong>{{ card.total_stamps }}</strong></td>
-                                <td style="text-align: center;">
-                                    <button class="btn btn-view" @click="viewCard(card.id)">View</button>
-                                    <button class="btn btn-stamp-direct" @click="addStampFromAdmin(card)">🍳 Stamp</button>
-                                    <button class="btn btn-redeem" :disabled="calculateAvailable(card) === 0" @click="redeemFromAdmin(card)">Redeem</button>
-                                    <button class="btn btn-reset" @click="resetCard(card.id)">Reset</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Socio</th>
+                            <th style="width: 25%;">Name & Contact</th>
+                            <th style="width: 15%;">Status & Consent</th>
+                            <th>Available</th>
+                            <th>Redeemed</th>
+                            <th>Visits</th>
+                            <th style="width: 100px; text-align: center;">Actions</th> </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="card in cards" :key="card.id">
+                            <td><span class="member-badge">#{{ card.member_number }}</span></td>
+                            <td>
+                                <div style="font-weight: 800; font-size: 0.9rem; margin-bottom: 4px;">{{ card.customer_id }} {{ card.last_name }}</div>
+                                <div class="contact-info">
+                                    <span v-if="card.email">✉️ {{ card.email }}</span>
+                                    <span v-if="card.phone">📞 {{ card.phone }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span v-if="card.total_stamps >= storeConfig.goldThreshold" class="status-pill pill-gold">Gold</span>
+                                <span v-else-if="card.total_stamps >= storeConfig.silverThreshold" class="status-pill pill-silver">Silver</span>
+                                <span v-else-if="card.total_stamps >= storeConfig.bronzeThreshold" class="status-pill pill-bronze">Bronze</span>
+                                <span v-else class="status-pill pill-new">New</span>
+                                
+                                <div class="consent-toggles">
+                                    <span class="toggle-btn" :class="{'is-active-rgpd': card.rgpd_accepted}" @click="toggleConsent(card, 'rgpd')">
+                                        {{ card.rgpd_accepted ? '✓' : '○' }} RGPD
+                                    </span>
+                                    <span class="toggle-btn" :class="{'is-active-mkt': card.marketing_accepted}" @click="toggleConsent(card, 'marketing')">
+                                        {{ card.marketing_accepted ? '✓' : '○' }} MKT
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="stat-cell" style="color: var(--primary);">{{ calculateAvailable(card) }} 🎁</td>
+                            <td class="stat-cell" style="color: var(--gold);">{{ card.total_redeemed_bonuses || 0 }} 🏆</td>
+                            <td class="stat-cell"><strong>{{ card.total_stamps }} 🍳</strong></td>
+                            
+                            <td>
+                                <div class="action-stack">
+                                    <button class="btn-action btn-edit" @click="openEditModal(card)">Edit</button>
+                                    <button class="btn-action btn-view" @click="viewCard(card.id)">View Card</button>
+                                    <button class="btn-action btn-stamp" @click="addStampFromAdmin(card)">Stamp</button>
+                                    <button class="btn-action btn-redeem" :disabled="calculateAvailable(card) === 0" @click="redeemFromAdmin(card)">Redeem</button>
+                                    <button class="btn-action btn-reset" @click="resetCard(card.id)">Reset</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            <div v-if="currentPage === 'skins' || currentPage === 'settings'">
-                <div v-if="loadingSubPage" style="text-align: center; padding: 50px;"><p style="color: var(--primary); font-weight: bold;">Loading Workspace...</p></div>
-                <div v-else v-html="subPageHtml"></div>
-            </div>
+            <div v-else v-html="subPageHtml"></div>
         </main>
+
+        <div class="modal-overlay" v-if="editingCard">
+            <div class="modal-content">
+                <span class="close-modal" @click="editingCard = null">✕</span>
+                <h2 style="margin-top:0; color:var(--primary);">Edit Customer</h2>
+                <div class="modal-form">
+                    <label>First Name</label><input v-model="editingCard.customer_id">
+                    <label>Last Name</label><input v-model="editingCard.last_name">
+                    <label>Email</label><input v-model="editingCard.email">
+                    <label>Phone</label><input v-model="editingCard.phone">
+                    <label>NIF</label><input v-model="editingCard.nif">
+                </div>
+                <div style="text-align: right;">
+                    <button class="save-btn" @click="saveEdit">SAVE CHANGES</button>
+                </div>
+            </div>
+        </div>
 
         <div class="modal-overlay" v-if="showPreview" @click.self="showPreview = false">
             <div class="modal-content">
                 <span class="close-modal" @click="showPreview = false">✕</span>
                 <h2 style="margin: 0; font-weight: 800; text-transform: uppercase; font-size: 1rem; color: var(--primary);">Card Preview</h2>
                 <div class="preview-card-shell" :style="{ backgroundColor: previewColors.bg, color: previewColors.text }">
-                    <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase;">
+                    <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
                         <span>{{ storeConfig.name }} VIP</span>
-                        <span style="color: var(--gold)">🎁 2</span>
+                        <span style="color: var(--gold)">2 🎁</span>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0;">
                         <div v-for="n in 10" :key="n" style="width: 35px; height: 35px; border-radius: 50%;" :style="{ background: n <= 6 ? 'white' : 'rgba(255,255,255,0.2)', border: n <= 6 ? '1px solid gold' : '1px dashed rgba(255,255,255,0.4)' }"></div>
                     </div>
                     <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">JOHN DOE <br><span style="color: var(--gold); font-size: 0.6rem;">MEMBER Nº 0000</span></div>
                 </div>
-                <button class="btn btn-view" style="width: 100%; padding: 15px; margin: 0;" @click="showPreview = false">CLOSE</button>
+                <button class="save-btn" style="background:var(--gold); color:black;" @click="showPreview = false">CLOSE</button>
             </div>
         </div>
     </div>
 
     <script>
-        const { createApp, ref, onMounted, computed, watch, nextTick } = Vue;
+        const { createApp, ref, onMounted, nextTick, watch, computed } = Vue;
         createApp({
             setup() {
                 const cards = ref([]);
@@ -145,16 +190,102 @@
                 const showPreview = ref(false);
                 const previewDesign = ref('default');
                 const storeConfig = ref({ name: 'Brunch.co', logo: '', themeMode: 'dark', bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 });
+                
+                // Variáveis para edição
+                const editingCard = ref(null);
                 let hasJustUploaded = false;
 
                 const fetchCards = async () => {
                     const res = await fetch('/api/v1/admin/cards');
+                    if (res.ok) cards.value = await res.json();
+                };
+
+                // Lógica de Edição
+                const openEditModal = (card) => {
+                    editingCard.value = { ...card }; // Clone
+                };
+
+                const saveEdit = async () => {
+                    const res = await fetch('/api/v1/admin/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(editingCard.value)
+                    });
                     if (res.ok) {
-                        const data = await res.json();
-                        cards.value = data;
-                        if (data.length > 0) activeSkin.value = data[0].design || 'default';
+                        alert("Customer info updated!");
+                        editingCard.value = null;
+                        fetchCards();
+                    } else {
+                        alert("Update failed.");
                     }
                 };
+
+                const toggleConsent = async (card, type) => {
+                    const field = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted';
+                    const newValue = !card[field];
+                    card[field] = newValue;
+                    await fetch('/api/v1/admin/update-consent', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: card.id, [field]: newValue })
+                    });
+                };
+
+                const syncSettingsUI = () => {
+                    if (currentPage.value !== 'settings') return;
+                    nextTick(() => {
+                        const nI = document.getElementById('store-name-input'), lI = document.getElementById('store-logo-url'), tB = document.getElementById('threshold-bronze'), tS = document.getElementById('threshold-silver'), tG = document.getElementById('threshold-gold');
+                        if (nI) nI.value = storeConfig.value.name;
+                        if (lI) lI.value = storeConfig.value.logo.startsWith('data:') ? '' : storeConfig.value.logo;
+                        if (tB) tB.value = storeConfig.value.bronzeThreshold;
+                        if (tS) tS.value = storeConfig.value.silverThreshold;
+                        if (tG) tG.value = storeConfig.value.goldThreshold;
+                        updateLogoPreview();
+                    });
+                };
+
+                const updateLogoPreview = () => {
+                    const container = document.getElementById('logo-preview-container');
+                    if (container && storeConfig.value.logo) {
+                        container.innerHTML = `<img src="${storeConfig.value.logo}" style="width:100%;height:100%;object-fit:contain;"><button onclick="window.removeLogo()" style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:#ff4444;color:white;border:none;cursor:pointer;">✕</button>`;
+                        container.classList.add('has-logo');
+                    }
+                };
+
+                const updateSkinUI = () => {
+                    if (currentPage.value !== 'skins') return;
+                    nextTick(() => {
+                        document.querySelectorAll('.skin-card').forEach(el => el.classList.remove('is-active'));
+                        document.querySelectorAll('.btn-skin-act').forEach(btn => { btn.innerText = 'ACTIVATE'; btn.disabled = false; });
+                        const activeEl = document.getElementById(`skin-${activeSkin.value}`);
+                        const activeBtn = document.getElementById(`btn-${activeSkin.value}`);
+                        if (activeEl) activeEl.classList.add('is-active');
+                        if (activeBtn) { activeBtn.innerText = 'ACTIVE'; activeBtn.disabled = true; }
+                    });
+                };
+
+                // Globais para Settings e Skins
+                window.updatePassword = async () => {
+                    const o = document.getElementById('pass-old').value, n = document.getElementById('pass-new').value;
+                    const res = await fetch('/api/v1/admin/update-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ old: o, new: n }) });
+                    alert(res.ok ? "Updated!" : "Error!");
+                };
+                window.setTheme = (m) => { storeConfig.value.themeMode = m; applyTheme(); };
+                window.handleLogoUpload = (e) => { const r = new FileReader(); r.onload = (ev) => { storeConfig.value.logo = ev.target.result; hasJustUploaded = true; updateLogoPreview(); }; r.readAsDataURL(e.target.files[0]); };
+                window.removeLogo = () => { storeConfig.value.logo = ''; hasJustUploaded = false; updateLogoPreview(); };
+                window.updateGlobalSkin = async (skin) => {
+                    const res = await fetch('/api/v1/admin/update-skin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ design: skin }) });
+                    if (res.ok) { activeSkin.value = skin; updateSkinUI(); }
+                };
+                window.saveSettings = async () => {
+                    const nI = document.getElementById('store-name-input');
+                    if(nI) storeConfig.value.name = nI.value;
+                    if(!hasJustUploaded) storeConfig.value.logo = document.getElementById('store-logo-url').value || storeConfig.value.logo;
+                    storeConfig.value.bronzeThreshold = parseInt(document.getElementById('threshold-bronze').value);
+                    storeConfig.value.silverThreshold = parseInt(document.getElementById('threshold-silver').value);
+                    storeConfig.value.goldThreshold = parseInt(document.getElementById('threshold-gold').value);
+                    const res = await fetch('/api/v1/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) });
+                    if(res.ok) alert("Settings Saved!");
+                };
+                window.openPreview = (d) => { previewDesign.value = d; showPreview.value = true; };
 
                 const applyTheme = () => {
                     const root = document.documentElement;
@@ -171,84 +302,22 @@
                     });
                 };
 
-                const updateLogoPreview = () => {
-                    const container = document.getElementById('logo-preview-container');
-                    if (container) {
-                        if (storeConfig.value.logo) {
-                            container.innerHTML = `<img src="${storeConfig.value.logo}"><button class="remove-btn" onclick="window.removeLogo()">✕</button>`;
-                            container.classList.add('has-logo');
-                        } else { container.innerHTML = ''; container.classList.remove('has-logo'); }
-                    }
+                const changePage = async (p) => {
+                    currentPage.value = p;
+                    if (p !== 'customers') {
+                        subPageHtml.value = await (await fetch(`/${p}.html`)).text();
+                        if (p === 'settings') setTimeout(syncSettingsUI, 50);
+                        if (p === 'skins') setTimeout(() => window.updateGlobalSkin(activeSkin.value), 50);
+                    } else fetchCards();
                 };
 
-                const syncSettingsUI = () => {
-                    if (currentPage.value !== 'settings') return;
-                    nextTick(() => {
-                        const nI = document.getElementById('store-name-input'), lI = document.getElementById('store-logo-url'), tB = document.getElementById('threshold-bronze'), tS = document.getElementById('threshold-silver'), tG = document.getElementById('threshold-gold');
-                        if (nI) nI.value = storeConfig.value.name;
-                        if (lI) lI.value = storeConfig.value.logo.startsWith('data:') ? '' : storeConfig.value.logo;
-                        if (tB) tB.value = storeConfig.value.bronzeThreshold;
-                        if (tS) tS.value = storeConfig.value.silverThreshold;
-                        if (tG) tG.value = storeConfig.value.goldThreshold;
-                        updateLogoPreview();
-                        applyTheme();
-                    });
-                };
-
-                const updateSkinUI = () => {
-                    if (currentPage.value !== 'skins') return;
-                    nextTick(() => {
-                        document.querySelectorAll('.skin-card').forEach(el => el.classList.remove('is-active'));
-                        document.querySelectorAll('.btn-skin-act').forEach(btn => { btn.innerText = 'ACTIVATE'; btn.disabled = false; });
-                        const activeEl = document.getElementById(`skin-${activeSkin.value}`);
-                        const activeBtn = document.getElementById(`btn-${activeSkin.value}`);
-                        if (activeEl) activeEl.classList.add('is-active');
-                        if (activeBtn) { activeBtn.innerText = 'ACTIVE'; activeBtn.disabled = true; }
-                    });
-                };
-
-                window.setTheme = (mode) => { storeConfig.value.themeMode = mode; applyTheme(); };
-                window.openPreview = (design) => { previewDesign.value = design; showPreview.value = true; };
-                window.handleLogoUpload = (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => { storeConfig.value.logo = ev.target.result; hasJustUploaded = true; updateLogoPreview(); };
-                        reader.readAsDataURL(file);
-                    }
-                };
-                window.removeLogo = () => { storeConfig.value.logo = ''; hasJustUploaded = false; updateLogoPreview(); };
-                window.updateGlobalSkin = async (skinName) => {
-                    const res = await fetch('/api/v1/admin/update-skin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ design: skinName }) });
-                    if (res.ok) { activeSkin.value = skinName; updateSkinUI(); }
-                };
-                window.saveSettings = async () => {
-                    const nI = document.getElementById('store-name-input'), lI = document.getElementById('store-logo-url'), tB = document.getElementById('threshold-bronze'), tS = document.getElementById('threshold-silver'), tG = document.getElementById('threshold-gold');
-                    if (nI) storeConfig.value.name = nI.value;
-                    if (lI && lI.value && !hasJustUploaded) storeConfig.value.logo = lI.value;
-                    if (tB) storeConfig.value.bronzeThreshold = parseInt(tB.value);
-                    if (tS) storeConfig.value.silverThreshold = parseInt(tS.value);
-                    if (tG) storeConfig.value.goldThreshold = parseInt(tG.value);
-                    const res = await fetch('/api/v1/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) });
-                    if (res.ok) { alert("Settings Saved!"); hasJustUploaded = false; }
-                };
-
-                const calculateAvailable = (card) => Math.max(0, Math.floor(card.total_stamps / 10) - (card.total_redeemed_bonuses || 0));
-                const addStampFromAdmin = async (card) => { if ((await fetch(`/api/v1/cards/stamp?id=${card.id}`, { method: 'POST' })).ok) await fetchCards(); };
-                const redeemFromAdmin = async (card) => { if ((await fetch(`/api/v1/cards/use-reward?id=${card.id}`, { method: 'POST' })).ok) await fetchCards(); };
-                const resetCard = async (id) => { if (confirm("Reset?")) { if ((await fetch(`/api/v1/admin/reset?id=${id}`, { method: 'POST' })).ok) await fetchCards(); } };
-                const viewCard = (id) => window.open(`/card?id=${id}`, '_blank');
+                const calculateAvailable = (c) => Math.max(0, Math.floor(c.total_stamps / 10) - (c.total_redeemed_bonuses || 0));
                 
-                const changePage = async (page) => {
-                    currentPage.value = page;
-                    if (page === 'skins' || page === 'settings') {
-                        loadingSubPage.value = true;
-                        subPageHtml.value = await (await fetch(`/${page}.html`)).text();
-                        loadingSubPage.value = false;
-                        if (page === 'settings') setTimeout(syncSettingsUI, 50);
-                        if (page === 'skins') setTimeout(updateSkinUI, 50);
-                    }
-                };
+                // Funções de Ação Direta
+                const addStampFromAdmin = async (c) => { await fetch(`/api/v1/cards/stamp?id=${c.id}`, {method:'POST'}); fetchCards(); };
+                const redeemFromAdmin = async (c) => { await fetch(`/api/v1/cards/use-reward?id=${c.id}`, {method:'POST'}); fetchCards(); };
+                const resetCard = async (id) => { if(confirm("Reset?")) { await fetch(`/api/v1/admin/reset?id=${id}`, {method:'POST'}); fetchCards(); } };
+                const viewCard = (id) => window.open(`/card?id=${id}`, '_blank');
 
                 watch([subPageHtml, currentPage], () => { applyTheme(); });
                 onMounted(() => {
@@ -256,7 +325,12 @@
                     fetch('/api/v1/system/config').then(r => r.json()).then(d => { storeConfig.value = { ...storeConfig.value, ...d }; applyTheme(); });
                 });
 
-                return { cards, currentPage, subPageHtml, loadingSubPage, storeConfig, changePage, calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, resetCard, previewColors: computed(() => ({'default':{bg:'#00a896',text:'#fff'},'loja':{bg:'#1a1a1a',text:'#fff'},'valentine':{bg:'#ff4d6d',text:'#fff'}}[previewDesign.value] || {bg:'#00a896',text:'#fff'})) };
+                return { 
+                    cards, currentPage, subPageHtml, loadingSubPage, storeConfig, changePage, calculateAvailable, 
+                    addStampFromAdmin, redeemFromAdmin, viewCard, resetCard, toggleConsent,
+                    editingCard, openEditModal, saveEdit,
+                    showPreview, previewColors: computed(() => ({'default':{bg:'#00a896',text:'#fff'},'loja':{bg:'#1a1a1a',text:'#fff'},'valentine':{bg:'#ff4d6d',text:'#fff'}}[previewDesign.value] || {bg:'#00a896',text:'#fff'}))
+                };
             }
         }).mount('#app');
     </script>

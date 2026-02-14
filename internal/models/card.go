@@ -12,7 +12,7 @@ const (
 	Modern     CardDesign = "modern"
 	Classic    CardDesign = "classic"
 	Holiday    CardDesign = "holiday"
-	Valentine CardDesign = "valentine"
+	Valentine  CardDesign = "valentine"
 )
 
 // BrunchCard represents the customer's digital loyalty card
@@ -29,22 +29,31 @@ type BrunchCard struct {
 	TotalRedeemedBonuses int       `json:"total_redeemed_bonuses"`
 	Is_reward_ready      bool      `json:"is_reward_ready"`
 	Design               string    `json:"design"`
+	RgpdAccepted         bool      `json:"rgpd_accepted"`
+	MarketingAccepted    bool      `json:"marketing_accepted"`
+	ConsentDate          time.Time `json:"consent_date"`
 	UpdatedAt            time.Time `json:"updated_at"`
 }
 
 type CreateCardRequest struct {
-	CustomerID string `json:"customer_id"` // First Name
-	LastName   string `json:"last_name"`
-	Email      string `json:"email"`
-	Phone      string `json:"phone"`
-	NIF        string `json:"nif"`
-	Design     string `json:"design"`
+	CustomerID        string `json:"customer_id"` // First Name
+	LastName          string `json:"last_name"`
+	Email             string `json:"email"`
+	Phone             string `json:"phone"`
+	NIF               string `json:"nif"`
+	Design            string `json:"design"`
+	RgpdAccepted      bool   `json:"rgpd_accepted"`
+	MarketingAccepted bool   `json:"marketing_accepted"`
 }
 
 // StoreConfig represents the global system settings
 type StoreConfig struct {
-	Name         string `json:"name"`
-	Logo         string `json:"logo"`
-	ThemeMode    string `json:"themeMode"`
-	PrimaryColor string `json:"primaryColor"`
+	Name            string `json:"name"`
+	Logo            string `json:"logo"`
+	ThemeMode       string `json:"themeMode"`
+	PrimaryColor    string `json:"primaryColor"`
+	BronzeThreshold int    `json:"bronzeThreshold"`
+	SilverThreshold int    `json:"silverThreshold"`
+	GoldThreshold   int    `json:"goldThreshold"`
+	AdminPassword   string `json:"-"`
 }
