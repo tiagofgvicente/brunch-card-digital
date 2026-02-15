@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SaaS Master Control</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 40px; margin: 0; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
+        .brand h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+        .brand span { color: var(--accent); font-weight: 900; }
+        
+        .grid-container { display: grid; grid-template-columns: 400px 1fr; gap: 40px; }
+        
+        /* FORMULÁRIO */
+        .create-box { background: var(--card); padding: 30px; border-radius: 12px; border: 1px solid #334155; height: fit-content; }
+        .create-box h2 { margin-top: 0; color: var(--accent); }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #94a3b8; }
+        input, select { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; box-sizing: border-box; }
+        input:focus { outline: 1px solid var(--accent); }
+        
+        /* ICON GRID (NOVO) */
+        .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 10px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; max-height: 150px; overflow-y: auto; }
+        .icon-option { 
+            font-size: 1.5rem; cursor: pointer; text-align: center; padding: 5px; border-radius: 4px; transition: 0.2s; border: 1px solid transparent; user-select: none;
+        }
+        .icon-option:hover { background: rgba(255,255,255,0.1); }
+        .icon-option.selected { background: var(--accent); border-color: white; transform: scale(1.1); }
+        
+        .category-label { font-size: 0.7rem; color: #64748b; margin: 10px 0 5px; text-transform: uppercase; font-weight: bold; grid-column: span 6; }
+
+        /* LISTA DE LOJAS */
+        .store-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .store-card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; transition: 0.2s; }
+        .store-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+        
+        .store-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; background: var(--success); color: #064e3b; }
+        
+        .store-config { margin-top: 15px; padding-top: 15px; border-top: 1px solid #334155; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; }
+        .config-item { display: flex; align-items: center; gap: 5px; }
+        .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+        .btn-create { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-link { display: inline-block; margin-top: 15px; color: var(--accent); text-decoration: none; font-size: 0.8rem; font-weight: bold; border: 1px solid var(--accent); padding: 5px 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="brand"><h1>SaaS <span>MASTER</span></h1></div>
+            <div><span class="badge">SUPER ADMIN</span></div>
+        </div>
+
+        <div class="grid-container">
+            <div class="create-box">
+                <h2>🚀 Launch Tenant</h2>
+                <form @submit.prevent="createStore">
+                    <div class="form-group">
+                        <label>Store Name</label>
+                        <input v-model="form.name" placeholder="e.g. Joe's Burgers" required>
+                    </div>
+                    <div class="form-group">
+                        <label>URL Slug (Identifier)</label>
+                        <input v-model="form.slug" placeholder="joes-burgers" required @input="sanitizeSlug">
+                        <small style="color: #64748b; font-size: 0.7rem;">Login via: {{ form.slug }}.app.com</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Admin Password</label>
+                        <input v-model="form.admin_password" placeholder="Manager access key" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Primary Brand Color</label>
+                        <div style="display:flex; gap:10px;">
+                            <input type="color" v-model="form.primary_color" style="width:50px; padding:0; height:40px;">
+                            <input v-model="form.primary_color">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Select Stamp Icon</label>
+                        <div class="icon-grid">
+                            <div v-for="(icon, index) in icons" :key="index" 
+                                 class="icon-option" 
+                                 :class="{selected: form.stamp_icon === icon}"
+                                 @click="form.stamp_icon = icon">
+                                {{ icon }}
+                            </div>
+                        </div>
+                        <div style="text-align:center; margin-top:5px; font-size:1.5rem;">Selected: {{ form.stamp_icon }}</div>
+                    </div>
+
+                    <button class="btn-create" :disabled="loading">{{ loading ? 'Deploying...' : 'CREATE STORE' }}</button>
+                </form>
+            </div>
+
+            <div>
+                <h2 style="margin-top: 0; margin-bottom: 20px;">Active Tenants ({{ stores.length }})</h2>
+                <div class="store-list">
+                    <div v-for="store in stores" :key="store.id" class="store-card">
+                        <div class="store-header">
+                            <h3 style="margin:0;">{{ store.name }}</h3>
+                            <span class="badge">ACTIVE</span>
+                        </div>
+                        <div style="color:#94a3b8; font-size:0.9rem;">/{{ store.slug }}</div>
+                        
+                        <div class="store-config">
+                            <div class="config-item"><span class="color-dot" :style="{background: store.primary_color}"></span> {{ store.primary_color }}</div>
+                            <div class="config-item">Stamp: {{ store.stamp_icon }}</div>
+                            <div class="config-item" style="grid-column: span 2;">Pass: {{ store.admin_password }}</div>
+                        </div>
+                        
+                        <a :href="'/?store=' + store.slug" target="_blank" class="btn-link">Open Login Page ↗</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        createApp({
+            setup() {
+                const stores = ref([]);
+                const loading = ref(false);
+                const form = ref({ name: '', slug: '', admin_password: '', primary_color: '#00a896', stamp_icon: '🍳' });
+                
+                // BIBLIOTECA DE ÍCONES
+                const icons = [
+                    '🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞', // Comida
+                    '☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦', // Bebida/Doces
+                    '✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮', // Serviços
+                    '🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'  // Outros
+                ];
+
+                const fetchStores = async () => {
+                    try {
+                        const res = await fetch('/api/v1/master/stores');
+                        if (res.ok) stores.value = await res.json();
+                    } catch(e) {}
+                };
+
+                const createStore = async () => {
+                    loading.value = true;
+                    try {
+                        const res = await fetch('/api/v1/master/stores', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(form.value)
+                        });
+                        if (res.ok) {
+                            alert("Store Created!");
+                            fetchStores();
+                            form.value = { name: '', slug: '', admin_password: '', primary_color: '#00a896', stamp_icon: '🍳' };
+                        } else alert("Error creating store");
+                    } catch(e) { alert("System error"); }
+                    loading.value = false;
+                };
+
+                const sanitizeSlug = () => { form.value.slug = form.value.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''); };
+
+                onMounted(fetchStores);
+                return { stores, form, loading, createStore, sanitizeSlug, icons };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

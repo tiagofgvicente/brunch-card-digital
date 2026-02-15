@@ -57,3 +57,18 @@ type StoreConfig struct {
 	GoldThreshold   int    `json:"goldThreshold"`
 	AdminPassword   string `json:"-"`
 }
+
+type Store struct {
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	Slug          string    `json:"slug"`
+	LogoURL       string    `json:"logo_url"`
+	PrimaryColor  string    `json:"primary_color"`
+	StampIcon     string    `json:"stamp_icon"`
+	ThemeMode     string    `json:"theme_mode"`
+	Bronze        int       `json:"bronze_threshold"`
+	Silver        int       `json:"silver_threshold"`
+	Gold          int       `json:"gold_threshold"`
+	AdminPassword string    `json:"admin_password"`
+	CreatedAt     time.Time `json:"created_at"`
+}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -60,6 +61,12 @@ func main() {
 
 	// --- API ENDPOINTS ---
 	mux.HandleFunc("/health", healthHandler)
+
+	// Master Panel
+	mux.HandleFunc("/master", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/master.html")
+	})
+	mux.HandleFunc("/api/v1/master/stores", makeHandler(api.MasterListStoresHandler, repo))
 
 	// Public
 	mux.HandleFunc("/api/v1/auth/login", makeHandler(api.LoginHandler, repo))
@@ -138,5 +145,31 @@ func basicAuth(next http.HandlerFunc, repo *database.CardRepository) http.Handle
 			return
 		}
 		next.ServeHTTP(w, r)
+	}
+}
+
+// Middleware que deteta a loja
+func TenantMiddleware(next http.HandlerFunc, repo *database.CardRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// 1. Ler slug (URL ou Query param para testes)
+		slug := r.URL.Query().Get("store")
+		if slug == "" {
+			slug = "brunch" // Default para testes locais
+		}
+
+		// 2. Buscar Loja à BD
+		store, err := repo.GetStoreBySlug(slug)
+		if err != nil {
+			http.Error(w, "Store Not Found: "+slug, 404)
+			return
+		}
+
+		// 3. A CORREÇÃO: Injetar a 'store' no contexto
+		// Isto resolve o erro "declared and not used" e prepara o terreno
+		ctx := context.WithValue(r.Context(), "current_store", store)
+
+		// Passamos o request com o contexto novo para a frente
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

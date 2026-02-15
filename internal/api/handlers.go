@@ -348,3 +348,27 @@ func UpdatePasswordHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		http.Error(w, "Wrong password", http.StatusUnauthorized)
 	}
 }
+
+// MasterCreateStoreHandler
+func MasterCreateStoreHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req models.Store
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid", 400)
+		return
+	}
+	if err := repo.CreateStore(req); err != nil {
+		http.Error(w, "DB Error: "+err.Error(), 500)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// MasterListStoresHandler
+func MasterListStoresHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	stores, err := repo.GetAllStores()
+	if err != nil {
+		http.Error(w, "DB Error", 500)
+		return
+	}
+	json.NewEncoder(w).Encode(stores)
+}

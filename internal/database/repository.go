@@ -6,6 +6,8 @@ import (
 	"log"
 
 	"brunch-card-digital/internal/models"
+
+	"github.com/google/uuid"
 )
 
 type CardRepository struct {
@@ -303,4 +305,56 @@ func (r *CardRepository) UpdatePassword(oldPass, newPass string) bool {
 	}
 	_, err := r.db.Exec("UPDATE system_settings SET admin_password=$1 WHERE id=1", newPass)
 	return err == nil
+}
+
+// --- MASTER / MULTI-TENANT FUNCTIONS ---
+
+// CreateStore (Usado pelo Painel Master)
+func (r *CardRepository) CreateStore(s models.Store) error {
+	query := `
+        INSERT INTO stores (id, name, slug, logo_url, primary_color, stamp_icon, admin_password, bronze_threshold, silver_threshold, gold_threshold)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 15, 40, 100)`
+
+	// Gera UUID se não tiveres
+	if s.ID == "" {
+		s.ID = uuid.New().String()
+	} // Importa "github.com/google/uuid" se faltar
+
+	_, err := r.db.Exec(query, s.ID, s.Name, s.Slug, s.LogoURL, s.PrimaryColor, s.StampIcon, s.AdminPassword)
+	return err
+}
+
+// GetAllStores (Para listar no Painel Master)
+func (r *CardRepository) GetAllStores() ([]models.Store, error) {
+	rows, err := r.db.Query("SELECT id, name, slug, primary_color, stamp_icon, admin_password FROM stores ORDER BY created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stores []models.Store
+	for rows.Next() {
+		var s models.Store
+		rows.Scan(&s.ID, &s.Name, &s.Slug, &s.PrimaryColor, &s.StampIcon, &s.AdminPassword)
+		stores = append(stores, s)
+	}
+	return stores, nil
+}
+
+// GetStoreBySlug (Usado pelo Middleware para identificar a loja)
+func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
+	var s models.Store
+	// NOTA: Certifica-te que a tua tabela 'stores' tem estas colunas todas criadas via migrations.sql
+	query := `SELECT id, name, slug, primary_color, stamp_icon, admin_password, bronze_threshold, silver_threshold, gold_threshold, logo_url 
+              FROM stores WHERE slug = $1 LIMIT 1`
+
+	// Tratamento de NULLs com sql.NullString se necessário, mas simplificando:
+	err := r.db.QueryRow(query, slug).Scan(
+		&s.ID, &s.Name, &s.Slug, &s.PrimaryColor, &s.StampIcon, &s.AdminPassword,
+		&s.Bronze, &s.Silver, &s.Gold, &s.LogoURL,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
 }

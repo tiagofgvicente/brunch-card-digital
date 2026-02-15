@@ -1,53 +1,62 @@
--- Initial migration to create the loyalty card table
--- This runs automatically when the Go app starts
+-- 1. Limpar tudo para começar a arquitetura SaaS limpa
+DROP TABLE IF EXISTS brunch_cards;
+DROP TABLE IF EXISTS system_settings; -- Já não vamos usar esta tabela antiga
+DROP TABLE IF EXISTS stores;
 
-CREATE TABLE IF NOT EXISTS brunch_cards (
+-- 2. Tabela de LOJAS (O teu inventário de clientes pagantes)
+CREATE TABLE stores (
     id UUID PRIMARY KEY,
-    member_number SERIAL,
-    customer_id TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    email TEXT CHECK (email IS NULL OR email LIKE '%@%'),
-    phone TEXT CHECK (phone IS NULL OR (phone ~ '^[0-9]+$')),
-    nif TEXT CHECK (nif IS NULL OR (nif ~ '^[0-9]{9}$')),
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(50) UNIQUE NOT NULL, -- ex: 'brunch', 'padaria-ze'. Será usado no URL.
+    
+    -- Configuração Visual (O que tu controlas centralmente)
+    logo_url TEXT,
+    primary_color VARCHAR(7) DEFAULT '#00a896', -- ex: #FF0000
+    theme_mode VARCHAR(10) DEFAULT 'dark', -- 'light' ou 'dark'
+    stamp_icon VARCHAR(50) DEFAULT '🍳', -- Emoji ou URL de imagem
+    
+    -- Regras de Negócio da Loja
+    bronze_threshold INTEGER DEFAULT 15,
+    silver_threshold INTEGER DEFAULT 40,
+    gold_threshold INTEGER DEFAULT 100,
+    
+    -- Acesso do Gerente da Loja
+    admin_password TEXT NOT NULL, 
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- 3. Tabela de Cartões (Agora ligada a UMA loja específica)
+CREATE TABLE loyalty_cards (
+    id UUID PRIMARY KEY,
+    store_id UUID REFERENCES stores(id) ON DELETE CASCADE, -- A magia do Multi-tenant
+    
+    member_number SERIAL, -- Este número será único globalmente ou por loja (depende da implementação do Go)
+    customer_id TEXT NOT NULL, -- Nome
+    last_name TEXT,
+    email TEXT,
+    phone TEXT,
+    nif TEXT,
     
     -- Game Logic
     stamps_count INTEGER DEFAULT 0,
     total_stamps INTEGER DEFAULT 0,
     total_redeemed_bonuses INTEGER DEFAULT 0,
     is_reward_ready BOOLEAN DEFAULT FALSE,
-    design TEXT DEFAULT 'minimalist',
     
-    -- RGPD & Consent (NOVOS CAMPOS)
+    -- RGPD
     rgpd_accepted BOOLEAN DEFAULT FALSE,
     marketing_accepted BOOLEAN DEFAULT FALSE,
-    consent_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    consent_date TIMESTAMP DEFAULT NOW(),
 
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS system_settings (
-    id SERIAL PRIMARY KEY,
-    store_name TEXT DEFAULT 'Brunch.co',
-    store_logo TEXT DEFAULT '',
-    theme_mode TEXT DEFAULT 'dark',
-    primary_color TEXT DEFAULT '#00a896',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
     
-    -- Loyalty Thresholds (NOVOS CAMPOS)
-    bronze_threshold INTEGER DEFAULT 15,
-    silver_threshold INTEGER DEFAULT 40,
-    gold_threshold INTEGER DEFAULT 100,
-
-    -- Security (NOVO CAMPO)
-    admin_password TEXT DEFAULT 'brunch2026vip',
-
-    updated_at TIMESTAMP DEFAULT NOW()
+    -- Garante que um email não se repete DENTRO da mesma loja, mas pode existir noutras
+    UNIQUE(store_id, email)
 );
 
--- Insert the initial default row with default thresholds and password
-INSERT INTO system_settings (id, store_name, bronze_threshold, silver_threshold, gold_threshold, admin_password) 
-VALUES (1, 'Brunch.co', 15, 40, 100, 'brunch2026vip') 
-ON CONFLICT (id) DO NOTHING;
-
-CREATE INDEX IF NOT EXISTS idx_customer_id ON brunch_cards(customer_id);
-CREATE INDEX IF NOT EXISTS idx_brunch_search ON brunch_cards (customer_id, last_name, phone, email, nif);
+-- Índices para performance
+CREATE INDEX idx_store_lookup ON stores(slug);
+CREATE INDEX idx_card_lookup ON loyalty_cards(store_id, email, phone);
