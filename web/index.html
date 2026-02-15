@@ -3,86 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registration Desk - VIP Cards</title>
+    <title>Brunch.co - Loyalty</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        :root { --primary: #00a896; --bg-main: #121212; --bg-card: #1e1e1e; --text-main: #ffffff; --text-sub: #888888; --border-color: #333333; }
-        body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .admin-link { position: fixed; top: 20px; right: 20px; background: none; border: none; font-size: 1.4rem; opacity: 0.3; cursor: pointer; transition: 0.3s; z-index: 100; }
-        .admin-link:hover { opacity: 1; transform: rotate(45deg); }
-        .reg-box { background: var(--bg-card); padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center; border: 1px solid var(--border-color); }
-        .tabs { display: flex; gap: 5px; margin-bottom: 25px; background: var(--bg-main); padding: 5px; border-radius: 12px; border: 1px solid var(--border-color); }
-        .tabs button { background: transparent; color: var(--text-sub); border: none; cursor: pointer; font-weight: 800; padding: 12px; flex: 1; border-radius: 8px; font-size: 0.75rem; }
-        .tabs button.active { background: var(--primary); color: white; }
-        input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 0.95rem; margin-bottom: 15px; box-sizing: border-box; }
-        .main-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        .main-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        :root { 
+            --primary: #00a896; 
+            --bg-main: #121212; 
+            --text-main: #ffffff; 
+            --text-sub: #888888; 
+            --border-color: #333333;
+            --gold: #ffd166;
+        }
+
+        body { 
+            margin: 0; font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg-main); color: var(--text-main); 
+            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+        }
+
+        /* TOPO (Login Button) */
+        .top-bar {
+            width: 100%; padding: 20px 40px; box-sizing: border-box;
+            display: flex; justify-content: flex-end; align-items: center;
+            position: absolute; top: 0; left: 0; z-index: 10;
+        }
+
+        .login-trigger {
+            background: transparent; border: 1px solid var(--gold); color: var(--gold);
+            padding: 8px 16px; border-radius: 20px;
+            font-weight: 600; font-size: 0.8rem; cursor: pointer;
+            display: flex; align-items: center; gap: 8px;
+            text-transform: uppercase; letter-spacing: 1px;
+            transition: 0.3s;
+        }
+        .login-trigger:hover { background: var(--gold); color: #121212; }
+
+        /* CENTRO (Logo & Intro) */
+        .hero-center {
+            flex: 1; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+            position: relative; z-index: 5;
+        }
+        .store-logo-hero {
+            width: 100px; height: 100px; object-fit: contain;
+            margin-bottom: 20px; border-radius: 50%; 
+            border: 2px solid var(--border-color); padding: 10px;
+            background: rgba(255,255,255,0.05); box-shadow: 0 0 30px rgba(0, 168, 150, 0.2);
+        }
+        .store-title {
+            font-size: 2.5rem; font-weight: 900; 
+            text-transform: uppercase; letter-spacing: 4px;
+            color: var(--text-main); margin-bottom: 5px;
+        }
+        .store-subtitle {
+            color: var(--primary); font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; font-weight: 700;
+        }
+
+        /* ESTATÍSTICAS (Stats Row) */
+        .stats-row {
+            display: flex; gap: 40px; margin-bottom: 50px;
+        }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: white; display: block; }
+        .stat-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-sub); letter-spacing: 1px; margin-top: 5px; }
+
+        /* VISUAL CARD FAN (O Leque de Cartões) */
+        .card-showcase {
+            position: relative; width: 300px; height: 180px;
+            perspective: 1000px; margin-top: 20px;
+        }
+        .mini-card {
+            position: absolute; width: 240px; height: 150px;
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: 0.5s ease; left: 30px;
+            display: flex; align-items: flex-end; padding: 15px; box-sizing: border-box;
+        }
+        /* Design 1: Retro/Orange */
+        .card-1 { background: #e67e22; transform: rotate(-10deg) translate(-40px, 10px); z-index: 1; opacity: 0.8; }
+        /* Design 2: Valentine/Pink */
+        .card-2 { background: #ff4d6d; transform: rotate(10deg) translate(40px, 10px); z-index: 1; opacity: 0.8; }
+        /* Design 3: Default/Teal (Centro) */
+        .card-3 { background: var(--primary); transform: rotate(0deg) translate(0, -10px) scale(1.1); z-index: 2; border: 2px solid var(--gold); }
         
-        /* ESTILOS NOVOS PARA RGPD */
-        .consent-group { margin: 10px 0 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); text-align: left; }
-        .consent-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; cursor: pointer; }
-        .consent-item:last-child { margin-bottom: 0; }
-        .consent-item input { width: auto; margin: 3px 0 0; }
-        .consent-text { font-size: 0.7rem; color: var(--text-sub); line-height: 1.4; }
-        .consent-text b { color: var(--text-main); }
-        
-        /* Search Results Styles */
-        .results-list { background: var(--bg-main); border-radius: 12px; margin-top: 10px; max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); }
-        .result-item { padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; text-align: left; transition: 0.2s; }
-        .result-item:last-child { border-bottom: none; }
-        .result-item:hover { background: rgba(0, 168, 150, 0.1); }
+        .card-content { font-size: 0.6rem; font-weight: bold; text-transform: uppercase; color: white; width: 100%; display: flex; justify-content: space-between; }
+
+        /* Animação ao passar o rato */
+        .card-showcase:hover .card-1 { transform: rotate(-20deg) translate(-60px, 20px); }
+        .card-showcase:hover .card-2 { transform: rotate(20deg) translate(60px, 20px); }
+        .card-showcase:hover .card-3 { transform: scale(1.15) translateY(-20px); box-shadow: 0 0 20px var(--primary); }
+
+        /* MODAL DE LOGIN */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; animation: fadeIn 0.3s ease;
+        }
+        .login-card {
+            background: #1e1e1e; padding: 40px; border-radius: 16px;
+            width: 100%; max-width: 350px; border: 1px solid var(--border-color);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative;
+        }
+        .close-btn {
+            position: absolute; top: 15px; right: 20px; 
+            background: none; border: none; color: var(--text-sub); 
+            font-size: 1.2rem; cursor: pointer;
+        }
+
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 0.7rem; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        input {
+            width: 100%; padding: 14px; background: #121212;
+            border: 1px solid var(--border-color); color: white;
+            border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: 0.3s;
+        }
+        input:focus { outline: none; border-color: var(--primary); }
+
+        .btn-submit {
+            width: 100%; padding: 14px; background: var(--primary);
+            color: white; border: none; border-radius: 8px;
+            font-weight: 800; cursor: pointer; font-size: 0.9rem;
+            text-transform: uppercase; margin-top: 10px; transition: 0.2s;
+        }
+        .btn-submit:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        .error-msg { color: #ff4444; font-size: 0.8rem; margin-top: 15px; text-align: center; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div id="app" style="display: contents;">
-        <button @click="goToAdmin" class="admin-link">⚙️</button>
+    <div id="app">
+        <div class="top-bar">
+            <button @click="showModal = true" class="login-trigger">
+                🔐 Access System
+            </button>
+        </div>
 
-        <div class="reg-box">
-            <header style="margin-bottom: 30px;">
-                <img v-if="storeConfig.logo" :src="storeConfig.logo" style="width:70px; margin-bottom:10px;">
-                <h1 style="font-size: 1.4rem; margin: 0; text-transform: uppercase;">{{ storeConfig.name }}</h1>
-            </header>
+        <div class="hero-center">
+            <img v-if="storeConfig.logo" :src="storeConfig.logo" class="store-logo-hero">
+            <div class="store-title">{{ storeConfig.name }}</div>
+            <div class="store-subtitle">Digital Loyalty Program</div>
 
-            <div v-if="!createdCard">
-                <div class="tabs">
-                    <button @click="tab = 'new'" :class="{active: tab === 'new'}">NEW REGISTER</button>
-                    <button @click="tab = 'find'" :class="{active: tab === 'find'}">SEARCH</button>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_cards || 0 }}</span>
+                    <span class="stat-label">Clients</span>
                 </div>
-
-                <div v-if="tab === 'new'">
-                    <input v-model="form.first_name" placeholder="First Name *">
-                    <input v-model="form.last_name" placeholder="Last Name *">
-                    <input v-model="form.email" placeholder="Email Address">
-                    <input v-model="form.phone" placeholder="Phone Number">
-
-                    <div class="consent-group">
-                        <label class="consent-item">
-                            <input type="checkbox" v-model="form.rgpd">
-                            <span class="consent-text">I confirm that I have read and agree to the <b>Privacy Policy</b> and consent to the processing of my data. *</span>
-                        </label>
-                        <label class="consent-item" v-if="form.email">
-                            <input type="checkbox" v-model="form.marketing">
-                            <span class="consent-text">I would like to receive exclusive offers and news via email.</span>
-                        </label>
-                    </div>
-                    <button class="main-btn" :disabled="!form.rgpd" @click="register">Create VIP Card</button>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_stamps || 0 }}</span>
+                    <span class="stat-label">Stamps</span>
                 </div>
-
-                <div v-else>
-                    <input v-model="searchTerm" placeholder="Search..." @input="doSearch">
-                    <div v-if="searchResults.length" class="results-list">
-                        <div v-for="c in searchResults" :key="c.id" class="result-item" @click="openCard(c.id)">
-                            <div style="font-weight:800;">{{ c.customer_id }} {{ c.last_name }}</div>
-                            <div style="font-size:0.7rem; color:var(--text-sub);">MEMBER #{{ c.member_number }}</div>
-                        </div>
-                    </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_redeems || 0 }}</span>
+                    <span class="stat-label">Redeems</span>
                 </div>
             </div>
 
-            <div v-else style="padding:20px; border:2px dashed var(--primary); border-radius:16px;">
-                <h2 style="color:var(--primary);">Card Ready!</h2>
-                <button class="main-btn" @click="viewCreated">OPEN CARD</button>
-                <button class="main-btn" @click="createdCard = null" style="background:transparent; color:var(--text-sub); border:none;">Register another</button>
+            <div class="card-showcase">
+                <div class="mini-card card-1">
+                    <div class="card-content"><span>Retro</span><span>🍳 5</span></div>
+                </div>
+                <div class="mini-card card-2">
+                    <div class="card-content"><span>Valentine</span><span>🍳 8</span></div>
+                </div>
+                <div class="mini-card card-3">
+                    <div class="card-content"><span>{{ storeConfig.name }} VIP</span><span>🍳 10</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" v-if="showModal" @click.self="showModal = false">
+            <div class="login-card">
+                <button class="close-btn" @click="showModal = false">✕</button>
+                <h2 style="text-align: center; margin-top: 0; margin-bottom: 30px; color: var(--primary); text-transform: uppercase;">Secure Login</h2>
+                
+                <form @submit.prevent="handleLogin">
+                    <div class="form-group">
+                        <label>Email or Username</label>
+                        <input type="text" v-model="form.identifier" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" v-model="form.password">
+                    </div>
+
+                    <button type="submit" class="btn-submit" :disabled="loading">
+                        {{ loading ? 'Authenticating...' : 'ENTER DASHBOARD' }}
+                    </button>
+                </form>
+
+                <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
             </div>
         </div>
     </div>
@@ -92,63 +205,58 @@
 
         createApp({
             setup() {
-                const tab = ref('new');
-                const form = ref({ first_name: '', last_name: '', email: '', phone: '', rgpd: false, marketing: false });
-                const searchTerm = ref('');
-                const searchResults = ref([]);
-                const createdCard = ref(null);
-                const storeConfig = ref({ name: 'Brunch.co', logo: '', themeMode: 'dark' });
+                const showModal = ref(false);
+                const loading = ref(false);
+                const errorMsg = ref('');
+                const form = ref({ identifier: '', password: '' });
+                const storeConfig = ref({ name: 'Brunch.co', logo: '' });
+                const stats = ref({ total_cards: 0, total_stamps: 0, total_redeems: 0 });
 
-                const fetchSettings = async () => {
-                    const res = await fetch('/api/v1/system/config');
-                    if (res.ok) storeConfig.value = await res.json();
+                const fetchConfig = async () => {
+                    try {
+                        const res = await fetch('/api/v1/system/config');
+                        if (res.ok) storeConfig.value = await res.json();
+                    } catch (e) {}
                 };
 
-                const goToAdmin = async () => {
-                    const pass = prompt("Access Key:");
-                    if (!pass) return;
-                    
-                    // VERIFICAÇÃO SEGURA NO SERVIDOR
-                    const res = await fetch('/api/v1/admin/verify-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ password: pass })
-                    });
-
-                    if (res.ok) window.location.href = "/admin";
-                    else alert("Access Denied");
+                const fetchStats = async () => {
+                    try {
+                        const res = await fetch('/api/v1/public/stats');
+                        if (res.ok) stats.value = await res.json();
+                    } catch (e) {}
                 };
 
-                const register = async () => {
-                    if (!form.value.rgpd) return alert("You must accept the Privacy Policy to continue.");
-                    
-                    const res = await fetch('/api/v1/cards', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            customer_id: form.value.first_name, 
-                            last_name: form.value.last_name, 
-                            email: form.value.email,
-                            phone: form.value.phone,
-                            rgpd_accepted: form.value.rgpd,       // NOVO
-                            marketing_accepted: form.value.marketing // NOVO
-                        })
-                    });
-                    if (res.ok) createdCard.value = await res.json();
+                const handleLogin = async () => {
+                    loading.value = true;
+                    errorMsg.value = '';
+
+                    try {
+                        const res = await fetch('/api/v1/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(form.value)
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            // Redireciona consoante a role (admin ou customer)
+                            window.location.href = data.redirect;
+                        } else {
+                            errorMsg.value = "Invalid credentials. Please try again.";
+                        }
+                    } catch (e) {
+                        errorMsg.value = "Connection error.";
+                    } finally {
+                        loading.value = false;
+                    }
                 };
 
-                const doSearch = async () => {
-                    if (searchTerm.value.length < 2) return;
-                    const res = await fetch(`/api/v1/cards/search?q=${searchTerm.value}`);
-                    if (res.ok) searchResults.value = await res.json();
-                };
+                onMounted(() => {
+                    fetchConfig();
+                    fetchStats();
+                });
 
-                const openCard = (id) => window.open(`/card?id=${id}&auth=staff`, '_blank');
-                const viewCreated = () => window.open(`/card?id=${createdCard.value.id}&auth=staff`, '_blank');
-
-                onMounted(fetchSettings);
-
-                return { tab, form, searchTerm, searchResults, createdCard, storeConfig, register, doSearch, openCard, viewCreated, goToAdmin };
+                return { showModal, form, loading, errorMsg, storeConfig, stats, handleLogin };
             }
         }).mount('#app');
     </script>
