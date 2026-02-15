@@ -2,88 +2,137 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SaaS Master Control</title>
+    <title>SaaS Master Admin</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 40px; margin: 0; }
+        :root { 
+            --bg-body: #f1f5f9;       /* Cinza muito claro */
+            --bg-card: #ffffff;       /* Branco puro */
+            --text-main: #1e293b;     /* Azul escuro quase preto */
+            --text-sub: #64748b;      /* Cinza médio */
+            --border: #e2e8f0;        /* Cinza claro para bordas */
+            --primary: #2563eb;       /* Azul Empresarial */
+            --primary-hover: #1d4ed8;
+            --success: #10b981;       /* Verde */
+            --danger: #ef4444;        /* Vermelho */
+        }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
-        .brand h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
-        .brand span { color: var(--accent); font-weight: 900; }
+        body { background: var(--bg-body); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 40px; margin: 0; }
         
-        .grid-container { display: grid; grid-template-columns: 400px 1fr; gap: 40px; }
+        /* HEADER */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border); 
+        }
+        .brand h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; color: var(--text-main); }
+        .brand span { color: var(--primary); font-weight: 800; }
+        .badge-master { background: var(--text-main); color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; letter-spacing: 1px; }
+
+        .grid-container { display: grid; grid-template-columns: 380px 1fr; gap: 40px; }
+        
+        /* CARDS GERAIS */
+        .card-box { 
+            background: var(--bg-card); padding: 30px; border-radius: 16px; 
+            border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); 
+        }
+        .card-box h2 { margin-top: 0; font-size: 1.1rem; color: var(--text-main); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         
         /* FORMULÁRIO */
-        .create-box { background: var(--card); padding: 30px; border-radius: 12px; border: 1px solid #334155; height: fit-content; }
-        .create-box h2 { margin-top: 0; color: var(--accent); }
-        
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #94a3b8; }
-        input, select { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; box-sizing: border-box; }
-        input:focus { outline: 1px solid var(--accent); }
-        
-        /* ICON GRID (NOVO) */
-        .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 10px; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; max-height: 150px; overflow-y: auto; }
-        .icon-option { 
-            font-size: 1.5rem; cursor: pointer; text-align: center; padding: 5px; border-radius: 4px; transition: 0.2s; border: 1px solid transparent; user-select: none;
+        .form-group label { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { 
+            width: 100%; padding: 12px; background: #f8fafc; border: 1px solid var(--border); 
+            color: var(--text-main); border-radius: 8px; box-sizing: border-box; font-size: 0.9rem; transition: 0.2s;
         }
-        .icon-option:hover { background: rgba(255,255,255,0.1); }
-        .icon-option.selected { background: var(--accent); border-color: white; transform: scale(1.1); }
+        input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
         
-        .category-label { font-size: 0.7rem; color: #64748b; margin: 10px 0 5px; text-transform: uppercase; font-weight: bold; grid-column: span 6; }
+        /* ICON GRID */
+        .icon-grid { 
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 5px; 
+            background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border); 
+            max-height: 150px; overflow-y: auto; 
+        }
+        .icon-option { 
+            font-size: 1.4rem; cursor: pointer; text-align: center; padding: 6px; border-radius: 6px; 
+            transition: 0.2s; border: 1px solid transparent; user-select: none; 
+        }
+        .icon-option:hover { background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .icon-option.selected { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.1); }
+
+        .btn-create { 
+            width: 100%; padding: 14px; background: var(--primary); color: white; 
+            border: none; border-radius: 8px; font-weight: 600; cursor: pointer; 
+            margin-top: 20px; font-size: 0.9rem; transition: 0.2s; 
+        }
+        .btn-create:hover { background: var(--primary-hover); transform: translateY(-1px); }
 
         /* LISTA DE LOJAS */
-        .store-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .store-card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; transition: 0.2s; }
-        .store-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+        .store-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .store-card { 
+            background: var(--bg-card); padding: 25px; border-radius: 12px; 
+            border: 1px solid var(--border); transition: 0.2s; position: relative;
+        }
+        .store-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); border-color: var(--primary); }
         
-        .store-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; background: var(--success); color: #064e3b; }
+        .store-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .badge-active { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; }
         
-        .store-config { margin-top: 15px; padding-top: 15px; border-top: 1px solid #334155; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem; }
-        .config-item { display: flex; align-items: center; gap: 5px; }
-        .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .store-info h3 { margin: 0; font-size: 1.1rem; color: var(--text-main); }
+        .store-info p { margin: 2px 0 0; color: var(--text-sub); font-size: 0.85rem; font-weight: 500; }
+        
+        .store-config { 
+            margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.8rem; color: var(--text-sub); 
+        }
+        .config-item { display: flex; align-items: center; gap: 6px; }
+        .color-dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid rgba(0,0,0,0.1); }
 
-        .btn-create { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .btn-link { display: inline-block; margin-top: 15px; color: var(--accent); text-decoration: none; font-size: 0.8rem; font-weight: bold; border: 1px solid var(--accent); padding: 5px 10px; border-radius: 4px; }
+        .actions { margin-top: 20px; display: flex; gap: 10px; }
+        .btn-small { 
+            flex: 1; padding: 8px; border: 1px solid var(--border); background: white; 
+            color: var(--text-main); border-radius: 6px; cursor: pointer; font-size: 0.75rem; 
+            font-weight: 600; text-align: center; text-decoration: none; transition: 0.2s; 
+        }
+        .btn-small:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .btn-danger { color: var(--danger); border-color: #fecaca; }
+        .btn-danger:hover { background: #fef2f2; border-color: var(--danger); }
     </style>
 </head>
 <body>
     <div id="app">
         <div class="header">
-            <div class="brand"><h1>SaaS <span>MASTER</span></h1></div>
-            <div><span class="badge">SUPER ADMIN</span></div>
+            <div class="brand"><h1>Loyalty <span>Manager</span></h1></div>
+            <div><span class="badge-master">SUPER ADMIN</span></div>
         </div>
 
         <div class="grid-container">
-            <div class="create-box">
-                <h2>🚀 Launch Tenant</h2>
+            <div class="card-box">
+                <h2>🚀 Create New Tenant</h2>
                 <form @submit.prevent="createStore">
                     <div class="form-group">
                         <label>Store Name</label>
-                        <input v-model="form.name" placeholder="e.g. Joe's Burgers" required>
+                        <input v-model="form.name" placeholder="Ex: Central Coffee" required>
                     </div>
                     <div class="form-group">
-                        <label>URL Slug (Identifier)</label>
-                        <input v-model="form.slug" placeholder="joes-burgers" required @input="sanitizeSlug">
-                        <small style="color: #64748b; font-size: 0.7rem;">Login via: {{ form.slug }}.app.com</small>
+                        <label>URL Slug (Subdomain)</label>
+                        <input v-model="form.slug" placeholder="central-coffee" required @input="sanitizeSlug">
                     </div>
                     <div class="form-group">
-                        <label>Admin Password</label>
-                        <input v-model="form.admin_password" placeholder="Manager access key" required>
+                        <label>Manager Password</label>
+                        <input v-model="form.admin_password" placeholder="Access key for store manager" required>
                     </div>
                     
                     <div class="form-group">
-                        <label>Primary Brand Color</label>
+                        <label>Brand Color</label>
                         <div style="display:flex; gap:10px;">
-                            <input type="color" v-model="form.primary_color" style="width:50px; padding:0; height:40px;">
-                            <input v-model="form.primary_color">
+                            <input type="color" v-model="form.primary_color" style="width:60px; padding:2px; height:42px; cursor:pointer;">
+                            <input v-model="form.primary_color" style="text-transform: uppercase;">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Select Stamp Icon</label>
+                        <label>Stamp Icon</label>
                         <div class="icon-grid">
                             <div v-for="(icon, index) in icons" :key="index" 
                                  class="icon-option" 
@@ -92,30 +141,38 @@
                                 {{ icon }}
                             </div>
                         </div>
-                        <div style="text-align:center; margin-top:5px; font-size:1.5rem;">Selected: {{ form.stamp_icon }}</div>
                     </div>
 
-                    <button class="btn-create" :disabled="loading">{{ loading ? 'Deploying...' : 'CREATE STORE' }}</button>
+                    <button class="btn-create" :disabled="loading">
+                        {{ loading ? 'Deploying...' : 'LAUNCH STORE' }}
+                    </button>
                 </form>
             </div>
 
             <div>
-                <h2 style="margin-top: 0; margin-bottom: 20px;">Active Tenants ({{ stores.length }})</h2>
+                <h2 style="margin-top: 0; margin-bottom: 20px; color: var(--text-main); font-size: 1.2rem;">
+                    Active Stores <span style="color:var(--text-sub); font-weight:normal; font-size:1rem; margin-left:5px;">({{ stores.length }})</span>
+                </h2>
                 <div class="store-list">
                     <div v-for="store in stores" :key="store.id" class="store-card">
                         <div class="store-header">
                             <h3 style="margin:0;">{{ store.name }}</h3>
-                            <span class="badge">ACTIVE</span>
+                            <span class="badge-active">ACTIVE</span>
                         </div>
-                        <div style="color:#94a3b8; font-size:0.9rem;">/{{ store.slug }}</div>
+                        <div class="store-info">
+                            <p>🔗 {{ store.slug }}.app.com</p>
+                        </div>
                         
                         <div class="store-config">
-                            <div class="config-item"><span class="color-dot" :style="{background: store.primary_color}"></span> {{ store.primary_color }}</div>
-                            <div class="config-item">Stamp: {{ store.stamp_icon }}</div>
-                            <div class="config-item" style="grid-column: span 2;">Pass: {{ store.admin_password }}</div>
+                            <div class="config-item"><span class="color-dot" :style="{background: store.primary_color}"></span> Color</div>
+                            <div class="config-item">Stamp: <strong>{{ store.stamp_icon }}</strong></div>
+                            <div class="config-item" style="grid-column: span 2;">Pass: <code style="background:#f1f5f9; padding:2px 5px; border-radius:4px;">{{ store.admin_password }}</code></div>
                         </div>
                         
-                        <a :href="'/?store=' + store.slug" target="_blank" class="btn-link">Open Login Page ↗</a>
+                        <div class="actions">
+                            <a :href="'/?store=' + store.slug" target="_blank" class="btn-small">Login Page ↗</a>
+                            <button class="btn-small btn-danger" @click="deleteStore(store.id)">Suspend</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -128,14 +185,13 @@
             setup() {
                 const stores = ref([]);
                 const loading = ref(false);
-                const form = ref({ name: '', slug: '', admin_password: '', primary_color: '#00a896', stamp_icon: '🍳' });
+                const form = ref({ name: '', slug: '', admin_password: '', primary_color: '#2563eb', stamp_icon: '🍳' });
                 
-                // BIBLIOTECA DE ÍCONES
                 const icons = [
-                    '🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞', // Comida
-                    '☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦', // Bebida/Doces
-                    '✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮', // Serviços
-                    '🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'  // Outros
+                    '🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞',
+                    '☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦',
+                    '✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮',
+                    '🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'
                 ];
 
                 const fetchStores = async () => {
@@ -153,18 +209,19 @@
                             body: JSON.stringify(form.value)
                         });
                         if (res.ok) {
-                            alert("Store Created!");
+                            alert("Store deployed successfully!");
                             fetchStores();
-                            form.value = { name: '', slug: '', admin_password: '', primary_color: '#00a896', stamp_icon: '🍳' };
-                        } else alert("Error creating store");
+                            form.value = { name: '', slug: '', admin_password: '', primary_color: '#2563eb', stamp_icon: '🍳' };
+                        } else alert("Error deploying store");
                     } catch(e) { alert("System error"); }
                     loading.value = false;
                 };
 
                 const sanitizeSlug = () => { form.value.slug = form.value.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''); };
+                const deleteStore = async (id) => { /* To be implemented in Go */ alert("Delete functionality pending backend implementation"); };
 
                 onMounted(fetchStores);
-                return { stores, form, loading, createStore, sanitizeSlug, icons };
+                return { stores, form, loading, createStore, sanitizeSlug, deleteStore, icons };
             }
         }).mount('#app');
     </script>

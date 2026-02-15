@@ -5,104 +5,164 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"brunch-card-digital/internal/api"
 	"brunch-card-digital/internal/database"
+
+	"github.com/joho/godotenv"
 )
 
-func main() {
-	// 1. DATABASE CONFIGURATION
-	dbConfig := struct {
-		host, user, pass, name string
-	}{
-		host: "postgres-service",
-		user: "admin",
-		pass: "brunch_pass",
-		name: "loyalty_db",
+func getEnvOrPanic(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		log.Fatalf("Error: Environment variable %s is not set.", key)
 	}
+	return value
+}
 
-	// 2. INITIALIZE DATABASE
-	log.Printf("Connecting to database at %s...", dbConfig.host)
-	db, err := database.ConnectDB(dbConfig.host, dbConfig.user, dbConfig.pass, dbConfig.name)
+func main() {
+	_ = godotenv.Load()
+
+	dbHost := getEnvOrPanic("DB_HOST")
+	dbUser := getEnvOrPanic("DB_USER")
+	dbPass := getEnvOrPanic("DB_PASS")
+	dbName := getEnvOrPanic("DB_NAME")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	masterPass := getEnvOrPanic("MASTER_PASSWORD")
+
+	db, err := database.ConnectDB(dbHost, dbUser, dbPass, dbName)
 	if err != nil {
-		log.Fatalf("Critical Error: Failed to connect to DB: %v", err)
+		log.Fatalf("DB Connection Error: %v", err)
 	}
 	defer db.Close()
 
-	// 3. RUN MIGRATIONS
-	migrationPath := "internal/database/migrations.sql"
-	if err := database.RunMigrations(db, migrationPath); err != nil {
-		log.Printf("Migration warning: %v", err)
+	if err := database.RunMigrations(db, "internal/database/migrations.sql"); err != nil {
+		log.Printf("Migration Error: %v", err)
 	}
 
-	// 4. REPOSITORY
 	repo := database.NewCardRepository(db)
-
-	// 5. ROUTING
 	mux := http.NewServeMux()
 
-	// --- UI ENDPOINTS ---
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// --- MIDDLEWARES ---
+
+	masterAuth := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			user, pass, ok := r.BasicAuth()
+			if !ok || user != "master" || pass != masterPass {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Master Control"`)
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			next.ServeHTTP(w, r)
+		}
+	}
+
+	// ESTE É O MIDDLEWARE IMPORTANTE (Agora com o Log corrigido)
+	tenantMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			// 1. Tenta ler do URL (?store=xyz)
+			slug := r.URL.Query().Get("store")
+
+			// 2. Se estiver vazio (acesso à raiz /), força "brunch"
+			if slug == "" {
+				slug = "brunch"
+			}
+
+			// 3. Vai buscar à BD
+			store, err := repo.GetStoreBySlug(slug)
+			if err != nil {
+				// AQUI ESTÁ A CORREÇÃO: %v para vermos o erro técnico!
+				log.Printf("❌ Critical: Default store '%s' not found. DETALHE DO ERRO: %v", slug, err)
+				http.Error(w, "System Error: Store Not Found ("+slug+")", 404)
+				return
+			}
+
+			// 4. Injeta e segue
+			ctx := context.WithValue(r.Context(), "current_store", store)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+	}
+
+	storeAuth := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie("session_token")
+			if err == nil && cookie.Value == "authenticated_admin" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			user, pass, ok := r.BasicAuth()
+			if !ok || (user != "admin" && user != "loja") || !repo.VerifyPassword(pass) {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Store Admin"`)
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			next.ServeHTTP(w, r)
+		}
+	}
+
+	// --- ROTAS ---
+
+	mux.HandleFunc("/health", healthHandler)
+
+	mux.HandleFunc("/master", masterAuth(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/master.html")
+	}))
+	mux.HandleFunc("/api/v1/master/stores", masterAuth(makeHandler(api.MasterListStoresHandler, repo)))
+
+	mux.HandleFunc("/", tenantMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
 		http.ServeFile(w, r, "web/index.html")
-	})
-	mux.HandleFunc("/card", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/card.html") })
+	}))
+
+	mux.HandleFunc("/card", tenantMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/card.html")
+	}))
+
+	mux.HandleFunc("/api/v1/auth/login", tenantMiddleware(makeHandler(api.LoginHandler, repo)))
+	mux.HandleFunc("/api/v1/auth/logout", tenantMiddleware(makeHandler(api.LogoutHandler, repo)))
+	mux.HandleFunc("/api/v1/public/stats", tenantMiddleware(makeHandler(api.PublicStatsHandler, repo)))
+
+	mux.HandleFunc("/api/v1/cards", tenantMiddleware(makeHandler(api.CreateCardHandler, repo)))
+	mux.HandleFunc("/api/v1/cards/status", tenantMiddleware(makeHandler(api.GetStatusHandler, repo)))
+	mux.HandleFunc("/api/v1/cards/stamp", tenantMiddleware(makeHandler(api.StampHandler, repo)))
+	mux.HandleFunc("/api/v1/cards/use-reward", tenantMiddleware(makeHandler(api.UseRewardHandler, repo)))
+	mux.HandleFunc("/api/v1/qrcode", tenantMiddleware(makeHandler(api.GetQRCodeHandler, repo)))
+	mux.HandleFunc("/api/v1/cards/search", tenantMiddleware(makeHandler(api.SearchHandler, repo)))
+	mux.HandleFunc("/api/v1/system/config", tenantMiddleware(makeHandler(api.GetSettingsHandler, repo)))
+
+	mux.HandleFunc("/admin", tenantMiddleware(storeAuth(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/admin.html")
+	})))
+
 	mux.HandleFunc("/skins.html", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/skins.html") })
 	mux.HandleFunc("/settings.html", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/settings.html") })
 
-	// ROTA ADMIN PROTEGIDA PELA BASE DE DADOS
-	mux.HandleFunc("/admin", basicAuth(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/admin.html")
-	}, repo))
+	mux.HandleFunc("/api/v1/admin/verify-password", tenantMiddleware(makeHandler(api.VerifyPasswordHandler, repo)))
+	mux.HandleFunc("/api/v1/admin/cards", tenantMiddleware(storeAuth(makeHandler(api.ListAllCardsHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/reset", tenantMiddleware(storeAuth(makeHandler(api.AdminResetHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/update", tenantMiddleware(storeAuth(makeHandler(api.UpdateCardHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/update-skin", tenantMiddleware(storeAuth(makeHandler(api.UpdateSkinHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/settings", tenantMiddleware(storeAuth(makeHandler(api.UpdateSettingsHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/update-consent", tenantMiddleware(storeAuth(makeHandler(api.UpdateConsentHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/update-password", tenantMiddleware(storeAuth(makeHandler(api.UpdatePasswordHandler, repo))))
 
-	// --- API ENDPOINTS ---
-	mux.HandleFunc("/health", healthHandler)
-
-	// Master Panel
-	mux.HandleFunc("/master", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/master.html")
-	})
-	mux.HandleFunc("/api/v1/master/stores", makeHandler(api.MasterListStoresHandler, repo))
-
-	// Public
-	mux.HandleFunc("/api/v1/auth/login", makeHandler(api.LoginHandler, repo))
-	mux.HandleFunc("/api/v1/auth/logout", makeHandler(api.LogoutHandler, repo))
-	mux.HandleFunc("/api/v1/public/stats", makeHandler(api.PublicStatsHandler, repo))
-	mux.HandleFunc("/api/v1/cards", makeHandler(api.CreateCardHandler, repo))
-	mux.HandleFunc("/api/v1/cards/status", makeHandler(api.GetStatusHandler, repo))
-	mux.HandleFunc("/api/v1/cards/stamp", makeHandler(api.StampHandler, repo))
-	mux.HandleFunc("/api/v1/cards/use-reward", makeHandler(api.UseRewardHandler, repo))
-	mux.HandleFunc("/api/v1/qrcode", makeHandler(api.GetQRCodeHandler, repo))
-	mux.HandleFunc("/api/v1/cards/search", makeHandler(api.SearchHandler, repo))
-	mux.HandleFunc("/api/v1/system/config", makeHandler(api.GetSettingsHandler, repo))
-
-	// --- NOVOS ENDPOINTS ---
-	mux.HandleFunc("/api/v1/admin/verify-password", makeHandler(api.VerifyPasswordHandler, repo))
-
-	// Protected Admin API
-	mux.HandleFunc("/api/v1/admin/cards", basicAuth(makeHandler(api.ListAllCardsHandler, repo), repo))
-	mux.HandleFunc("/api/v1/admin/reset", basicAuth(makeHandler(api.AdminResetHandler, repo), repo))
-	mux.HandleFunc("/api/v1/admin/update", basicAuth(makeHandler(api.UpdateCardHandler, repo), repo))
-	mux.HandleFunc("/api/v1/admin/update-skin", basicAuth(makeHandler(api.UpdateSkinHandler, repo), repo))
-	mux.HandleFunc("/api/v1/admin/settings", basicAuth(makeHandler(api.UpdateSettingsHandler, repo), repo))
-
-	// NOVOS PROTEGIDOS
-	mux.HandleFunc("/api/v1/admin/update-consent", basicAuth(makeHandler(api.UpdateConsentHandler, repo), repo))
-	mux.HandleFunc("/api/v1/admin/update-password", basicAuth(makeHandler(api.UpdatePasswordHandler, repo), repo))
-
-	// 6. START SERVER
 	server := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + port,
 		Handler:      loggingMiddleware(mux),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
-	fmt.Println("🚀 Brunch API Server started on port 8080")
+	fmt.Printf("🚀 Brunch SaaS Platform started on port %s\n", port)
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server startup failed: %v", err)
 	}
@@ -125,51 +185,4 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
 	})
-}
-
-// ATUALIZADO: basicAuth agora verifica a password na Base de Dados
-func basicAuth(next http.HandlerFunc, repo *database.CardRepository) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. VERIFICAR SE EXISTE COOKIE VÁLIDO
-		cookie, err := r.Cookie("session_token")
-		if err == nil && cookie.Value == "authenticated_admin" {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// 2. FALLBACK PARA BASIC AUTH (Se o cookie não existir)
-		user, pass, ok := r.BasicAuth()
-		if !ok || user != "admin" || !repo.VerifyPassword(pass) {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	}
-}
-
-// Middleware que deteta a loja
-func TenantMiddleware(next http.HandlerFunc, repo *database.CardRepository) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		// 1. Ler slug (URL ou Query param para testes)
-		slug := r.URL.Query().Get("store")
-		if slug == "" {
-			slug = "brunch" // Default para testes locais
-		}
-
-		// 2. Buscar Loja à BD
-		store, err := repo.GetStoreBySlug(slug)
-		if err != nil {
-			http.Error(w, "Store Not Found: "+slug, 404)
-			return
-		}
-
-		// 3. A CORREÇÃO: Injetar a 'store' no contexto
-		// Isto resolve o erro "declared and not used" e prepara o terreno
-		ctx := context.WithValue(r.Context(), "current_store", store)
-
-		// Passamos o request com o contexto novo para a frente
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
 }

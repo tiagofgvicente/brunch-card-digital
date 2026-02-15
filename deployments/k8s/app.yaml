@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brunch-api-deployment
+  labels:
+    app: brunch-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: brunch-api
+  template:
+    metadata:
+      labels:
+        app: brunch-api
+    spec:
+      containers:
+      - name: brunch-api
+        image: localhost/brunch-api:v3
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"       
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: DB_USER
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: DB_PASS
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: DB_NAME
+        - name: MASTER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: MASTER_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: brunch-api-service
+spec:
+  type: NodePort
+  selector:
+    app: brunch-api
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+    nodePort: 30080

@@ -9,7 +9,7 @@ spec:
     app: postgres
 ---
 apiVersion: apps/v1
-kind: Deployment # Para desenvolvimento local, Deployment é mais simples que StatefulSet
+kind: Deployment
 metadata:
   name: postgres
 spec:
@@ -27,11 +27,20 @@ spec:
           image: postgres:15-alpine
           env:
             - name: POSTGRES_USER
-              value: "admin"
+              valueFrom:
+                secretKeyRef:
+                  name: brunch-secrets 
+                  key: DB_USER          
             - name: POSTGRES_PASSWORD
-              value: "brunch_pass" # In production, use Secrets!
+              valueFrom:
+                secretKeyRef:
+                  name: brunch-secrets
+                  key: DB_PASS
             - name: POSTGRES_DB
-              value: "loyalty_db"
+              valueFrom:
+                secretKeyRef:
+                  name: brunch-secrets
+                  key: DB_NAME
           ports:
             - containerPort: 5432
           volumeMounts:

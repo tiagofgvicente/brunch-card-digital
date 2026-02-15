@@ -18,6 +18,7 @@ const (
 // BrunchCard represents the customer's digital loyalty card
 type BrunchCard struct {
 	ID                   string    `json:"id"`
+	StoreID              string    `json:"store_id"` // <--- NOVO: Obrigatório para SaaS
 	MemberNumber         int       `json:"member_number"`
 	CustomerID           string    `json:"customer_id"`
 	LastName             string    `json:"last_name"`
@@ -46,18 +47,6 @@ type CreateCardRequest struct {
 	MarketingAccepted bool   `json:"marketing_accepted"`
 }
 
-// StoreConfig represents the global system settings
-type StoreConfig struct {
-	Name            string `json:"name"`
-	Logo            string `json:"logo"`
-	ThemeMode       string `json:"themeMode"`
-	PrimaryColor    string `json:"primaryColor"`
-	BronzeThreshold int    `json:"bronzeThreshold"`
-	SilverThreshold int    `json:"silverThreshold"`
-	GoldThreshold   int    `json:"goldThreshold"`
-	AdminPassword   string `json:"-"`
-}
-
 type Store struct {
 	ID            string    `json:"id"`
 	Name          string    `json:"name"`
@@ -65,6 +54,7 @@ type Store struct {
 	LogoURL       string    `json:"logo_url"`
 	PrimaryColor  string    `json:"primary_color"`
 	StampIcon     string    `json:"stamp_icon"`
+	CardSkin      string    `json:"card_skin"`
 	ThemeMode     string    `json:"theme_mode"`
 	Bronze        int       `json:"bronze_threshold"`
 	Silver        int       `json:"silver_threshold"`
