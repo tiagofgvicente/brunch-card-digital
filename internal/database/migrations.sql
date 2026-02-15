@@ -1,33 +1,35 @@
 -- 1. Limpeza TOTAL (Reset)
 DROP TABLE IF EXISTS loyalty_cards;
 DROP TABLE IF EXISTS stores;
-DROP TABLE IF EXISTS system_settings; 
-DROP TABLE IF EXISTS brunch_cards;
 
--- 2. Tabela de LOJAS
+-- 2. Tabela de LOJAS (Atualizada com Username e Email para Login Global)
 CREATE TABLE stores (
     id UUID PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    slug VARCHAR(50) UNIQUE NOT NULL, -- É isto que usamos para pesquisar!
+    slug VARCHAR(50) UNIQUE NOT NULL,
     
+    -- CREDENCIAIS DE ACESSO (Login Global)
+    admin_username VARCHAR(50) UNIQUE NOT NULL,
+    admin_email VARCHAR(150) UNIQUE NOT NULL,
+    admin_password TEXT NOT NULL, 
+
+    -- CONFIGURAÇÃO VISUAL
     logo_url TEXT,
     primary_color VARCHAR(7) DEFAULT '#00a896',
     stamp_icon VARCHAR(50) DEFAULT '🍳',
-    
-    -- Colunas NOVAS (O Go tem de saber ler isto!)
     card_skin VARCHAR(50) DEFAULT 'default', 
     theme_mode VARCHAR(10) DEFAULT 'dark',
 
+    -- REGRAS DE NEGÓCIO
     bronze_threshold INTEGER DEFAULT 15,
     silver_threshold INTEGER DEFAULT 40,
     gold_threshold INTEGER DEFAULT 100,
     
-    admin_password TEXT NOT NULL, 
     created_at TIMESTAMP DEFAULT NOW(),
     is_active BOOLEAN DEFAULT TRUE
 );
 
--- 3. Tabela de Cartões
+-- 3. Tabela de Cartões (Clientes)
 CREATE TABLE loyalty_cards (
     id UUID PRIMARY KEY,
     store_id UUID REFERENCES stores(id) ON DELETE CASCADE,
@@ -55,19 +57,26 @@ CREATE TABLE loyalty_cards (
     UNIQUE(store_id, email)
 );
 
--- 4. Índices
+-- 4. Índices para performance
 CREATE INDEX idx_store_slug ON stores(slug);
+CREATE INDEX idx_store_login ON stores(admin_username, admin_email);
 CREATE INDEX idx_card_lookup ON loyalty_cards(store_id, email, phone);
 
--- 5. SEED (Dados Iniciais)
-INSERT INTO stores (id, name, slug, primary_color, stamp_icon, admin_password, card_skin, theme_mode)
+-- 5. SEED (Dados Iniciais Obrigatórios)
+INSERT INTO stores (
+    id, name, slug, 
+    admin_username, admin_email, admin_password, 
+    primary_color, stamp_icon, card_skin, theme_mode
+)
 VALUES (
     'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     'Brunch VIP Project',
-    'brunch',          -- O SLUG é 'brunch', é isto que o código procura.
+    'brunch',
+    'admin_brunch',      -- Username
+    'admin@brunch.com',  -- Email
+    'brunch2026vip',     -- Password
     '#00a896',         
-    '🍳',              
-    'brunch2026vip',   
+    '🍳',
     'default',
     'dark'
 );

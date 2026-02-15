@@ -113,7 +113,15 @@ func main() {
 	mux.HandleFunc("/master", masterAuth(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/master.html")
 	}))
-	mux.HandleFunc("/api/v1/master/stores", masterAuth(makeHandler(api.MasterListStoresHandler, repo)))
+	mux.HandleFunc("/api/v1/master/stores", masterAuth(makeHandler(func(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+		if r.Method == http.MethodPost {
+			// Se o browser mandou dados para criar, chama o CreateHandler
+			api.MasterCreateStoreHandler(w, r, repo)
+		} else {
+			// Caso contrário (GET), mostra a lista
+			api.MasterListStoresHandler(w, r, repo)
+		}
+	}, repo)))
 
 	mux.HandleFunc("/", tenantMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {

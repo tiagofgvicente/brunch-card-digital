@@ -6,7 +6,7 @@
 
     <div class="settings-container">
         <div class="settings-section">
-            <h3 class="section-label">Branding</h3>
+            <h3 class="section-label">Branding & Identity</h3>
             
             <div class="setting-row">
                 <div class="setting-info">
@@ -20,12 +20,32 @@
 
             <div class="setting-row">
                 <div class="setting-info">
+                    <label>Primary Brand Color</label>
+                    <span>Used for the "Custom" card skin and buttons.</span>
+                </div>
+                <div class="setting-control" style="display:flex; align-items:center; gap:10px;">
+                    <input type="color" id="store-primary-color" style="width:60px; height:40px; border:none; padding:0; background:none; cursor:pointer;">
+                    <input type="text" id="store-primary-color-text" class="custom-input" style="width:120px; text-transform:uppercase;" onchange="document.getElementById('store-primary-color').value = this.value">
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>Stamp Icon (Emoji)</label>
+                    <span>Used if no logo is uploaded. e.g. ☕, 🍔, ✂️</span>
+                </div>
+                <div class="setting-control">
+                    <input type="text" id="store-stamp-icon" placeholder="e.g. 🍳" class="custom-input" style="font-size:1.5rem; width:80px; text-align:center;">
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-info">
                     <label>Store Logo</label>
-                    <span>Upload a file or provide an image URL.</span>
+                    <span>Upload a file. Used for header and stamps.</span>
                 </div>
                 <div class="setting-control logo-management-v2">
-                    <div class="logo-preview-box" id="logo-preview-container">
-                        </div>
+                    <div class="logo-preview-box" id="logo-preview-container"></div>
                     <div class="logo-actions">
                         <input type="text" id="store-logo-url" placeholder="https://..." class="custom-input mb-10">
                         <label class="upload-btn-styled">
@@ -78,7 +98,6 @@
 
         <div class="settings-section">
             <h3 class="section-label">Appearance</h3>
-            
             <div class="setting-row">
                 <div class="setting-info">
                     <label>Global Interface Theme</label>

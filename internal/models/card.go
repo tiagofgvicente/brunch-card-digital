@@ -18,7 +18,7 @@ const (
 // BrunchCard represents the customer's digital loyalty card
 type BrunchCard struct {
 	ID                   string    `json:"id"`
-	StoreID              string    `json:"store_id"` // <--- NOVO: Obrigatório para SaaS
+	StoreID              string    `json:"store_id"`
 	MemberNumber         int       `json:"member_number"`
 	CustomerID           string    `json:"customer_id"`
 	LastName             string    `json:"last_name"`
@@ -37,7 +37,7 @@ type BrunchCard struct {
 }
 
 type CreateCardRequest struct {
-	CustomerID        string `json:"customer_id"` // First Name
+	CustomerID        string `json:"customer_id"`
 	LastName          string `json:"last_name"`
 	Email             string `json:"email"`
 	Phone             string `json:"phone"`
@@ -47,18 +47,24 @@ type CreateCardRequest struct {
 	MarketingAccepted bool   `json:"marketing_accepted"`
 }
 
+// Store define as configurações da loja
 type Store struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	Slug          string    `json:"slug"`
-	LogoURL       string    `json:"logo_url"`
-	PrimaryColor  string    `json:"primary_color"`
-	StampIcon     string    `json:"stamp_icon"`
-	CardSkin      string    `json:"card_skin"`
-	ThemeMode     string    `json:"theme_mode"`
-	Bronze        int       `json:"bronze_threshold"`
-	Silver        int       `json:"silver_threshold"`
-	Gold          int       `json:"gold_threshold"`
-	AdminPassword string    `json:"admin_password"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+
+	// CREDENCIAIS
+	AdminUsername string `json:"admin_username"`
+	AdminEmail    string `json:"admin_email"`
+	AdminPassword string `json:"admin_password"`
+
+	LogoURL      string    `json:"logo_url"`
+	PrimaryColor string    `json:"primary_color"`
+	StampIcon    string    `json:"stamp_icon"`
+	CardSkin     string    `json:"card_skin"`
+	ThemeMode    string    `json:"theme_mode"`
+	Bronze       int       `json:"bronze_threshold"`
+	Silver       int       `json:"silver_threshold"`
+	Gold         int       `json:"gold_threshold"`
+	CreatedAt    time.Time `json:"created_at"`
 }

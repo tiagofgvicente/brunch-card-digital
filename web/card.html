@@ -22,13 +22,17 @@
         .stamps-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 10px 0; }
         .circle { width: 44px; height: 44px; background: rgba(0,0,0,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px dashed rgba(255,255,255,0.4); overflow: hidden; }
         .circle.active { background: white; border-style: solid; border-color: var(--gold); animation: pop 0.3s ease; }
-        .stamp-img { width: 80%; height: 80%; object-fit: contain; }
+        .stamp-img { width: 70%; height: 70%; object-fit: contain; }
+        
         .card-footer { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
         .client-info { text-transform: uppercase; font-weight: bold; font-size: 0.8rem; line-height: 1.2; text-align: left; }
         .member-number-sub { display: block; font-size: 0.6rem; color: var(--gold); opacity: 0.9; margin-top: 2px; }
+        
         .stats-row { display: flex; align-items: center; gap: 12px; font-weight: bold; font-size: 0.85rem; }
         .stat-item { display: flex; align-items: center; gap: 4px; }
         .stat-item span { color: var(--gold); }
+        .stat-logo { width: 16px; height: 16px; object-fit: contain; vertical-align: middle; }
+
         .controls { margin-top: 30px; }
         .btn { padding: 12px 24px; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; background: var(--gold); color: #333; box-shadow: 0 4px 15px rgba(255,209,102,0.3); }
         @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
@@ -41,29 +45,38 @@
                 <div class="card-face card-front" :style="themeStyles">
                     <div class="card-top">
                         <div class="store-branding">
-                            <img v-if="storeConfig.logo" :src="storeConfig.logo" class="store-logo-mini">
+                            <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" class="store-logo-mini">
                             <span style="font-weight: 800; letter-spacing: 1.5px; font-size: 0.85rem;">{{ storeConfig.name.toUpperCase() }} VIP</span>
                         </div>
                         <div v-if="customerTier.name" class="tier-badge" :style="{ color: customerTier.color, borderColor: customerTier.color }">{{ customerTier.name }}</div>
                     </div>
+                    
                     <div class="stamps-grid">
                         <div v-for="n in 10" :key="n" class="circle" :class="{ active: n <= card.stamps_count }">
                             <template v-if="n <= card.stamps_count">
-                                <img v-if="storeConfig.logo" :src="storeConfig.logo" class="stamp-img">
-                                <span v-else style="font-size: 22px;">🍳</span>
+                                <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" class="stamp-img">
+                                <span v-else style="font-size: 22px;">{{ storeConfig.stamp_icon || '🍳' }}</span>
                             </template>
                         </div>
                     </div>
+
                     <div class="card-footer">
                         <div class="client-info">{{ card.customer_id }} {{ card.last_name }} <span class="member-number-sub">MEMBER Nº {{ card.member_number }}</span></div>
                         <div class="stats-row">
                             <div class="stat-item">🎁 <span>{{ availableRewards }}</span></div>
                             <div class="stat-item">🏆 <span>{{ card.total_redeemed_bonuses || 0 }}</span></div>
-                            <div class="stat-item">🍳 <span>{{ card.total_stamps }}</span></div>
+                            <div class="stat-item">
+                                <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" class="stat-logo">
+                                <span v-else>{{ storeConfig.stamp_icon || '🍳' }}</span>
+                                <span>{{ card.total_stamps }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-face card-back"><img :src="'/api/v1/qrcode?id=' + card.id" alt="QR Code"><p style="font-size: 0.6rem; font-weight: bold; color: var(--primary); margin: 0; letter-spacing: 1px; text-transform: uppercase;">Scan to Stamp</p></div>
+                <div class="card-face card-back">
+                    <img :src="qrCodeUrl" alt="QR Code">
+                    <p style="font-size: 0.6rem; font-weight: bold; color: var(--primary); margin: 0; letter-spacing: 1px; text-transform: uppercase;">Scan to Stamp</p>
+                </div>
             </div>
         </div>
         <div class="controls" v-if="isStaff"><button class="btn" @click.stop="addStamp">Validate Visit</button></div>
@@ -71,13 +84,27 @@
     <script>
         const { createApp, ref, computed, onMounted } = Vue;
         const STAFF_KEY = "brunch2026vip"; 
+        
         createApp({
             setup() {
-                const card = ref({ id: null, design: 'default', total_stamps: 0, stamps_count: 0 });
+                const urlParams = new URLSearchParams(window.location.search);
+                const currentStore = urlParams.get('store');
+                const api = (url) => currentStore ? `${url}${url.includes('?') ? '&' : '?'}store=${currentStore}` : url;
+
+                const card = ref({ id: null, total_stamps: 0, stamps_count: 0 });
                 const isFlipped = ref(false);
-                const cardId = new URLSearchParams(window.location.search).get('id');
-                const isStaff = ref(new URLSearchParams(window.location.search).get('staff') === STAFF_KEY);
-                const storeConfig = ref({ name: 'Brunch.co', logo: '', themeMode: 'dark', bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 });
+                const cardId = urlParams.get('id');
+                const isStaff = ref(urlParams.get('staff') === STAFF_KEY);
+                
+                const storeConfig = ref({ 
+                    name: 'Brunch.co', 
+                    logo_url: '', 
+                    themeMode: 'dark', 
+                    primary_color: '#00a896',
+                    card_skin: 'default', // IMPORTANTE: Valor default
+                    bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100, 
+                    stamp_icon: '🍳' 
+                });
 
                 const customerTier = computed(() => {
                     const total = card.value.total_stamps || 0;
@@ -89,23 +116,54 @@
                 });
 
                 const tierGlowStyle = computed(() => ({ '--tier-glow': customerTier.value.glow }));
+                
                 const applyTheme = () => { document.documentElement.style.setProperty('--page-bg', storeConfig.value.themeMode === 'light' ? '#f0f2f5' : '#1a1a1a'); };
+                
                 const fetchSettings = async () => {
-                    const res = await fetch('/api/v1/system/config');
-                    if (res.ok) { storeConfig.value = { ...storeConfig.value, ...(await res.json()) }; applyTheme(); }
+                    const res = await fetch(api('/api/v1/system/config'));
+                    if (res.ok) { 
+                        storeConfig.value = { ...storeConfig.value, ...(await res.json()) }; 
+                        applyTheme(); 
+                    }
                 };
 
+                // LÓGICA DE CORES CORRIGIDA
                 const themeStyles = computed(() => {
-                    const themes = { 'default': { primary: '#00a896', gold: '#ffd166' }, 'loja': { primary: '#1a1a1a', gold: '#ffd166' }, 'valentine': { primary: '#ff4d6d', gold: '#ffffff' } };
-                    const active = themes[card.value.design] || themes['default'];
-                    return { 'backgroundColor': active.primary, '--primary': active.primary, '--gold': active.gold };
+                    // 1. Verificar qual é a skin escolhida pela loja (vindo da BD)
+                    const activeSkin = storeConfig.value.card_skin || 'default';
+
+                    // 2. Aplicar estilos consoante a skin
+                    if (activeSkin === 'custom') {
+                        // Se for custom, usa a cor definida, ou fallback para teal
+                        const pColor = storeConfig.value.primary_color || '#00a896';
+                        return { 'backgroundColor': pColor, '--primary': pColor, '--gold': '#ffd166' };
+                    } 
+                    else if (activeSkin === 'black') {
+                        return { 'backgroundColor': '#1a1a1a', '--primary': '#1a1a1a', '--gold': '#ffd166' };
+                    }
+                    else if (activeSkin === 'valentine') {
+                        return { 'backgroundColor': '#ff4d6d', '--primary': '#ff4d6d', '--gold': '#ffffff' };
+                    }
+                    else {
+                        // Default
+                        return { 'backgroundColor': '#00a896', '--primary': '#00a896', '--gold': '#ffd166' };
+                    }
                 });
 
                 const availableRewards = computed(() => Math.max(0, Math.floor(card.value.total_stamps / 10) - (card.value.total_redeemed_bonuses || 0)));
-                const fetchCard = async () => { const res = await fetch(`/api/v1/cards/status?id=${cardId}`); if (res.ok) card.value = await res.json(); };
-                const addStamp = async () => { if (isStaff.value) { await fetch(`/api/v1/cards/stamp?id=${cardId}`, { method: 'POST' }); fetchCard(); } };
-                onMounted(() => { fetchCard(); fetchSettings(); });
-                return { card, isFlipped, isStaff, availableRewards, addStamp, themeStyles, storeConfig, customerTier, tierGlowStyle };
+                
+                const fetchCard = async () => { const res = await fetch(api(`/api/v1/cards/status?id=${cardId}`)); if (res.ok) card.value = await res.json(); };
+                
+                const addStamp = async () => { if (isStaff.value) { await fetch(api(`/api/v1/cards/stamp?id=${cardId}`), { method: 'POST' }); fetchCard(); } };
+                
+                const qrCodeUrl = computed(() => api('/api/v1/qrcode?id=' + card.value.id));
+
+                onMounted(() => { 
+                    fetchCard(); 
+                    fetchSettings(); 
+                });
+                
+                return { card, isFlipped, isStaff, availableRewards, addStamp, themeStyles, storeConfig, customerTier, tierGlowStyle, qrCodeUrl };
             }
         }).mount('#app');
     </script>

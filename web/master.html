@@ -83,10 +83,11 @@
         
         .store-config { 
             margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.8rem; color: var(--text-sub); 
+            display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.8rem; color: var(--text-sub); 
         }
         .config-item { display: flex; align-items: center; gap: 6px; }
         .color-dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid rgba(0,0,0,0.1); }
+        .cred-box { background:#f1f5f9; padding:4px 8px; border-radius:4px; font-family: monospace; font-size: 0.75rem; color: var(--text-main); }
 
         .actions { margin-top: 20px; display: flex; gap: 10px; }
         .btn-small { 
@@ -118,11 +119,19 @@
                         <label>URL Slug (Subdomain)</label>
                         <input v-model="form.slug" placeholder="central-coffee" required @input="sanitizeSlug">
                     </div>
+
+                    <div class="form-group">
+                        <label>Manager Username</label>
+                        <input v-model="form.admin_username" placeholder="manager_central" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Manager Email</label>
+                        <input type="email" v-model="form.admin_email" placeholder="manager@central.com" required>
+                    </div>
                     <div class="form-group">
                         <label>Manager Password</label>
-                        <input v-model="form.admin_password" placeholder="Access key for store manager" required>
+                        <input v-model="form.admin_password" placeholder="Access key" required>
                     </div>
-                    
                     <div class="form-group">
                         <label>Brand Color</label>
                         <div style="display:flex; gap:10px;">
@@ -166,7 +175,16 @@
                         <div class="store-config">
                             <div class="config-item"><span class="color-dot" :style="{background: store.primary_color}"></span> Color</div>
                             <div class="config-item">Stamp: <strong>{{ store.stamp_icon }}</strong></div>
-                            <div class="config-item" style="grid-column: span 2;">Pass: <code style="background:#f1f5f9; padding:2px 5px; border-radius:4px;">{{ store.admin_password }}</code></div>
+                            
+                            <div class="config-item">
+                                <span style="font-weight:bold;">User:</span> <span class="cred-box">{{ store.admin_username }}</span>
+                            </div>
+                            <div class="config-item">
+                                <span style="font-weight:bold;">Email:</span> <span class="cred-box">{{ store.admin_email }}</span>
+                            </div>
+                            <div class="config-item">
+                                <span style="font-weight:bold;">Pass:</span> <span class="cred-box">{{ store.admin_password }}</span>
+                            </div>
                         </div>
                         
                         <div class="actions">
@@ -185,7 +203,17 @@
             setup() {
                 const stores = ref([]);
                 const loading = ref(false);
-                const form = ref({ name: '', slug: '', admin_password: '', primary_color: '#2563eb', stamp_icon: '🍳' });
+                
+                // Form atualizado com os novos campos
+                const form = ref({ 
+                    name: '', 
+                    slug: '', 
+                    admin_username: '', 
+                    admin_email: '', 
+                    admin_password: '', 
+                    primary_color: '#2563eb', 
+                    stamp_icon: '🍳' 
+                });
                 
                 const icons = [
                     '🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞',
@@ -208,17 +236,26 @@
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(form.value)
                         });
+                        
                         if (res.ok) {
                             alert("Store deployed successfully!");
                             fetchStores();
-                            form.value = { name: '', slug: '', admin_password: '', primary_color: '#2563eb', stamp_icon: '🍳' };
-                        } else alert("Error deploying store");
-                    } catch(e) { alert("System error"); }
+                            // Reset do form
+                            form.value = { 
+                                name: '', slug: '', 
+                                admin_username: '', admin_email: '', admin_password: '', 
+                                primary_color: '#2563eb', stamp_icon: '🍳' 
+                            };
+                        } else {
+                            const errText = await res.text();
+                            alert("Error deploying store: " + errText);
+                        }
+                    } catch(e) { alert("System error: " + e.message); }
                     loading.value = false;
                 };
 
                 const sanitizeSlug = () => { form.value.slug = form.value.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''); };
-                const deleteStore = async (id) => { /* To be implemented in Go */ alert("Delete functionality pending backend implementation"); };
+                const deleteStore = async (id) => { alert("Delete functionality pending backend implementation"); };
 
                 onMounted(fetchStores);
                 return { stores, form, loading, createStore, sanitizeSlug, deleteStore, icons };
