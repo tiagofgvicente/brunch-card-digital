@@ -7,258 +7,294 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg-body: #f1f5f9;       /* Cinza muito claro */
-            --bg-card: #ffffff;       /* Branco puro */
-            --text-main: #1e293b;     /* Azul escuro quase preto */
-            --text-sub: #64748b;      /* Cinza médio */
-            --border: #e2e8f0;        /* Cinza claro para bordas */
-            --primary: #2563eb;       /* Azul Empresarial */
+            --bg-body: #f1f5f9;       
+            --bg-sidebar: #ffffff;    
+            --bg-card: #ffffff;       
+            --text-main: #1e293b;     
+            --text-sub: #64748b;      
+            --border: #e2e8f0;        
+            --primary: #2563eb;       
             --primary-hover: #1d4ed8;
-            --success: #10b981;       /* Verde */
-            --danger: #ef4444;        /* Vermelho */
+            --success: #10b981;
+            --danger: #ef4444;
         }
         
-        body { background: var(--bg-body); color: var(--text-main); font-family: 'Inter', sans-serif; padding: 40px; margin: 0; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); }
+
+        /* LAYOUT FLEXBOX */
+        #app { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
         
-        /* HEADER */
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border); 
-        }
-        .brand h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; color: var(--text-main); }
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; }
+        .brand { padding: 25px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+        .brand h1 { margin: 0; font-size: 1.4rem; letter-spacing: -0.5px; color: var(--text-main); }
         .brand span { color: var(--primary); font-weight: 800; }
-        .badge-master { background: var(--text-main); color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; letter-spacing: 1px; }
+        
+        .nav-section { font-size: 0.7rem; text-transform: uppercase; color: var(--text-sub); padding: 15px 25px 5px; font-weight: 700; letter-spacing: 0.5px; margin-top: 10px; }
+        .nav-item { padding: 12px 25px; cursor: pointer; color: var(--text-sub); font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; transition: 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover { color: var(--primary); background: #f8fafc; }
+        .nav-item.active { color: var(--primary); background: #eff6ff; border-left-color: var(--primary); }
 
-        .grid-container { display: grid; grid-template-columns: 380px 1fr; gap: 40px; }
-        
-        /* CARDS GERAIS */
-        .card-box { 
-            background: var(--bg-card); padding: 30px; border-radius: 16px; 
-            border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); 
-        }
-        .card-box h2 { margin-top: 0; font-size: 1.1rem; color: var(--text-main); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        
-        /* FORMULÁRIO */
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
-        input, select { 
-            width: 100%; padding: 12px; background: #f8fafc; border: 1px solid var(--border); 
-            color: var(--text-main); border-radius: 8px; box-sizing: border-box; font-size: 0.9rem; transition: 0.2s;
-        }
-        input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-        
-        /* ICON GRID */
-        .icon-grid { 
-            display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 5px; 
-            background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border); 
-            max-height: 150px; overflow-y: auto; 
-        }
-        .icon-option { 
-            font-size: 1.4rem; cursor: pointer; text-align: center; padding: 6px; border-radius: 6px; 
-            transition: 0.2s; border: 1px solid transparent; user-select: none; 
-        }
-        .icon-option:hover { background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .icon-option.selected { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.1); }
+        /* MAIN CONTENT */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: var(--bg-body); }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .page-title h2 { margin: 0; font-size: 1.8rem; color: var(--text-main); }
+        .page-title p { margin: 5px 0 0; color: var(--text-sub); }
 
-        .btn-create { 
-            width: 100%; padding: 14px; background: var(--primary); color: white; 
-            border: none; border-radius: 8px; font-weight: 600; cursor: pointer; 
-            margin-top: 20px; font-size: 0.9rem; transition: 0.2s; 
-        }
-        .btn-create:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        /* SEARCH BAR */
+        .search-container { position: relative; width: 300px; }
+        .search-input { width: 100%; padding: 12px 12px 12px 40px; background: white; border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .search-input:focus { outline: none; border-color: var(--primary); }
+        .search-icon { position: absolute; left: 12px; top: 12px; color: var(--text-sub); opacity: 0.7; }
 
-        /* LISTA DE LOJAS */
-        .store-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .store-card { 
-            background: var(--bg-card); padding: 25px; border-radius: 12px; 
-            border: 1px solid var(--border); transition: 0.2s; position: relative;
-        }
-        .store-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); border-color: var(--primary); }
-        
-        .store-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-        .badge-active { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; }
-        
+        /* STORE CARDS GRID */
+        .grid-stores { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .card-box { background: var(--bg-card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.03); transition: 0.2s; position: relative; }
+        .card-box:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.06); border-color: var(--primary); }
+
+        .store-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; }
+        .store-icon { width: 45px; height: 45px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; overflow: hidden; border: 1px solid var(--border); }
+        .store-icon img { width: 100%; height: 100%; object-fit: contain; }
+        .badge-active { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; }
+
         .store-info h3 { margin: 0; font-size: 1.1rem; color: var(--text-main); }
-        .store-info p { margin: 2px 0 0; color: var(--text-sub); font-size: 0.85rem; font-weight: 500; }
+        .store-info p { margin: 4px 0 0; font-size: 0.85rem; color: var(--primary); font-weight: 600; }
         
-        .store-config { 
-            margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); 
-            display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.8rem; color: var(--text-sub); 
-        }
-        .config-item { display: flex; align-items: center; gap: 6px; }
-        .color-dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid rgba(0,0,0,0.1); }
-        .cred-box { background:#f1f5f9; padding:4px 8px; border-radius:4px; font-family: monospace; font-size: 0.75rem; color: var(--text-main); }
+        /* DETALHES DE CREDENCIAIS (RECUPERADOS) */
+        .store-creds { margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-sub); }
+        .cred-row { display: flex; justify-content: space-between; }
+        .cred-val { font-family: monospace; color: var(--text-main); font-weight: 600; }
 
-        .actions { margin-top: 20px; display: flex; gap: 10px; }
-        .btn-small { 
-            flex: 1; padding: 8px; border: 1px solid var(--border); background: white; 
-            color: var(--text-main); border-radius: 6px; cursor: pointer; font-size: 0.75rem; 
-            font-weight: 600; text-align: center; text-decoration: none; transition: 0.2s; 
-        }
-        .btn-small:hover { background: #f8fafc; border-color: #cbd5e1; }
-        .btn-danger { color: var(--danger); border-color: #fecaca; }
-        .btn-danger:hover { background: #fef2f2; border-color: var(--danger); }
+        .store-meta { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-sub); display: flex; justify-content: space-between; align-items: center; }
+        .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 5px; border: 1px solid rgba(0,0,0,0.1); }
+
+        .actions { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-small { padding: 10px; border: 1px solid var(--border); background: white; color: var(--text-main); border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; text-align: center; text-decoration: none; transition: 0.2s; }
+        .btn-small:hover { background: #f1f5f9; }
+        .btn-primary-small { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-primary-small:hover { background: var(--primary-hover); }
+
+        /* FORMS (VERTICALIZED) */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 6px; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { width: 100%; padding: 12px; background: #fff; border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        .btn-create { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: 0.2s; margin-top: 10px; }
+        .btn-create:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        
+        .btn-danger { width: 100%; padding: 12px; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 20px; transition: 0.2s; }
+        .btn-danger:hover { background: #fecaca; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal { background: white; width: 450px; padding: 30px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        .modal h2 { margin: 0; font-size: 1.4rem; color: var(--text-main); }
+        .close-btn { cursor: pointer; font-size: 1.5rem; color: var(--text-sub); }
+
+        /* ICON GRID */
+        .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 5px; max-height: 150px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+        .icon-option { font-size: 1.4rem; cursor: pointer; text-align: center; padding: 6px; border-radius: 6px; transition: 0.2s; border: 1px solid transparent; }
+        .icon-option:hover { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .icon-option.selected { background: var(--primary); color: white; transform: scale(1.1); }
     </style>
 </head>
 <body>
     <div id="app">
-        <div class="header">
+        <aside class="sidebar">
             <div class="brand"><h1>Loyalty <span>Manager</span></h1></div>
-            <div><span class="badge-master">SUPER ADMIN</span></div>
-        </div>
+            
+            <div class="nav-section">Tenant Management</div>
+            <div class="nav-item" :class="{active: view === 'stores'}" @click="view = 'stores'">🏢 Stores & Maintenance</div>
+            <div class="nav-item" :class="{active: view === 'create'}" @click="view = 'create'">🚀 Create New Store</div>
 
-        <div class="grid-container">
-            <div class="card-box">
-                <h2>🚀 Create New Tenant</h2>
-                <form @submit.prevent="createStore">
-                    <div class="form-group">
-                        <label>Store Name</label>
-                        <input v-model="form.name" placeholder="Ex: Central Coffee" required>
-                    </div>
-                    <div class="form-group">
-                        <label>URL Slug (Subdomain)</label>
-                        <input v-model="form.slug" placeholder="central-coffee" required @input="sanitizeSlug">
-                    </div>
+            <div class="nav-section">Platform Assets</div>
+            <div class="nav-item" :class="{active: view === 'skins'}" @click="view = 'skins'">🎨 Global Skins</div>
+            <div class="nav-item" :class="{active: view === 'users'}" @click="view = 'users'">🛡️ Master Users</div>
+        </aside>
 
-                    <div class="form-group">
-                        <label>Manager Username</label>
-                        <input v-model="form.admin_username" placeholder="manager_central" required>
+        <main class="main-content">
+            
+            <div v-if="view === 'stores'">
+                <div class="header-bar">
+                    <div class="page-title">
+                        <h2>Tenant Maintenance</h2>
+                        <p>Managing {{ stores.length }} active store instances.</p>
                     </div>
-                    <div class="form-group">
-                        <label>Manager Email</label>
-                        <input type="email" v-model="form.admin_email" placeholder="manager@central.com" required>
+                    <div class="search-container">
+                        <span class="search-icon">🔍</span>
+                        <input v-model="search" class="search-input" placeholder="Search stores...">
                     </div>
-                    <div class="form-group">
-                        <label>Manager Password</label>
-                        <input v-model="form.admin_password" placeholder="Access key" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Brand Color</label>
-                        <div style="display:flex; gap:10px;">
-                            <input type="color" v-model="form.primary_color" style="width:60px; padding:2px; height:42px; cursor:pointer;">
-                            <input v-model="form.primary_color" style="text-transform: uppercase;">
-                        </div>
-                    </div>
+                </div>
 
-                    <div class="form-group">
-                        <label>Stamp Icon</label>
-                        <div class="icon-grid">
-                            <div v-for="(icon, index) in icons" :key="index" 
-                                 class="icon-option" 
-                                 :class="{selected: form.stamp_icon === icon}"
-                                 @click="form.stamp_icon = icon">
-                                {{ icon }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <button class="btn-create" :disabled="loading">
-                        {{ loading ? 'Deploying...' : 'LAUNCH STORE' }}
-                    </button>
-                </form>
-            </div>
-
-            <div>
-                <h2 style="margin-top: 0; margin-bottom: 20px; color: var(--text-main); font-size: 1.2rem;">
-                    Active Stores <span style="color:var(--text-sub); font-weight:normal; font-size:1rem; margin-left:5px;">({{ stores.length }})</span>
-                </h2>
-                <div class="store-list">
-                    <div v-for="store in stores" :key="store.id" class="store-card">
+                <div class="grid-stores">
+                    <div v-for="store in filteredStores" :key="store.id" class="card-box">
                         <div class="store-header">
-                            <h3 style="margin:0;">{{ store.name }}</h3>
+                            <div class="store-icon">
+                                <img v-if="store.logo_url" :src="store.logo_url">
+                                <span v-else>{{ store.stamp_icon || '🍳' }}</span>
+                            </div>
                             <span class="badge-active">ACTIVE</span>
                         </div>
                         <div class="store-info">
-                            <p>🔗 {{ store.slug }}.app.com</p>
+                            <h3>{{ store.name }}</h3>
+                            <p>🔗 <a :href="'/?store=' + store.slug" target="_blank" style="color:var(--primary); text-decoration:none;">{{ store.slug }}</a></p>
                         </div>
                         
-                        <div class="store-config">
-                            <div class="config-item"><span class="color-dot" :style="{background: store.primary_color}"></span> Color</div>
-                            <div class="config-item">Stamp: <strong>{{ store.stamp_icon }}</strong></div>
-                            
-                            <div class="config-item">
-                                <span style="font-weight:bold;">User:</span> <span class="cred-box">{{ store.admin_username }}</span>
-                            </div>
-                            <div class="config-item">
-                                <span style="font-weight:bold;">Email:</span> <span class="cred-box">{{ store.admin_email }}</span>
-                            </div>
-                            <div class="config-item">
-                                <span style="font-weight:bold;">Pass:</span> <span class="cred-box">{{ store.admin_password }}</span>
-                            </div>
+                        <div class="store-creds">
+                            <div class="cred-row"><span>User:</span> <span class="cred-val">{{ store.admin_username }}</span></div>
+                            <div class="cred-row"><span>Pass:</span> <span class="cred-val">{{ store.admin_password }}</span></div>
+                            <div class="cred-row"><span>Email:</span> <span class="cred-val">{{ store.admin_email }}</span></div>
                         </div>
-                        
+
+                        <div class="store-meta">
+                            <div class="meta-item"><span class="color-dot" :style="{background: store.primary_color}"></span> Brand Color</div>
+                            <div class="meta-item">Skin: <strong>{{ store.card_skin || 'Default' }}</strong></div>
+                        </div>
                         <div class="actions">
-                            <a :href="'/?store=' + store.slug" target="_blank" class="btn-small">Login Page ↗</a>
-                            <button class="btn-small btn-danger" @click="deleteStore(store.id)">Suspend</button>
+                            <button class="btn-small" @click="openEdit(store)">✏️ Edit</button>
+                            <button class="btn-small" @click="openSkins(store)">🎨 Skins</button>
+                            <a :href="'/?store=' + store.slug" target="_blank" class="btn-small btn-primary-small" style="grid-column: span 2;">Login Dashboard ↗</a>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div v-if="view === 'create'">
+                <div class="header-bar"><div class="page-title"><h2>Onboard New Tenant</h2><p>Deploy a new store to the network.</p></div></div>
+                
+                <div class="card-box" style="max-width: 500px; margin: 0 auto;">
+                    <form @submit.prevent="createStore">
+                        <div class="form-group"><label>Store Name</label><input v-model="form.name" placeholder="Ex: Central Coffee" required></div>
+                        <div class="form-group"><label>URL Slug</label><input v-model="form.slug" placeholder="central-coffee" required @input="sanitizeSlug"></div>
+                        
+                        <div class="form-group"><label>Manager Username</label><input v-model="form.admin_username" required></div>
+                        <div class="form-group"><label>Manager Email</label><input type="email" v-model="form.admin_email" required></div>
+                        <div class="form-group"><label>Manager Password</label><input v-model="form.admin_password" required></div>
+
+                        <div class="form-group"><label>Brand Color</label>
+                            <input type="color" v-model="form.primary_color" style="width:100%; height:50px; cursor:pointer; padding:2px;">
+                        </div>
+
+                        <div class="form-group"><label>Stamp Icon</label>
+                            <div class="icon-grid">
+                                <div v-for="icon in icons" :key="icon" class="icon-option" :class="{selected: form.stamp_icon === icon}" @click="form.stamp_icon = icon">{{ icon }}</div>
+                            </div>
+                        </div>
+
+                        <button class="btn-create" :disabled="loading">{{ loading ? 'Deploying...' : 'LAUNCH STORE' }}</button>
+                    </form>
+                </div>
+            </div>
+
+            <div v-if="view === 'skins'">
+                <div class="header-bar"><div class="page-title"><h2>Global Card Skins</h2><p>Themes available to all stores.</p></div><button class="btn-small btn-primary-small">＋ Add Theme</button></div>
+                <div class="grid-stores">
+                    <div class="card-box">
+                        <div style="height:120px; background:#00a896; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white;">Default Teal</div>
+                        <h3 style="margin-top:15px;">Default Design</h3>
+                    </div>
+                    <div class="card-box">
+                        <div style="height:120px; background:#1a1a1a; border-bottom:3px solid #ffd166; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white;">Black Edition</div>
+                        <h3 style="margin-top:15px;">Black Edition</h3>
+                    </div>
+                    <div class="card-box">
+                        <div style="height:120px; background:#ff4d6d; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:2rem;">❤️</div>
+                        <h3 style="margin-top:15px;">Valentine's</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="view === 'users'">
+                <div class="header-bar"><div class="page-title"><h2>Master Users</h2><p>Access control for this portal.</p></div><button class="btn-small btn-primary-small">＋ Add User</button></div>
+                <div class="card-box">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead style="text-align:left; border-bottom:1px solid var(--border);"><tr><th style="padding:10px;">User</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody><tr><td style="padding:15px 10px; font-weight:bold;">Super Admin</td><td>Root</td><td><span class="badge-active">ACTIVE</span></td><td><button class="btn-small">Edit</button></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+
+        <div v-if="editingStore" class="modal-overlay" @click.self="editingStore = null">
+            <div class="modal">
+                <div class="modal-header"><h2>Edit Tenant</h2><span class="close-btn" @click="editingStore = null">✕</span></div>
+                
+                <div class="form-group"><label>Store Name</label><input v-model="editingStore.name"></div>
+                <div class="form-group"><label>Primary Color</label><input type="color" v-model="editingStore.primary_color" style="width:100%; height:50px;"></div>
+                <div class="form-group"><label>Stamp Icon</label><input v-model="editingStore.stamp_icon" style="font-size:1.5rem; text-align:center;"></div>
+                
+                <button class="btn-create" @click="alert('Edit functionality needs backend implementation')">SAVE CHANGES</button>
+                
+                <button class="btn-danger" @click="deleteStore(editingStore.id)">⚠ SUSPEND STORE</button>
+            </div>
         </div>
+
+        <div v-if="managingSkins" class="modal-overlay" @click.self="managingSkins = null">
+            <div class="modal">
+                <div class="modal-header"><h2>Store Skins Permissions</h2><span class="close-btn" @click="managingSkins = null">✕</span></div>
+                <p style="color:var(--text-sub); margin-bottom:20px;">Control which skins <strong>{{ managingSkins.name }}</strong> can access.</p>
+                
+                <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between;"><span>Default</span> <input type="checkbox" checked disabled></div>
+                <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between;"><span>Black Edition</span> <input type="checkbox" checked></div>
+                <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between;"><span>Custom Brand</span> <input type="checkbox" checked></div>
+                <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:15px; margin-bottom:10px; display:flex; justify-content:space-between;"><span>Valentine's</span> <input type="checkbox"></div>
+                
+                <button class="btn-create" style="margin-top:10px;">UPDATE PERMISSIONS</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        const { createApp, ref, onMounted } = Vue;
+        const { createApp, ref, computed, onMounted } = Vue;
         createApp({
             setup() {
+                const view = ref('stores');
                 const stores = ref([]);
+                const search = ref('');
                 const loading = ref(false);
+                const editingStore = ref(null);
+                const managingSkins = ref(null);
                 
-                // Form atualizado com os novos campos
-                const form = ref({ 
-                    name: '', 
-                    slug: '', 
-                    admin_username: '', 
-                    admin_email: '', 
-                    admin_password: '', 
-                    primary_color: '#2563eb', 
-                    stamp_icon: '🍳' 
-                });
+                const form = ref({ name: '', slug: '', admin_username: '', admin_email: '', admin_password: '', primary_color: '#2563eb', stamp_icon: '🍳' });
                 
-                const icons = [
-                    '🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞',
-                    '☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦',
-                    '✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮',
-                    '🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'
-                ];
+                const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'];
 
                 const fetchStores = async () => {
-                    try {
-                        const res = await fetch('/api/v1/master/stores');
-                        if (res.ok) stores.value = await res.json();
-                    } catch(e) {}
+                    try { const res = await fetch('/api/v1/master/stores'); if(res.ok) stores.value = await res.json(); } catch(e){}
                 };
+
+                const filteredStores = computed(() => {
+                    if(!search.value) return stores.value;
+                    const q = search.value.toLowerCase();
+                    return stores.value.filter(s => s.name.toLowerCase().includes(q) || s.slug.includes(q) || s.admin_email.includes(q));
+                });
 
                 const createStore = async () => {
                     loading.value = true;
                     try {
-                        const res = await fetch('/api/v1/master/stores', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(form.value)
-                        });
-                        
-                        if (res.ok) {
-                            alert("Store deployed successfully!");
-                            fetchStores();
-                            // Reset do form
-                            form.value = { 
-                                name: '', slug: '', 
-                                admin_username: '', admin_email: '', admin_password: '', 
-                                primary_color: '#2563eb', stamp_icon: '🍳' 
-                            };
-                        } else {
-                            const errText = await res.text();
-                            alert("Error deploying store: " + errText);
-                        }
-                    } catch(e) { alert("System error: " + e.message); }
+                        const res = await fetch('/api/v1/master/stores', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(form.value) });
+                        if(res.ok) { 
+                            alert("Store deployed successfully!"); 
+                            fetchStores(); 
+                            view.value = 'stores'; 
+                            form.value = { name: '', slug: '', admin_username: '', admin_email: '', admin_password: '', primary_color: '#2563eb', stamp_icon: '🍳' }; 
+                        } else { alert("Error deploying store"); }
+                    } catch(e) { alert("System error"); }
                     loading.value = false;
                 };
 
                 const sanitizeSlug = () => { form.value.slug = form.value.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''); };
-                const deleteStore = async (id) => { alert("Delete functionality pending backend implementation"); };
+                const openEdit = (s) => editingStore.value = { ...s };
+                const openSkins = (s) => managingSkins.value = s;
+                const deleteStore = (id) => alert("Suspension functionality requires backend implementation");
 
                 onMounted(fetchStores);
-                return { stores, form, loading, createStore, sanitizeSlug, deleteStore, icons };
+
+                return { view, stores, search, filteredStores, form, loading, editingStore, managingSkins, icons, createStore, sanitizeSlug, openEdit, openSkins, deleteStore };
             }
         }).mount('#app');
     </script>
