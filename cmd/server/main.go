@@ -62,7 +62,6 @@ func main() {
 		}
 	}
 
-	// ESTE É O MIDDLEWARE IMPORTANTE (Agora com o Log corrigido)
 	tenantMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			// 1. Tenta ler do URL (?store=xyz)
@@ -76,7 +75,6 @@ func main() {
 			// 3. Vai buscar à BD
 			store, err := repo.GetStoreBySlug(slug)
 			if err != nil {
-				// AQUI ESTÁ A CORREÇÃO: %v para vermos o erro técnico!
 				log.Printf("❌ Critical: Default store '%s' not found. DETALHE DO ERRO: %v", slug, err)
 				http.Error(w, "System Error: Store Not Found ("+slug+")", 404)
 				return
@@ -110,19 +108,35 @@ func main() {
 
 	mux.HandleFunc("/health", healthHandler)
 
+	// 1. MASTER ROUTES
 	mux.HandleFunc("/master", masterAuth(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/master.html")
 	}))
+
+	// API Master Stores
 	mux.HandleFunc("/api/v1/master/stores", masterAuth(makeHandler(func(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 		if r.Method == http.MethodPost {
-			// Se o browser mandou dados para criar, chama o CreateHandler
 			api.MasterCreateStoreHandler(w, r, repo)
 		} else {
-			// Caso contrário (GET), mostra a lista
 			api.MasterListStoresHandler(w, r, repo)
 		}
 	}, repo)))
 
+	// API Master Skins (NOVO)
+	mux.HandleFunc("/api/v1/master/skins", masterAuth(makeHandler(func(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+		switch r.Method {
+		case http.MethodGet:
+			api.GetMasterSkinsHandler(w, r, repo)
+		case http.MethodPost:
+			api.SaveSkinHandler(w, r, repo)
+		case http.MethodDelete:
+			api.DeleteSkinHandler(w, r, repo)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}, repo)))
+
+	// 2. PUBLIC / TENANT ROUTES
 	mux.HandleFunc("/", tenantMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -135,25 +149,33 @@ func main() {
 		http.ServeFile(w, r, "web/card.html")
 	}))
 
+	// Auth & Stats
 	mux.HandleFunc("/api/v1/auth/login", tenantMiddleware(makeHandler(api.LoginHandler, repo)))
 	mux.HandleFunc("/api/v1/auth/logout", tenantMiddleware(makeHandler(api.LogoutHandler, repo)))
 	mux.HandleFunc("/api/v1/public/stats", tenantMiddleware(makeHandler(api.PublicStatsHandler, repo)))
 
+	// Card Operations
 	mux.HandleFunc("/api/v1/cards", tenantMiddleware(makeHandler(api.CreateCardHandler, repo)))
 	mux.HandleFunc("/api/v1/cards/status", tenantMiddleware(makeHandler(api.GetStatusHandler, repo)))
 	mux.HandleFunc("/api/v1/cards/stamp", tenantMiddleware(makeHandler(api.StampHandler, repo)))
 	mux.HandleFunc("/api/v1/cards/use-reward", tenantMiddleware(makeHandler(api.UseRewardHandler, repo)))
 	mux.HandleFunc("/api/v1/qrcode", tenantMiddleware(makeHandler(api.GetQRCodeHandler, repo)))
 	mux.HandleFunc("/api/v1/cards/search", tenantMiddleware(makeHandler(api.SearchHandler, repo)))
-	mux.HandleFunc("/api/v1/system/config", tenantMiddleware(makeHandler(api.GetSettingsHandler, repo)))
 
+	// System Config & Skins (NOVO endpoint para ler skins)
+	mux.HandleFunc("/api/v1/system/config", tenantMiddleware(makeHandler(api.GetSettingsHandler, repo)))
+	mux.HandleFunc("/api/v1/system/skins", tenantMiddleware(makeHandler(api.GetAvailableSkinsHandler, repo)))
+
+	// 3. ADMIN ROUTES (STORE SPECIFIC)
 	mux.HandleFunc("/admin", tenantMiddleware(storeAuth(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/admin.html")
 	})))
 
+	// Sub-pages (Legacy support if needed, but logic is moving to single admin file)
 	mux.HandleFunc("/skins.html", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/skins.html") })
 	mux.HandleFunc("/settings.html", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/settings.html") })
 
+	// API Admin
 	mux.HandleFunc("/api/v1/admin/verify-password", tenantMiddleware(makeHandler(api.VerifyPasswordHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/cards", tenantMiddleware(storeAuth(makeHandler(api.ListAllCardsHandler, repo))))
 	mux.HandleFunc("/api/v1/admin/reset", tenantMiddleware(storeAuth(makeHandler(api.AdminResetHandler, repo))))

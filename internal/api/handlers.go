@@ -290,3 +290,51 @@ func AdminResetHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 	repo.ResetCard(r.URL.Query().Get("id"))
 	w.WriteHeader(http.StatusOK)
 }
+
+// Master: Get All Skins
+func GetMasterSkinsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	skins, err := repo.GetAllSkins()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	json.NewEncoder(w).Encode(skins)
+}
+
+// Master: Save Skin
+func SaveSkinHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var s models.Skin
+	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
+		http.Error(w, "Invalid JSON", 400)
+		return
+	}
+	if s.ID == "" {
+		s.ID = uuid.New().String()
+	} // Gera ID se for novo
+
+	if err := repo.SaveSkin(s); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// Master: Delete Skin
+func DeleteSkinHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	id := r.URL.Query().Get("id")
+	if err := repo.DeleteSkin(id); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// System: Get Available Skins (Para Admin e Stores)
+func GetAvailableSkinsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	skins, err := repo.GetAvailableSkins()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	json.NewEncoder(w).Encode(skins)
+}

@@ -5,7 +5,8 @@
     <title>Management Panel</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        :root { --primary: #00a896; --bg-main: #121212; --bg-side: #1e1e1e; --text-main: #ffffff; --text-sub: #888888; --border-color: #333333; --gold: #ffd166; --silver: #bdc3c7; --bronze: #cd7f32; --red: #ff4444; --orange: #e67e22; }
+        /* ... (O teu CSS anterior está aqui igual, só adicionei a classe TOAST) ... */
+        :root { --primary: #00a896; --bg-main: #121212; --bg-side: #1e1e1e; --text-main: #ffffff; --text-sub: #888888; --border-color: #333333; --gold: #ffd166; --silver: #bdc3c7; --bronze: #cd7f32; --red: #ff4444; --orange: #e67e22; --success: #00a896; --danger: #ff4444; --warning: #ffb74d; }
         body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
         
         .sidebar { width: 240px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; z-index: 100; }
@@ -62,9 +63,10 @@
         .skin-card.is-active { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 168, 150, 0.4); transform: translateY(-5px); }
         .skin-card .active-badge { display: none; position: absolute; top: 10px; right: 10px; background: var(--primary); color: white; padding: 4px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; z-index: 10; }
         .skin-card.is-active .active-badge { display: block; }
-        .skin-preview { height: 110px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+        .skin-preview { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 30px; background-size: cover; background-position: center; position: relative; }
         .skin-body { padding: 15px; color: var(--text-main); }
-        .skin-body h3 { margin: 0; font-size: 1rem; margin-bottom: 12px; }
+        .skin-body h3 { margin: 0; font-size: 1rem; margin-bottom: 5px; }
+        .skin-body p { margin: 0 0 12px; font-size: 0.7rem; color: var(--text-sub); }
         .skin-actions { display: flex; gap: 8px; }
         .btn-skin-preview, .btn-skin-act { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
         .btn-skin-preview { background: var(--border-color); color: var(--text-main); }
@@ -110,10 +112,24 @@
         .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 20px; }
         .icon-opt { font-size: 1.5rem; cursor: pointer; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid transparent; transition: 0.2s; }
         .icon-opt:hover { background: rgba(0, 168, 150, 0.2); transform: scale(1.1); border-color: var(--primary); }
+
+        /* --- TOAST NOTIFICATIONS --- */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { pointer-events: auto; padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; font-size: 0.9rem; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; min-width: 250px; }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: var(--warning); color: #1e293b; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="app" style="display: contents;">
+        <div class="toast-container">
+            <div v-for="(t, i) in toasts" :key="i" class="toast" :class="'toast-' + t.type">
+                <span>{{ t.message }}</span>
+            </div>
+        </div>
+
         <aside class="sidebar">
             <div class="sidebar-header">
                 <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" alt="Store Logo">
@@ -195,23 +211,24 @@
             <div v-else-if="currentPage === 'skins'" class="skins-container">
                 <div class="page-header"><h1>Card Skins</h1><p>Choose the visual style for your customers' digital cards.</p></div>
                 <div class="skins-grid">
-                    <div class="skin-card" :class="{'is-active': activeSkin === 'default'}">
-                        <div class="active-badge">ACTIVE</div><div class="skin-preview" style="background:#00a896;"><div class="mini-card-mock"></div></div>
-                        <div class="skin-body"><h3>Default Design</h3><div class="skin-actions"><button class="btn-skin-preview" @click="openPreview('default')">Preview</button><button class="btn-skin-act" :disabled="activeSkin === 'default'" @click="updateGlobalSkin('default')">ACTIVATE</button></div></div>
-                    </div>
-                    <div class="skin-card" :class="{'is-active': activeSkin === 'black'}">
-                        <div class="active-badge">ACTIVE</div><div class="skin-preview" style="background:#1a1a1a; border-bottom:2px solid #ffd166;"><div class="mini-card-mock" style="border-color:#ffd166;"></div></div>
-                        <div class="skin-body"><h3>Black Edition</h3><div class="skin-actions"><button class="btn-skin-preview" @click="openPreview('black')">Preview</button><button class="btn-skin-act" :disabled="activeSkin === 'black'" @click="updateGlobalSkin('black')">ACTIVATE</button></div></div>
-                    </div>
-                    <div class="skin-card" :class="{'is-active': activeSkin === 'custom'}">
+                    
+                    <div v-for="skin in availableSkins" :key="skin.id" class="skin-card" :class="{'is-active': activeSkin === skin.id}">
                         <div class="active-badge">ACTIVE</div>
-                        <div class="skin-preview custom-skin" :style="{ backgroundColor: storeConfig.primary_color || '#00a896' }"><div class="mini-card-mock"></div></div>
-                        <div class="skin-body"><h3>Custom Brand</h3><div class="skin-actions"><button class="btn-skin-preview" @click="openPreview('custom')">Preview</button><button class="btn-skin-act" :disabled="activeSkin === 'custom'" @click="updateGlobalSkin('custom')">ACTIVATE</button></div></div>
+                        <div class="skin-preview" :style="getPreviewStyle(skin)">
+                            <div v-if="!skin.image" class="mini-card-mock" :style="getMockStyle(skin)"></div>
+                        </div>
+                        <div class="skin-body">
+                            <h3>{{ skin.name }}</h3>
+                            <p v-if="skin.type === 'seasonal'">📅 Limited Time Collection</p>
+                            <p v-else>✨ Standard Collection</p>
+                            
+                            <div class="skin-actions">
+                                <button class="btn-skin-preview" @click="openPreview(skin.id)">Preview</button>
+                                <button class="btn-skin-act" :disabled="activeSkin === skin.id" @click="updateGlobalSkin(skin.id)">ACTIVATE</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="skin-card" :class="{'is-active': activeSkin === 'valentine'}">
-                        <div class="active-badge">ACTIVE</div><div class="skin-preview" style="background:#ff4d6d;">❤️</div>
-                        <div class="skin-body"><h3>Valentine's</h3><div class="skin-actions"><button class="btn-skin-preview" @click="openPreview('valentine')">Preview</button><button class="btn-skin-act" :disabled="activeSkin === 'valentine'" @click="updateGlobalSkin('valentine')">ACTIVATE</button></div></div>
-                    </div>
+
                 </div>
             </div>
 
@@ -341,11 +358,11 @@
                 const activeSkin = ref('default');
                 const showPreview = ref(false);
                 const previewDesign = ref('default');
+                const toasts = ref([]);
                 
                 const showIconPicker = ref(false);
                 const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'];
 
-                // CORREÇÃO: "logo" -> "logo_url"
                 const storeConfig = ref({ 
                     name: 'Brunch.co', logo_url: '', themeMode: 'dark', 
                     primary_color: '#00a896', stamp_icon: '🍳',
@@ -357,35 +374,49 @@
                 const lastScanStatus = ref('');
                 const scannerInput = ref(null);
 
+                const availableSkins = ref([]);
+
+                const showToast = (message, type = 'success') => {
+                    const id = Date.now();
+                    toasts.value.push({ id, message, type });
+                    setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000);
+                };
+
                 const fetchCards = async () => { const res = await fetch(api('/api/v1/admin/cards')); if (res.ok) cards.value = await res.json(); };
                 
+                const fetchAvailableSkins = async () => {
+                    const res = await fetch(api('/api/v1/system/skins'));
+                    if(res.ok) {
+                        const globals = await res.json();
+                        const customSkin = { id: 'custom', name: 'Custom Brand', type: 'standard', style: `background: ${storeConfig.value.primary_color || '#00a896'}` };
+                        availableSkins.value = [customSkin, ...globals];
+                    }
+                };
+
                 const filteredCards = computed(() => {
                     if (!searchQuery.value) return cards.value;
                     const q = searchQuery.value.toLowerCase();
                     return cards.value.filter(c => c.customer_id.toLowerCase().includes(q) || c.last_name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q)));
                 });
 
-                const previewColors = computed(() => {
-                    const map = {
-                        'default': { bg: '#00a896', text: '#fff' },
-                        'black': { bg: '#1a1a1a', text: '#fff' },
-                        'custom': { bg: storeConfig.value.primary_color || '#00a896', text: '#fff' },
-                        'valentine': { bg: '#ff4d6d', text: '#fff' }
-                    };
-                    return map[previewDesign.value] || map['default'];
-                });
+                const getPreviewStyle = (skin) => {
+                    if (!skin) return {};
+                    if (skin.image) return { backgroundImage: `url(${skin.image})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+                    if(skin.id === 'default') return { background: '#00a896', color: '#fff' };
+                    if(skin.id === 'black') return { background: '#1a1a1a', borderBottom: '3px solid #ffd166', color: '#fff' };
+                    if(skin.id === 'custom') return { backgroundColor: storeConfig.value.primary_color || '#00a896', color: '#fff' };
+                    if(skin.style) return { background: skin.style.replace('background:', '').replace(';', ''), color: '#fff' };
+                    return { background: '#ccc' };
+                };
+                
+                const getMockStyle = (skin) => {
+                    if(skin.id === 'black') return { borderColor: '#ffd166' };
+                    return {};
+                }
 
                 const changePage = (page) => {
                     currentPage.value = page;
                     if (page === 'scanner') nextTick(() => focusScanner());
-                    if (page === 'skins') {
-                        nextTick(() => {
-                            setTimeout(() => {
-                                const customPreview = document.querySelector('.skin-preview.custom-skin');
-                                if (customPreview) customPreview.style.backgroundColor = storeConfig.value.primary_color;
-                            }, 50);
-                        });
-                    }
                     if (page !== 'settings' && page !== 'skins') fetchCards();
                 };
 
@@ -395,18 +426,20 @@
                     if (activeSkin.value !== 'custom') { await updateGlobalSkin('custom'); }
                     
                     await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); 
-                    alert("Configuration Saved & Custom Skin Activated!"); 
-                    fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { storeConfig.value = { ...storeConfig.value, ...d }; });
+                    showToast("Configuration Saved & Custom Skin Activated!", "success"); 
+                    fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
+                        storeConfig.value = { ...storeConfig.value, ...d }; 
+                        fetchAvailableSkins();
+                    });
                 };
 
-                // CORREÇÃO: "logo" -> "logo_url"
                 const handleLogoUpload = (e) => { const r=new FileReader(); r.onload=(ev)=>{ storeConfig.value.logo_url=ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
                 const removeLogo = () => { storeConfig.value.logo_url=''; };
 
                 const updatePassword = async () => { 
                     const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value; 
                     const res = await fetch(api('/api/v1/admin/update-password'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n})}); 
-                    alert(res.ok?"Updated!":"Error"); 
+                    if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error");
                 };
 
                 const setTheme = (m) => { storeConfig.value.themeMode = m; };
@@ -414,22 +447,24 @@
                 const updateGlobalSkin = async (s) => { 
                     await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); 
                     activeSkin.value = s; 
+                    showToast("Card Skin Activated!", "success");
                 };
                 const openPreview = (d) => { previewDesign.value = d; showPreview.value = true; };
 
                 const openEditModal = (c) => editingCard.value = { ...c };
-                const saveEdit = async () => { await fetch(api('/api/v1/admin/update'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) }); alert("Updated!"); editingCard.value = null; fetchCards(); };
+                const saveEdit = async () => { await fetch(api('/api/v1/admin/update'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) }); showToast("Customer Updated!", "success"); editingCard.value = null; fetchCards(); };
                 const toggleConsent = async (c, type) => { const f = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted'; c[f] = !c[f]; await fetch(api('/api/v1/admin/update-consent'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, [f]: c[f] }) }); };
-                const registerMember = async () => { const res = await fetch(api('/api/v1/cards'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: newMember.value.first_name, last_name: newMember.value.last_name, email: newMember.value.email, phone: newMember.value.phone, rgpd_accepted: newMember.value.rgpd, marketing_accepted: newMember.value.marketing }) }); if(res.ok) { alert("Registered!"); newMember.value = {first_name:'', last_name:'', email:'', phone:'', rgpd:false, marketing:false}; changePage('customers'); } };
+                const registerMember = async () => { const res = await fetch(api('/api/v1/cards'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: newMember.value.first_name, last_name: newMember.value.last_name, email: newMember.value.email, phone: newMember.value.phone, rgpd_accepted: newMember.value.rgpd, marketing_accepted: newMember.value.marketing }) }); if(res.ok) { showToast("Member Registered Successfully!", "success"); newMember.value = {first_name:'', last_name:'', email:'', phone:'', rgpd:false, marketing:false}; changePage('customers'); } };
                 const logout = async () => { await fetch(api('/api/v1/auth/logout'), { method: 'POST' }); window.location.href = "/"; };
                 const focusScanner = () => { if(scannerInput.value) scannerInput.value.focus(); };
                 const handleScan = async (e) => { let id = e.target.value; e.target.value = ''; if(id.includes('id=')) id = id.split('id=')[1].split('&')[0]; if(id.length>5) { const res = await fetch(api(`/api/v1/cards/stamp?id=${id}`), { method: 'POST' }); if(res.ok) { const d = await res.json(); lastScanStatus.value = `Success: ${d.customer_id}`; setTimeout(()=>lastScanStatus.value='',3000); } else lastScanStatus.value = "Error"; } };
                 const calculateAvailable = (c) => Math.max(0, Math.floor(c.total_stamps / 10) - (c.total_redeemed_bonuses || 0));
-                const addStampFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/stamp?id=${c.id}`), {method:'POST'}); fetchCards(); };
-                const redeemFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/use-reward?id=${c.id}`), {method:'POST'}); fetchCards(); };
-                const resetCard = async (id) => { if(confirm("Reset?")) await fetch(api(`/api/v1/admin/reset?id=${id}`), {method:'POST'}); fetchCards(); };
+                const addStampFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/stamp?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Stamp Added", "success"); };
+                const redeemFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/use-reward?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Reward Redeemed", "success"); };
+                const resetCard = async (id) => { if(confirm("Reset?")) { await fetch(api(`/api/v1/admin/reset?id=${id}`), {method:'POST'}); fetchCards(); showToast("Card Reset", "warning"); } };
                 const viewCard = (id) => window.open(`/card?store=${currentStore}&id=${id}`, '_blank');
-                
+                const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+
                 const applyTheme = () => { const r = document.documentElement, m = storeConfig.value.themeMode; if(m==='light') { r.style.setProperty('--bg-main','#f8f9fa'); r.style.setProperty('--bg-side','#fff'); r.style.setProperty('--text-main','#212529'); r.style.setProperty('--text-sub','#6c757d'); r.style.setProperty('--border-color','#dee2e6'); } else { r.style.setProperty('--bg-main','#121212'); r.style.setProperty('--bg-side','#1e1e1e'); r.style.setProperty('--text-main','#fff'); r.style.setProperty('--text-sub','#888888'); r.style.setProperty('--border-color','#333333'); } };
                 watch(() => storeConfig.value.themeMode, applyTheme);
 
@@ -439,6 +474,7 @@
                         storeConfig.value = { ...storeConfig.value, ...d }; 
                         activeSkin.value = d.card_skin || 'default';
                         applyTheme(); 
+                        fetchAvailableSkins();
                     }); 
                 });
 
@@ -448,7 +484,8 @@
                     showIconPicker, icons, selectIcon, saveSettings, handleLogoUpload, removeLogo,
                     changePage, logout, registerMember, focusScanner, handleScan, openEditModal, saveEdit, toggleConsent,
                     calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, resetCard, updatePassword, setTheme,
-                    updateGlobalSkin, openPreview, showPreview, previewColors
+                    updateGlobalSkin, openPreview, showPreview, previewColors, availableSkins, getPreviewStyle, getMockStyle, formatDate,
+                    toasts, showToast
                 };
             }
         }).mount('#app');

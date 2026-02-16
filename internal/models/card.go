@@ -68,3 +68,17 @@ type Store struct {
 	Gold         int       `json:"gold_threshold"`
 	CreatedAt    time.Time `json:"created_at"`
 }
+
+type Skin struct {
+	ID          string     `json:"id" db:"id"`
+	Name        string     `json:"name" db:"name"`
+	Type        string     `json:"type" db:"type"`
+	ImageData   string     `json:"image" db:"image_data"`
+	ColorBg     string     `json:"colorBg" db:"color_bg"`
+	ColorText   string     `json:"colorText" db:"color_text"`
+	ColorBorder string     `json:"colorBorder" db:"color_border"`
+	IsGlobal    bool       `json:"isGlobal" db:"is_global"`
+	StoreID     *string    `json:"storeId" db:"store_id"`
+	StartDate   *time.Time `json:"start,omitempty" db:"start_date"`
+	EndDate     *time.Time `json:"end,omitempty" db:"end_date"`
+}
