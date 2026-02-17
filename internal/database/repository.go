@@ -8,6 +8,7 @@ import (
 	"brunch-card-digital/internal/models"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type CardRepository struct {
@@ -436,5 +437,38 @@ func (r *CardRepository) UpdateConsent(id string, rgpd *bool, marketing *bool) e
 
 func (r *CardRepository) ToggleStoreStatus(id string, status bool) error {
 	_, err := r.db.Exec("UPDATE stores SET is_active = $1 WHERE id = $2", status, id)
+	return err
+}
+
+func (repo *CardRepository) UpdateStore(s models.Store) error {
+
+	// Se a password vier preenchida
+	if s.NewPassword != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(s.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		query := `
+			UPDATE stores 
+			SET name=$1, tier=$2, tier_expiration=$3, billing_cycle=$4, 
+			    logo_url=$5, card_skin=$6, primary_color=$7, stamp_icon=$8, 
+			    admin_password=$9, updated_at=CURRENT_TIMESTAMP
+			WHERE id=$10
+		`
+		// CORREÇÃO DO ERR: Usar := porque estamos a declarar 'result' (ignorado) e 'err'
+		_, err = repo.db.Exec(query, s.Name, s.Tier, s.TierExpiration, s.BillingCycle, s.LogoURL, s.CardSkin, s.PrimaryColor, s.StampIcon, string(hashed), s.ID)
+		return err
+	}
+
+	// Sem password nova
+	query := `
+		UPDATE stores 
+		SET name=$1, tier=$2, tier_expiration=$3, billing_cycle=$4, 
+		    logo_url=$5, card_skin=$6, primary_color=$7, stamp_icon=$8, 
+		    updated_at=CURRENT_TIMESTAMP
+		WHERE id=$9
+	`
+	// CORREÇÃO DO ERR: Aqui usamos :=
+	_, err := repo.db.Exec(query, s.Name, s.Tier, s.TierExpiration, s.BillingCycle, s.LogoURL, s.CardSkin, s.PrimaryColor, s.StampIcon, s.ID)
 	return err
 }

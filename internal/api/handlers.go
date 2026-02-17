@@ -354,3 +354,30 @@ func MasterToggleStoreHandler(w http.ResponseWriter, r *http.Request, repo *data
 	}
 	w.WriteHeader(http.StatusOK)
 }
+
+func MasterUpdateStoreHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	// MUDANÇA: Em vez de 'database.Store', usamos 'models.Store'
+	var store models.Store
+
+	// Descodificar o JSON
+	if err := json.NewDecoder(r.Body).Decode(&store); err != nil {
+		http.Error(w, "Invalid input format", http.StatusBadRequest)
+		return
+	}
+
+	// Validar ID
+	if store.ID == "" {
+		http.Error(w, "Store ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Executar update
+	if err := repo.UpdateStore(store); err != nil {
+		log.Printf("Error updating store: %v", err)
+		http.Error(w, "Failed to update store", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Store updated successfully"})
+}
