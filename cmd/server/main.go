@@ -157,10 +157,10 @@ func main() {
 	}, repo)))
 
 	mux.HandleFunc("/api/v1/master/stores/update", masterAuth(makeHandler(func(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-        if r.Method == http.MethodPost {
-            api.MasterUpdateStoreHandler(w, r, repo) 
-        }
-    }, repo)))
+		if r.Method == http.MethodPost {
+			api.MasterUpdateStoreHandler(w, r, repo)
+		}
+	}, repo)))
 
 	// API Master Skins (NOVO)
 	mux.HandleFunc("/api/v1/master/skins", masterAuth(makeHandler(func(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
@@ -202,7 +202,14 @@ func main() {
 	mux.HandleFunc("/api/v1/auth/login", tenantMiddleware(makeHandler(api.LoginHandler, repo)))
 	mux.HandleFunc("/api/v1/auth/logout", tenantMiddleware(makeHandler(api.LogoutHandler, repo)))
 	mux.HandleFunc("/api/v1/public/stats", tenantMiddleware(makeHandler(api.PublicStatsHandler, repo)))
-
+	mux.HandleFunc("/api/v1/public/register", func(w http.ResponseWriter, r *http.Request) {
+		// Não usamos middleware aqui porque é um acesso público (ainda não tem token)
+		if r.Method == http.MethodPost {
+			api.PublicRegisterHandler(w, r, repo)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 	// Card Operations
 	mux.HandleFunc("/api/v1/cards", tenantMiddleware(makeHandler(api.CreateCardHandler, repo)))
 	mux.HandleFunc("/api/v1/cards/status", tenantMiddleware(makeHandler(api.GetStatusHandler, repo)))

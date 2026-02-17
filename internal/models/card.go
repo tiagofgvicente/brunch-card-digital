@@ -97,3 +97,10 @@ type Skin struct {
 	StartDate   *time.Time `json:"start,omitempty" db:"start_date"`
 	EndDate     *time.Time `json:"end,omitempty" db:"end_date"`
 }
+
+type RegisterStoreRequest struct {
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}

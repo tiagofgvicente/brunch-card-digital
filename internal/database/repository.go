@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"brunch-card-digital/internal/models"
 
@@ -470,5 +471,42 @@ func (repo *CardRepository) UpdateStore(s models.Store) error {
 	`
 	// CORREÇÃO DO ERR: Aqui usamos :=
 	_, err := repo.db.Exec(query, s.Name, s.Tier, s.TierExpiration, s.BillingCycle, s.LogoURL, s.CardSkin, s.PrimaryColor, s.StampIcon, s.ID)
+	return err
+}
+
+func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) error {
+	// 1. Encriptar a Password
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	// 2. Gerar ID único e Data de Expiração
+	id := uuid.New().String()
+	expiration := time.Now().AddDate(0, 0, 30) // Hoje + 30 Dias
+
+	// 3. Inserir na Base de Dados
+	query := `
+        INSERT INTO stores (
+            id, name, slug, 
+            admin_username, admin_email, admin_password, 
+            tier, tier_expiration, billing_cycle, max_users, 
+            account_activated, is_active, 
+            card_skin, primary_color, stamp_icon, theme_mode
+        ) VALUES (
+            $1, $2, $3, 
+            $4, $5, $6, 
+            'free_trial', $7, 'monthly', 1, 
+            TRUE, TRUE, 
+            'default', '#00a896', '🚀', 'dark'
+        )
+    `
+
+	// Nota: Usamos o email como username inicial para simplificar
+	_, err = repo.db.Exec(query,
+		id, req.Name, req.Slug,
+		req.Email, req.Email, string(hashed),
+		expiration,
+	)
 	return err
 }

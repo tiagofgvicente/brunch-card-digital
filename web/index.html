@@ -3,132 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brunch.co - Loyalty</title>
+    <title>Volto - Loyalty Platform</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+    
     <style>
-        :root { 
-            --primary: #00a896; 
-            --bg-main: #121212; 
-            --text-main: #ffffff; 
-            --text-sub: #888888; 
-            --border-color: #333333;
-            --gold: #ffd166;
+        /* --- THEME VARIABLES --- */
+        :root {
+            /* Light Theme */
+            --bg-main: #eaeff2; --bg-card: #ffffff;
+            --text-main: #1e293b; --text-sub: #64748b;
+            --primary: #2563eb; --primary-light: #dbeafe;
+            --accent: #f59e0b; /* Laranja para o Sol */
+            --border: #cbd5e1;
+            --shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+            --modal-bg: rgba(234, 239, 242, 0.95);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --bg-main: #121212; --bg-card: #1e1e1e;
+            --text-main: #ffffff; --text-sub: #888888;
+            --primary: #00a896; --primary-light: rgba(0, 168, 150, 0.2);
+            --accent: #ffd166; --border: #333333;
+            --shadow: 0 20px 50px -10px rgba(0,0,0,0.5);
+            --modal-bg: rgba(18, 18, 18, 0.95);
         }
 
         body { 
-            margin: 0; font-family: 'Segoe UI', sans-serif; 
+            margin: 0; font-family: 'Inter', sans-serif; 
             background: var(--bg-main); color: var(--text-main); 
             height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
-        /* TOPO (Login Button) */
+        /* --- TOP BAR --- */
         .top-bar {
             width: 100%; padding: 20px 40px; box-sizing: border-box;
-            display: flex; justify-content: flex-end; align-items: center;
-            position: absolute; top: 0; left: 0; z-index: 10;
+            display: flex; justify-content: space-between; align-items: center;
+            position: fixed; top: 0; left: 0; z-index: 50;
+            background: linear-gradient(to bottom, var(--bg-card) 0%, var(--bg-main) 100%);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
         }
 
-        .login-trigger {
-            background: transparent; border: 1px solid var(--gold); color: var(--gold);
-            padding: 8px 16px; border-radius: 20px;
-            font-weight: 600; font-size: 0.8rem; cursor: pointer;
+        .brand-area {
+            font-weight: 900; font-size: 1.6rem; letter-spacing: -1px;
+            color: var(--text-main); display: flex; align-items: center; gap: 5px;
+        }
+        .brand-area span { color: var(--primary); font-size: 2rem; line-height: 0; }
+
+        .nav-area { display: flex; align-items: center; gap: 12px; }
+
+        .btn-nav {
+            padding: 10px 18px; border-radius: 10px; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; transition: 0.2s; border: none; letter-spacing: 0.3px; white-space: nowrap;
             display: flex; align-items: center; gap: 8px;
-            text-transform: uppercase; letter-spacing: 1px;
-            transition: 0.3s;
         }
-        .login-trigger:hover { background: var(--gold); color: #121212; }
+        
+        .btn-ghost { 
+            background: var(--bg-card); color: var(--primary); 
+            border: 2px solid var(--primary-light); box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .btn-ghost:hover { 
+            background: var(--primary-light); border-color: var(--primary);
+            transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }
 
-        /* CENTRO (Logo & Intro) */
+        .btn-login { background: transparent; color: var(--text-sub); border: 1px solid var(--border); }
+        .btn-login:hover { border-color: var(--text-main); color: var(--text-main); background: var(--bg-card); }
+        
+        .btn-register { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
+        .btn-register:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        /* --- TEMA BTN: ANIMAÇÕES CELESTIAIS --- */
+        
+        /* Base do botão */
+        .theme-btn {
+            background: var(--bg-card); border: 1px solid var(--border);
+            font-size: 1.3rem; cursor: pointer; 
+            width: 42px; height: 42px; border-radius: 50%;
+            color: var(--text-main); display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            /* Transição suave para todas as propriedades */
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Definição das Animações */
+        @keyframes sun-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes moon-rock { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(10deg); } }
+
+        /* HOVER NO TEMA CLARO (SOL ☀️) */
+        /* Quando o body NÃO tem o atributo data-theme="dark" */
+        body:not([data-theme="dark"]) .theme-btn:hover {
+            /* Fundo gradiente quente */
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            border-color: transparent;
+            color: white; /* Ícone fica branco */
+            /* Brilho dourado intenso */
+            box-shadow: 0 0 20px rgba(246, 211, 101, 0.7);
+            /* Animação de rotação contínua */
+            animation: sun-spin 3s linear infinite;
+        }
+
+        /* HOVER NO TEMA ESCURO (LUA 🌙) */
+        /* Quando o body TEM o atributo data-theme="dark" */
+        [data-theme="dark"] .theme-btn:hover {
+            /* Fundo céu noturno profundo */
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border-color: transparent;
+            color: #fffadd; /* Ícone num branco amarelado de lua */
+            /* Brilho frio azulado */
+            box-shadow: 0 0 20px rgba(42, 82, 152, 0.7);
+            /* Animação de baloiçar suave */
+            animation: moon-rock 3s ease-in-out infinite;
+        }
+
+
+        /* --- BOTÃO DE IDIOMA (EFEITO BANDEIRA) --- */
+        .lang-btn {
+            font-size: 0.75rem; font-weight: 900; text-transform: uppercase;
+            border-radius: 12px; width: 42px; height: 42px; 
+            position: relative; overflow: hidden;
+            background-repeat: no-repeat; background-position: left center;
+            background-size: 0% 100%; /* Começa invisível */
+            transition: background-size 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                        transform 0.2s ease, color 0.3s, border-color 0.3s;
+        }
+        .lang-pt { background-image: url('https://flagcdn.com/w160/pt.png'); }
+        .lang-en { background-image: url('https://flagcdn.com/w160/gb.png'); }
+        .lang-btn:hover {
+            background-size: 100% 100%; color: white; 
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            border-color: transparent; transform: rotate(15deg) scale(1.1); 
+        }
+        /* Reutiliza o estilo base do theme-btn para tamanho e borda */
+        .lang-btn { background-color: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: var(--text-main); display:flex; align-items:center; justify-content:center;}
+
+
+        /* --- HERO CENTER --- */
         .hero-center {
             flex: 1; display: flex; flex-direction: column; 
             justify-content: center; align-items: center;
             position: relative; z-index: 5;
+            padding-top: 90px; 
         }
         .store-logo-hero {
-            width: 100px; height: 100px; object-fit: contain;
-            margin-bottom: 20px; border-radius: 50%; 
-            border: 2px solid var(--border-color); padding: 10px;
-            background: rgba(255,255,255,0.05); box-shadow: 0 0 30px rgba(0, 168, 150, 0.2);
+            width: 80px; height: 80px; object-fit: contain;
+            margin-bottom: 25px; border-radius: 20px; 
+            border: 1px solid var(--border); padding: 15px;
+            background: var(--bg-card); box-shadow: var(--shadow);
         }
         .store-title {
-            font-size: 2.5rem; font-weight: 900; 
-            text-transform: uppercase; letter-spacing: 4px;
-            color: var(--text-main); margin-bottom: 5px;
+            font-size: 4rem; font-weight: 900; line-height: 1.1; text-align: center;
+            letter-spacing: -2px; color: var(--text-main); margin-bottom: 15px;
+            background: -webkit-linear-gradient(120deg, var(--text-main), var(--text-sub));
+            -webkit-background-clip: text;
         }
         .store-subtitle {
-            color: var(--primary); font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; font-weight: 700;
+            color: var(--text-sub); font-size: 1.1rem; max-width: 550px; text-align: center;
+            margin-bottom: 40px; font-weight: 400; line-height: 1.6;
         }
 
-        /* ESTATÍSTICAS (Stats Row) */
-        .stats-row {
-            display: flex; gap: 40px; margin-bottom: 50px;
+        /* STATS */
+        .stats-row { display: flex; gap: 30px; margin-bottom: 50px; }
+        .stat-card { 
+            background: var(--bg-card); padding: 15px 25px; border-radius: 12px;
+            border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            text-align: center; min-width: 110px;
         }
-        .stat-item { text-align: center; }
-        .stat-value { font-size: 1.8rem; font-weight: 800; color: white; display: block; }
-        .stat-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-sub); letter-spacing: 1px; margin-top: 5px; }
+        .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--text-main); display: block; }
+        .stat-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-sub); font-weight: 700; margin-top: 5px; }
 
-        /* VISUAL CARD FAN (O Leque de Cartões) */
-        .card-showcase {
-            position: relative; width: 300px; height: 180px;
-            perspective: 1000px; margin-top: 20px;
-        }
+        /* CARD VISUALS */
+        .card-showcase { position: relative; width: 300px; height: 180px; perspective: 1000px; }
         .mini-card {
             position: absolute; width: 240px; height: 150px;
-            border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: 0.5s ease; left: 30px;
-            display: flex; align-items: flex-end; padding: 15px; box-sizing: border-box;
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); left: 30px;
+            display: flex; align-items: flex-end; padding: 20px; box-sizing: border-box;
         }
-        /* Design 1: Retro/Orange */
-        .card-1 { background: #e67e22; transform: rotate(-10deg) translate(-40px, 10px); z-index: 1; opacity: 0.8; }
-        /* Design 2: Valentine/Pink */
-        .card-2 { background: #ff4d6d; transform: rotate(10deg) translate(40px, 10px); z-index: 1; opacity: 0.8; }
-        /* Design 3: Default/Teal (Centro) */
-        .card-3 { background: var(--primary); transform: rotate(0deg) translate(0, -10px) scale(1.1); z-index: 2; border: 2px solid var(--gold); }
-        
-        .card-content { font-size: 0.6rem; font-weight: bold; text-transform: uppercase; color: white; width: 100%; display: flex; justify-content: space-between; }
+        .card-1 { background: #6366f1; transform: rotate(-8deg) translate(-50px, 10px); z-index: 1; opacity: 0.9; }
+        .card-2 { background: #ec4899; transform: rotate(8deg) translate(50px, 10px); z-index: 1; opacity: 0.9; }
+        .card-3 { background: #10b981; transform: rotate(0deg) translate(0, -15px) scale(1.1); z-index: 2; border: 2px solid #ffffff; }
+        .card-content { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: white; width: 100%; display: flex; justify-content: space-between; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .card-showcase:hover .card-1 { transform: rotate(-20deg) translate(-80px, 30px); }
+        .card-showcase:hover .card-2 { transform: rotate(20deg) translate(80px, 30px); }
+        .card-showcase:hover .card-3 { transform: scale(1.15) translateY(-30px); }
 
-        /* Animação ao passar o rato */
-        .card-showcase:hover .card-1 { transform: rotate(-20deg) translate(-60px, 20px); }
-        .card-showcase:hover .card-2 { transform: rotate(20deg) translate(60px, 20px); }
-        .card-showcase:hover .card-3 { transform: scale(1.15) translateY(-20px); box-shadow: 0 0 20px var(--primary); }
-
-        /* MODAL DE LOGIN */
+        /* MODAL */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            background: var(--modal-bg); backdrop-filter: blur(12px);
             display: flex; justify-content: center; align-items: center;
             z-index: 100; animation: fadeIn 0.3s ease;
         }
-        .login-card {
-            background: #1e1e1e; padding: 40px; border-radius: 16px;
-            width: 100%; max-width: 350px; border: 1px solid var(--border-color);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative;
+        .auth-card {
+            background: var(--bg-card); padding: 40px; border-radius: 20px;
+            width: 100%; max-width: 380px; border: 1px solid var(--border);
+            box-shadow: var(--shadow); position: relative;
         }
         .close-btn {
-            position: absolute; top: 15px; right: 20px; 
+            position: absolute; top: 20px; right: 25px; 
             background: none; border: none; color: var(--text-sub); 
-            font-size: 1.2rem; cursor: pointer;
+            font-size: 1.5rem; cursor: pointer;
         }
-
-        .form-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; font-size: 0.7rem; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 6px; font-weight: 700; }
         input {
-            width: 100%; padding: 14px; background: #121212;
-            border: 1px solid var(--border-color); color: white;
-            border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: 0.3s;
+            width: 100%; padding: 12px; background: var(--bg-main);
+            border: 1px solid var(--border); color: var(--text-main);
+            border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;
         }
-        input:focus { outline: none; border-color: var(--primary); }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        
+        .otp-container { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+        .otp-input { width: 45px; height: 50px; text-align: center; font-size: 1.5rem; letter-spacing: 5px; font-weight: 700; }
 
         .btn-submit {
             width: 100%; padding: 14px; background: var(--primary);
             color: white; border: none; border-radius: 8px;
-            font-weight: 800; cursor: pointer; font-size: 0.9rem;
-            text-transform: uppercase; margin-top: 10px; transition: 0.2s;
+            font-weight: 700; cursor: pointer; font-size: 0.9rem; margin-top: 10px;
         }
-        .btn-submit:hover { filter: brightness(1.1); transform: translateY(-1px); }
-
-        .error-msg { color: #ff4444; font-size: 0.8rem; margin-top: 15px; text-align: center; }
+        .switch-auth { margin-top: 20px; text-align: center; font-size: 0.85rem; color: var(--text-sub); }
+        .switch-auth span { color: var(--primary); font-weight: 700; cursor: pointer; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -136,129 +234,97 @@
 <body>
     <div id="app">
         <div class="top-bar">
-            <button @click="showModal = true" class="login-trigger">
-                🔐 Access System
-            </button>
+            <div class="brand-area">Volto<span>.</span></div>
+            
+            <div class="nav-area">
+                <button @click="openWallet" class="btn-nav btn-ghost">👛 {{ t('wallet_btn') }}</button>
+                <div style="width: 1px; height: 20px; background: var(--border);"></div>
+                <button @click="openLogin" class="btn-nav btn-login">{{ t('login_btn') }}</button>
+                <button @click="openRegister" class="btn-nav btn-register">{{ t('register_btn') }}</button>
+                
+                <div style="width: 1px; height: 20px; background: var(--border);"></div>
+                
+                <button @click="toggleTheme" class="theme-btn">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
+                
+                <button @click="toggleLang" class="lang-btn" :class="'lang-' + lang">{{ lang }}</button>
+            </div>
         </div>
 
         <div class="hero-center">
             <img v-if="storeConfig.logo" :src="storeConfig.logo" class="store-logo-hero">
-            <div class="store-title">{{ storeConfig.name }}</div>
-            <div class="store-subtitle">Digital Loyalty Program</div>
+            <div class="store-title" v-html="t('hero_title')"></div>
+            <div class="store-subtitle">{{ t('hero_subtitle') }}</div>
 
             <div class="stats-row">
-                <div class="stat-item">
-                    <span class="stat-value">{{ stats.total_cards || 0 }}</span>
-                    <span class="stat-label">Clients</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">{{ stats.total_stamps || 0 }}</span>
-                    <span class="stat-label">Stamps</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">{{ stats.total_redeems || 0 }}</span>
-                    <span class="stat-label">Redeems</span>
-                </div>
+                <div class="stat-card"><span class="stat-value">{{ stats.total_cards || 0 }}</span><span class="stat-label">{{ t('stats_users') }}</span></div>
+                <div class="stat-card"><span class="stat-value">{{ stats.total_stamps || 0 }}</span><span class="stat-label">{{ t('stats_stamps') }}</span></div>
+                <div class="stat-card"><span class="stat-value">{{ stats.total_redeems || 0 }}</span><span class="stat-label">{{ t('stats_rewards') }}</span></div>
             </div>
 
             <div class="card-showcase">
-                <div class="mini-card card-1">
-                    <div class="card-content"><span>Retro</span><span>🍳 5</span></div>
-                </div>
-                <div class="mini-card card-2">
-                    <div class="card-content"><span>Valentine</span><span>🍳 8</span></div>
-                </div>
-                <div class="mini-card card-3">
-                    <div class="card-content"><span>{{ storeConfig.name }} VIP</span><span>🍳 10</span></div>
-                </div>
+                <div class="mini-card card-1"><div class="card-content"><span>Barber</span><span>✂️ 5</span></div></div>
+                <div class="mini-card card-2"><div class="card-content"><span>Bakery</span><span>🥐 8</span></div></div>
+                <div class="mini-card card-3"><div class="card-content"><span>Gym Pro</span><span>💪 10</span></div></div>
             </div>
         </div>
 
-        <div class="modal-overlay" v-if="showModal" @click.self="showModal = false">
-            <div class="login-card">
-                <button class="close-btn" @click="showModal = false">✕</button>
-                <h2 style="text-align: center; margin-top: 0; margin-bottom: 30px; color: var(--primary); text-transform: uppercase;">Secure Login</h2>
+        <div class="modal-overlay" v-if="currentModal" @click.self="closeModal">
+            <div class="auth-card">
+                <button class="close-btn" @click="closeModal">✕</button>
                 
-                <form @submit.prevent="handleLogin">
-                    <div class="form-group">
-                        <label>Email or Username</label>
-                        <input type="text" v-model="form.identifier" required>
-                    </div>
+                <div v-if="currentModal === 'login'">
+                    <h2 style="text-align:center; margin:0 0 25px; color:var(--text-main);">{{ t('modal_login_title') }}</h2>
+                    <form @submit.prevent="handleLogin">
+                        <div class="form-group"><label>Admin Email</label><input type="email" v-model="loginForm.email" required placeholder="manager@store.com"></div>
+                        <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="loginForm.password" required placeholder="••••••••"></div>
+                        <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_enter') }}</button>
+                    </form>
+                    <div class="switch-auth">{{ t('new_business') }} <span @click="openRegister">{{ t('create_free_acc') }}</span></div>
+                </div>
+
+                <div v-if="currentModal === 'register'">
+                    <h2 style="text-align:center; margin:0 0 10px; color:var(--text-main);">{{ t('modal_register_title') }}</h2>
+                    <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">{{ t('modal_register_sub') }}</p>
+                    <form @submit.prevent="handleRegister">
+                        <div class="form-group"><label>{{ t('business_name') }}</label><input v-model="registerForm.name" required placeholder="Ex: Joe's Burgers"></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group"><label>Email</label><input type="email" v-model="registerForm.email" required></div>
+                            <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="registerForm.password" required></div>
+                        </div>
+                        <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_launch') }}</button>
+                    </form>
+                    <div class="switch-auth">{{ t('has_account') }} <span @click="openLogin">{{ t('btn_login') }}</span></div>
+                </div>
+
+                <div v-if="currentModal === 'wallet'">
+                    <h2 style="text-align:center; margin:0 0 10px; color:var(--text-main);">{{ t('wallet_title') }} 👛</h2>
+                    <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">{{ t('wallet_sub') }}</p>
                     
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" v-model="form.password">
-                    </div>
+                    <form v-if="walletStep === 1" @submit.prevent="requestWalletCode">
+                        <div class="form-group">
+                            <label>Your Email</label>
+                            <input type="email" v-model="walletForm.email" required placeholder="client@gmail.com">
+                        </div>
+                        <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? 'Sending...' : t('btn_send_code') }}</button>
+                    </form>
 
-                    <button type="submit" class="btn-submit" :disabled="loading">
-                        {{ loading ? 'Authenticating...' : 'ENTER DASHBOARD' }}
-                    </button>
-                </form>
+                    <form v-if="walletStep === 2" @submit.prevent="verifyWalletCode">
+                        <div class="form-group" style="text-align:center;">
+                            <label>Enter 6-digit Code</label>
+                            <div class="otp-container">
+                                <input type="text" class="otp-input" maxlength="6" v-model="walletForm.code" placeholder="000000">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? 'Checking...' : t('btn_access_wallet') }}</button>
+                        <div class="switch-auth" style="font-size:0.75rem;"><span @click="walletStep = 1">Wrong email? Go back</span></div>
+                    </form>
+                </div>
 
-                <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
+                <div v-if="errorMsg" class="error-msg" style="color:#ef4444; text-align:center; margin-top:15px; font-size:0.85rem;">{{ errorMsg }}</div>
             </div>
         </div>
     </div>
 
-    <script>
-        const { createApp, ref, onMounted } = Vue;
-
-        createApp({
-            setup() {
-                const showModal = ref(false);
-                const loading = ref(false);
-                const errorMsg = ref('');
-                const form = ref({ identifier: '', password: '' });
-                const storeConfig = ref({ name: 'Brunch.co', logo: '' });
-                const stats = ref({ total_cards: 0, total_stamps: 0, total_redeems: 0 });
-
-                const fetchConfig = async () => {
-                    try {
-                        const res = await fetch('/api/v1/system/config');
-                        if (res.ok) storeConfig.value = await res.json();
-                    } catch (e) {}
-                };
-
-                const fetchStats = async () => {
-                    try {
-                        const res = await fetch('/api/v1/public/stats');
-                        if (res.ok) stats.value = await res.json();
-                    } catch (e) {}
-                };
-
-                const handleLogin = async () => {
-                    loading.value = true;
-                    errorMsg.value = '';
-
-                    try {
-                        const res = await fetch('/api/v1/auth/login', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(form.value)
-                        });
-
-                        if (res.ok) {
-                            const data = await res.json();
-                            // Redireciona consoante a role (admin ou customer)
-                            window.location.href = data.redirect;
-                        } else {
-                            errorMsg.value = "Invalid credentials. Please try again.";
-                        }
-                    } catch (e) {
-                        errorMsg.value = "Connection error.";
-                    } finally {
-                        loading.value = false;
-                    }
-                };
-
-                onMounted(() => {
-                    fetchConfig();
-                    fetchStats();
-                });
-
-                return { showModal, form, loading, errorMsg, storeConfig, stats, handleLogin };
-            }
-        }).mount('#app');
-    </script>
+    <script src="/static/js/landing.js"></script>
 </body>
 </html>

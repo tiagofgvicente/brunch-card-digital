@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"brunch-card-digital/internal/database"
@@ -380,4 +383,65 @@ func MasterUpdateStoreHandler(w http.ResponseWriter, r *http.Request, repo *data
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Store updated successfully"})
+}
+
+func PublicRegisterHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req models.RegisterStoreRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		return
+	}
+
+	// Validação básica (Sem Slug)
+	if req.Name == "" || req.Email == "" || req.Password == "" {
+		http.Error(w, "Nome, Email e Password são obrigatórios", http.StatusBadRequest)
+		return
+	}
+
+	// --- GERAÇÃO AUTOMÁTICA DO SLUG ---
+	baseSlug := generateSlug(req.Name)
+	req.Slug = baseSlug
+
+	// Tentar criar. Se der conflito (slug já existe), tentamos adicionar um número.
+	// Esta é uma lógica simples de "retry".
+	err := repo.RegisterStore(req)
+	if err != nil {
+		// Se o erro for de duplicado (provavelmente slug repetido), tentamos de novo com sufixo
+		// Ex: "padaria" falhou -> tenta "padaria-2"
+		req.Slug = fmt.Sprintf("%s-%d", baseSlug, rand.Intn(9999))
+		err = repo.RegisterStore(req)
+
+		if err != nil {
+			log.Printf("Register Error: %v", err)
+			http.Error(w, "Erro ao criar conta. O Email pode já estar em uso.", http.StatusConflict)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":  "Loja criada com sucesso!",
+		"redirect": "/?store=" + req.Slug,
+	})
+}
+
+func generateSlug(name string) string {
+	// 1. Converter para minúsculas
+	slug := strings.ToLower(name)
+
+	// 2. Substituir tudo o que não for letra ou número por hifen
+	// (Esta regex simples mantém a-z e 0-9, o resto vira -)
+	reg := regexp.MustCompile("[^a-z0-9]+")
+	slug = reg.ReplaceAllString(slug, "-")
+
+	// 3. Remover hífens do início e do fim
+	slug = strings.Trim(slug, "-")
+
+	// 4. Se ficar vazio (ex: nome era "!!!"), gerar algo aleatório
+	if slug == "" {
+		slug = fmt.Sprintf("store-%d", rand.Intn(100000))
+	}
+
+	return slug
 }
