@@ -24,6 +24,7 @@ WORKDIR /root/
 COPY --from=builder /app/brunch-api .
 
 COPY --from=builder /app/web ./web
+COPY --from=builder /app/static ./static
 
 RUN mkdir -p internal/database
 COPY --from=builder /app/internal/database/migrations.sql ./internal/database/migrations.sql

@@ -22,6 +22,19 @@ func getEnvOrPanic(key string) string {
 	return value
 }
 
+func getStaticDir() string {
+	// Tenta no diretório atual
+	if _, err := os.Stat("./static"); err == nil {
+		return "./static"
+	}
+	// Tenta subir dois níveis (caso estejas a correr de cmd/server)
+	if _, err := os.Stat("../../static"); err == nil {
+		return "../../static"
+	}
+	// Retorna vazio se falhar (vai dar erro, mas permite logar)
+	return ""
+}
+
 func main() {
 	_ = godotenv.Load()
 
@@ -104,13 +117,28 @@ func main() {
 		}
 	}
 
+	// --- CONFIGURAÇÃO INTELIGENTE DE FICHEIROS ESTÁTICOS ---
+	// Verifica se a pasta "static" está na diretoria atual (raiz) ou acima (cmd/server)
+	staticDir := getStaticDir()
+	if staticDir == "" {
+		log.Fatal("CRITICAL ERROR: Pasta 'static' não encontrada. Corre o projeto na raiz.")
+	}
+
+	log.Printf("📂 Serving static files from: %s", staticDir)
+	fs := http.FileServer(http.Dir(staticDir))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	// --- ROTAS ---
 
 	mux.HandleFunc("/health", healthHandler)
 
 	// 1. MASTER ROUTES
 	mux.HandleFunc("/master", masterAuth(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/master.html")
+		htmlPath := "web/master.html"
+		if _, err := os.Stat(htmlPath); os.IsNotExist(err) {
+			htmlPath = "../../web/master.html"
+		}
+		http.ServeFile(w, r, htmlPath)
 	}))
 
 	// API Master Stores
@@ -119,6 +147,12 @@ func main() {
 			api.MasterCreateStoreHandler(w, r, repo)
 		} else {
 			api.MasterListStoresHandler(w, r, repo)
+		}
+	}, repo)))
+
+	mux.HandleFunc("/api/v1/master/stores/status", masterAuth(makeHandler(func(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+		if r.Method == http.MethodPost {
+			api.MasterToggleStoreHandler(w, r, repo)
 		}
 	}, repo)))
 
@@ -142,11 +176,20 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		http.ServeFile(w, r, "web/index.html")
+
+		htmlPath := "web/index.html"
+		if _, err := os.Stat(htmlPath); os.IsNotExist(err) {
+			htmlPath = "../../web/index.html"
+		}
+		http.ServeFile(w, r, htmlPath)
 	}))
 
 	mux.HandleFunc("/card", tenantMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/card.html")
+		htmlPath := "web/card.html"
+		if _, err := os.Stat(htmlPath); os.IsNotExist(err) {
+			htmlPath = "../../web/card.html"
+		}
+		http.ServeFile(w, r, htmlPath)
 	}))
 
 	// Auth & Stats
@@ -162,18 +205,18 @@ func main() {
 	mux.HandleFunc("/api/v1/qrcode", tenantMiddleware(makeHandler(api.GetQRCodeHandler, repo)))
 	mux.HandleFunc("/api/v1/cards/search", tenantMiddleware(makeHandler(api.SearchHandler, repo)))
 
-	// System Config & Skins (NOVO endpoint para ler skins)
+	// System Config & Skins
 	mux.HandleFunc("/api/v1/system/config", tenantMiddleware(makeHandler(api.GetSettingsHandler, repo)))
 	mux.HandleFunc("/api/v1/system/skins", tenantMiddleware(makeHandler(api.GetAvailableSkinsHandler, repo)))
 
 	// 3. ADMIN ROUTES (STORE SPECIFIC)
 	mux.HandleFunc("/admin", tenantMiddleware(storeAuth(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/admin.html")
+		htmlPath := "web/admin.html"
+		if _, err := os.Stat(htmlPath); os.IsNotExist(err) {
+			htmlPath = "../../web/admin.html"
+		}
+		http.ServeFile(w, r, htmlPath)
 	})))
-
-	// Sub-pages (Legacy support if needed, but logic is moving to single admin file)
-	mux.HandleFunc("/skins.html", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/skins.html") })
-	mux.HandleFunc("/settings.html", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "web/settings.html") })
 
 	// API Admin
 	mux.HandleFunc("/api/v1/admin/verify-password", tenantMiddleware(makeHandler(api.VerifyPasswordHandler, repo)))

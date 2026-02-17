@@ -58,15 +58,23 @@ type Store struct {
 	AdminEmail    string `json:"admin_email"`
 	AdminPassword string `json:"admin_password"`
 
-	LogoURL      string    `json:"logo_url"`
-	PrimaryColor string    `json:"primary_color"`
-	StampIcon    string    `json:"stamp_icon"`
-	CardSkin     string    `json:"card_skin"`
-	ThemeMode    string    `json:"theme_mode"`
-	Bronze       int       `json:"bronze_threshold"`
-	Silver       int       `json:"silver_threshold"`
-	Gold         int       `json:"gold_threshold"`
-	CreatedAt    time.Time `json:"created_at"`
+	LogoURL          string    `json:"logo_url"`
+	PrimaryColor     string    `json:"primary_color"`
+	StampIcon        string    `json:"stamp_icon"`
+	CardSkin         string    `json:"card_skin"`
+	ThemeMode        string    `json:"theme_mode"`
+	Bronze           int       `json:"bronze_threshold"`
+	Silver           int       `json:"silver_threshold"`
+	Gold             int       `json:"gold_threshold"`
+	CreatedAt        time.Time `json:"created_at"`
+	IsActive         bool      `json:"isActive" db:"is_active"`
+	TotalMembers     int       `json:"totalMembers" db:"total_members"`
+	Tier             string    `json:"tier"`
+	TierExpiration   time.Time `json:"tierExpiration"`
+	BillingCycle     string    `json:"billingCycle"`
+	MaxUsers         int       `json:"maxUsers"` // Adicionado para suportar a lógica de Tiers
+	AccountActivated bool      `json:"accountActivated"`
+	Status           string    `json:"status"`
 }
 
 type Skin struct {

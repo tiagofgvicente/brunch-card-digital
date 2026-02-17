@@ -338,3 +338,19 @@ func GetAvailableSkinsHandler(w http.ResponseWriter, r *http.Request, repo *data
 	}
 	json.NewEncoder(w).Encode(skins)
 }
+
+func MasterToggleStoreHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct {
+		ID       string `json:"id"`
+		IsActive bool   `json:"isActive"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", 400)
+		return
+	}
+	if err := repo.ToggleStoreStatus(req.ID, req.IsActive); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}

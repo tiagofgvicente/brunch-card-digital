@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	"brunch-card-digital/internal/models"
 
@@ -60,13 +61,13 @@ func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
 	var s models.Store
 	var logoURL sql.NullString
 
-	// Lê todos os campos de configuração
 	query := `
         SELECT 
             id, name, slug, admin_username, admin_email, admin_password,
             logo_url, primary_color, stamp_icon, 
             card_skin, theme_mode, 
-            bronze_threshold, silver_threshold, gold_threshold
+            bronze_threshold, silver_threshold, gold_threshold,
+            tier, tier_expiration, billing_cycle, max_users, account_activated, status, is_active
         FROM stores 
         WHERE slug = $1
     `
@@ -74,6 +75,7 @@ func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
 		&s.ID, &s.Name, &s.Slug, &s.AdminUsername, &s.AdminEmail, &s.AdminPassword,
 		&logoURL, &s.PrimaryColor, &s.StampIcon,
 		&s.CardSkin, &s.ThemeMode, &s.Bronze, &s.Silver, &s.Gold,
+		&s.Tier, &s.TierExpiration, &s.BillingCycle, &s.MaxUsers, &s.AccountActivated, &s.Status, &s.IsActive,
 	)
 	if err != nil {
 		return nil, err
@@ -88,13 +90,13 @@ func (r *CardRepository) CreateStore(s models.Store) error {
             id, name, slug, 
             admin_username, admin_email, admin_password, 
             logo_url, primary_color, stamp_icon, card_skin, theme_mode,
+            tier, tier_expiration, billing_cycle, max_users,
             bronze_threshold, silver_threshold, gold_threshold, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 15, 40, 100, CURRENT_TIMESTAMP)`
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 15, 40, 100, CURRENT_TIMESTAMP)`
 
 	if s.ID == "" {
 		s.ID = uuid.New().String()
 	}
-	// Defaults de segurança
 	if s.CardSkin == "" {
 		s.CardSkin = "default"
 	}
@@ -107,6 +109,15 @@ func (r *CardRepository) CreateStore(s models.Store) error {
 	if s.StampIcon == "" {
 		s.StampIcon = "🍳"
 	}
+	if s.Tier == "" {
+		s.Tier = "free_trial"
+	}
+	if s.BillingCycle == "" {
+		s.BillingCycle = "monthly"
+	}
+
+	// Calcula expiração se estiver vazia (ex: 30 dias)
+	// Se s.TierExpiration for zero, define manual aqui
 
 	var logoURL interface{} = nil
 	if s.LogoURL != "" {
@@ -116,12 +127,22 @@ func (r *CardRepository) CreateStore(s models.Store) error {
 	_, err := r.db.Exec(query,
 		s.ID, s.Name, s.Slug,
 		s.AdminUsername, s.AdminEmail, s.AdminPassword,
-		logoURL, s.PrimaryColor, s.StampIcon, s.CardSkin, s.ThemeMode)
+		logoURL, s.PrimaryColor, s.StampIcon, s.CardSkin, s.ThemeMode,
+		s.Tier, s.TierExpiration, s.BillingCycle, s.MaxUsers)
 	return err
 }
 
 func (r *CardRepository) GetAllStores() ([]models.Store, error) {
-	query := `SELECT id, name, slug, admin_username, admin_email, admin_password, logo_url, primary_color, card_skin, created_at FROM stores ORDER BY created_at DESC`
+	query := `
+        SELECT 
+            s.id, s.name, s.slug, s.admin_username, s.admin_email, 
+            COALESCE(s.logo_url, ''), s.primary_color, s.stamp_icon, s.card_skin, 
+            s.is_active, s.tier, s.tier_expiration, s.billing_cycle, 
+            s.max_users, s.account_activated, s.status, s.created_at,
+            (SELECT COUNT(*) FROM loyalty_cards WHERE store_id = s.id) as total_members
+        FROM stores s 
+        ORDER BY s.name ASC`
+
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -131,12 +152,17 @@ func (r *CardRepository) GetAllStores() ([]models.Store, error) {
 	var stores []models.Store
 	for rows.Next() {
 		var s models.Store
-		var logoURL sql.NullString
-		// Scan manual
-		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.AdminUsername, &s.AdminEmail, &s.AdminPassword, &logoURL, &s.PrimaryColor, &s.CardSkin, &s.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&s.ID, &s.Name, &s.Slug, &s.AdminUsername, &s.AdminEmail,
+			&s.LogoURL, &s.PrimaryColor, &s.StampIcon, &s.CardSkin,
+			&s.IsActive, &s.Tier, &s.TierExpiration, &s.BillingCycle,
+			&s.MaxUsers, &s.AccountActivated, &s.Status, &s.CreatedAt,
+			&s.TotalMembers,
+		); err != nil {
+			log.Printf("Scan error: %v", err)
 			continue
 		}
-		s.LogoURL = logoURL.String
+		s.AdminPassword = ""
 		stores = append(stores, s)
 	}
 	return stores, nil
@@ -156,15 +182,8 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
         WHERE id = $9`
 
 	_, err := r.db.Exec(query,
-		s.Name,
-		s.LogoURL,
-		s.PrimaryColor,
-		s.StampIcon,
-		s.ThemeMode,
-		s.Bronze,
-		s.Silver,
-		s.Gold,
-		s.ID,
+		s.Name, s.LogoURL, s.PrimaryColor, s.StampIcon, s.ThemeMode,
+		s.Bronze, s.Silver, s.Gold, s.ID,
 	)
 	return err
 }
@@ -184,7 +203,6 @@ func (r *CardRepository) VerifyPassword(pass string) bool { return true }
 // --- SKINS (Global Assets) ---
 
 func (r *CardRepository) GetAllSkins() ([]models.Skin, error) {
-	// Adicionei store_id à query
 	query := "SELECT id, name, type, image_data, color_bg, color_text, color_border, is_global, store_id, start_date, end_date FROM skins ORDER BY created_at DESC"
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -206,7 +224,7 @@ func (r *CardRepository) GetAllSkins() ([]models.Skin, error) {
 		if sId.Valid {
 			temp := sId.String
 			s.StoreID = &temp
-		} // Handle NULL StoreID
+		}
 		if start.Valid {
 			s.StartDate = &start.Time
 		}
@@ -260,7 +278,6 @@ func (r *CardRepository) SaveSkin(s models.Skin) error {
             is_global=excluded.is_global, store_id=excluded.store_id, 
             start_date=excluded.start_date, end_date=excluded.end_date;`
 
-	// Tratamento do ponteiro para SQL NULL
 	var storeID interface{} = nil
 	if s.StoreID != nil && *s.StoreID != "" {
 		storeID = *s.StoreID
@@ -271,7 +288,6 @@ func (r *CardRepository) SaveSkin(s models.Skin) error {
 }
 
 func (r *CardRepository) DeleteSkin(id string) error {
-	// Proteção Hardcoded
 	if id == "default" || id == "black" {
 		return fmt.Errorf("cannot delete system skin")
 	}
@@ -382,7 +398,6 @@ func (r *CardRepository) ResetCard(id string) error {
 }
 
 func (r *CardRepository) SearchCards(storeID, term string) ([]models.BrunchCard, error) {
-	// SQLite usa LIKE por defeito case-insensitive para ASCII
 	query := `SELECT id, store_id, member_number, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, rgpd_accepted, marketing_accepted FROM loyalty_cards WHERE store_id = $1 AND (customer_id LIKE $2 OR last_name LIKE $2 OR email LIKE $2 OR phone LIKE $2 OR nif LIKE $2) ORDER BY member_number DESC LIMIT 15`
 	rows, err := r.db.Query(query, storeID, "%"+term+"%")
 	if err != nil {
@@ -417,4 +432,9 @@ func (r *CardRepository) UpdateConsent(id string, rgpd *bool, marketing *bool) e
 		r.db.Exec("UPDATE loyalty_cards SET marketing_accepted=$1 WHERE id=$2", *marketing, id)
 	}
 	return nil
+}
+
+func (r *CardRepository) ToggleStoreStatus(id string, status bool) error {
+	_, err := r.db.Exec("UPDATE stores SET is_active = $1 WHERE id = $2", status, id)
+	return err
 }
