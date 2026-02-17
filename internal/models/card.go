@@ -104,3 +104,13 @@ type RegisterStoreRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type LoginRequest struct {
+    Email    string `json:"identifier"` 
+    Password string `json:"password"`
+}
+
+type LoginResponse struct {
+    Token    string `json:"token"`
+    Redirect string `json:"redirect"`
+}

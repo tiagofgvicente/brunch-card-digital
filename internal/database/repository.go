@@ -474,18 +474,18 @@ func (repo *CardRepository) UpdateStore(s models.Store) error {
 	return err
 }
 
-func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) error {
-	// 1. Encriptar a Password
+func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (string, error) {
+	// 1. Encriptar Password
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// 2. Gerar ID único e Data de Expiração
+	// 2. Gerar ID e Data
 	id := uuid.New().String()
-	expiration := time.Now().AddDate(0, 0, 30) // Hoje + 30 Dias
+	expiration := time.Now().AddDate(0, 0, 30)
 
-	// 3. Inserir na Base de Dados
+	// 3. Inserir na BD
 	query := `
         INSERT INTO stores (
             id, name, slug, 
@@ -495,18 +495,61 @@ func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) error
             card_skin, primary_color, stamp_icon, theme_mode
         ) VALUES (
             $1, $2, $3, 
-            $4, $5, $6, 
-            'free_trial', $7, 'monthly', 1, 
+            $4, $4, $5, 
+            'free_trial', $6, 'monthly', 1, 
             TRUE, TRUE, 
-            'default', '#00a896', '🚀', 'dark'
+            'default', '#00a896', '🍳', 'dark'
         )
     `
-
-	// Nota: Usamos o email como username inicial para simplificar
+	// Nota: $4 é usado duas vezes (email e username)
 	_, err = repo.db.Exec(query,
 		id, req.Name, req.Slug,
-		req.Email, req.Email, string(hashed),
+		req.Email, string(hashed),
 		expiration,
 	)
-	return err
+
+	if err != nil {
+		return "", err
+	}
+
+	// Retorna o ID para o Handler poder criar o cookie
+	return id, nil
+}
+
+func (repo *CardRepository) AuthenticateStore(email, password string) (*models.Store, error) {
+	var store models.Store
+	var hashedPassword string
+
+	// MUDANÇA: Query simplificada para procurar apenas por admin_email
+	query := `
+        SELECT id, slug, admin_password, tier, is_active 
+        FROM stores 
+        WHERE admin_email = $1
+    `
+
+	err := repo.db.QueryRow(query, email).Scan(
+		&store.ID,
+		&store.Slug,
+		&hashedPassword,
+		&store.Tier,
+		&store.IsActive,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("email not found")
+		}
+		return nil, err
+	}
+
+	if !store.IsActive {
+		return nil, fmt.Errorf("store is suspended")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		return nil, fmt.Errorf("invalid password")
+	}
+
+	return &store, nil
 }

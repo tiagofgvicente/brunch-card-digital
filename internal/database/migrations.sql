@@ -85,7 +85,7 @@ CREATE INDEX idx_store_status ON stores(status);
 
 -- LOJA 1: Brunch VIP (PRO - Pagamento Anual - Saudável)
 INSERT INTO stores (id, name, slug, admin_username, admin_email, admin_password, tier, tier_expiration, billing_cycle, max_users, is_active, account_activated, stamp_icon)
-VALUES ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Brunch VIP', 'brunch', 'admin', 'admin@brunch.com', '$2a$10$C82H9C1f1F5J3Z9oR7u2m.I8R8v2p4z6H7x9N9v1w2L7q3t0r1s2e', 'pro', '2030-01-01', 'annual', 10, TRUE, TRUE, '🍳');
+VALUES ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Brunch VIP', 'brunch', 'admin@brunch.com', 'admin@brunch.com', '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 'pro', '2030-01-01', 'annual', 10, TRUE, TRUE, '🍳');
 
 -- LOJA 2: Sushi Zen (FREE TRIAL - A acabar em 3 dias - Urgente & Não Ativado)
 -- Objetivo: Testar barra amarela/vermelha de trial e o badge "Pending Login"

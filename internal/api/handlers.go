@@ -61,48 +61,74 @@ func MasterListStoresHandler(w http.ResponseWriter, r *http.Request, repo *datab
 // --- LOGIN GLOBAL INTELIGENTE ---
 
 func LoginHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	// 1. Ler o JSON (Identifier = Email ou Username)
+	fmt.Println("!!! DEBUG: O HANDLER DE LOGIN FOI CHAMADO !!!")
 	var req struct {
-		Identifier string `json:"identifier"` // Username ou Email
+		Identifier string `json:"identifier"`
 		Password   string `json:"password"`
 	}
-	json.NewDecoder(r.Body).Decode(&req)
+	// Se o JSON estiver mal formatado, abortamos logo
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Formato inválido", http.StatusBadRequest)
+		return
+	}
 
 	log.Printf("🌍 GLOBAL LOGIN: Tentativa para '%s'", req.Identifier)
 
-	// 1. É O MASTER?
+	// ---------------------------------------------------------
+	// 2. É O MASTER ADMIN? (Backdoor para ti)
+	// ---------------------------------------------------------
 	if req.Identifier == "master" && req.Password == "superadmin2026" {
 		log.Println("✅ Login Master")
+
+		// Criar cookie de sessão master
+		http.SetCookie(w, &http.Cookie{
+			Name: "session_token", Value: "master_access", Path: "/", HttpOnly: true, Expires: time.Now().Add(12 * time.Hour),
+		})
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"role": "master", "redirect": "/master",
+			"role": "master", "redirect": "/master", // Redireciona para o painel secreto
 		})
 		return
 	}
 
-	// 2. É UM DONO DE LOJA? (Verifica user OU email)
-	store, err := repo.GetStoreByLogin(req.Identifier)
+	// ---------------------------------------------------------
+	// 3. É UM DONO DE LOJA? (Verifica Email + Password Encriptada)
+	// ---------------------------------------------------------
+	// Usamos a função AuthenticateStore que criámos no repository.go
+	store, err := repo.AuthenticateStore(req.Identifier, req.Password)
+
 	if err == nil && store != nil {
-		if req.Password == store.AdminPassword {
-			log.Printf("✅ Login Store Admin: '%s' -> %s", req.Identifier, store.Slug)
+		log.Printf("✅ Login Store Admin: '%s' -> %s", req.Identifier, store.Slug)
 
-			http.SetCookie(w, &http.Cookie{
-				Name: "session_token", Value: "authenticated_admin", Path: "/", HttpOnly: true, Expires: time.Now().Add(24 * time.Hour),
-			})
+		// Criar Cookie de Sessão (Guardamos o ID da loja no cookie)
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_token",
+			Value:    store.ID, // Guardamos o ID real para saber quem é
+			Path:     "/",
+			HttpOnly: true,
+			Expires:  time.Now().Add(24 * time.Hour),
+		})
 
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{
-				"role":     "admin",
-				"redirect": fmt.Sprintf("/admin?store=%s", store.Slug),
-			})
-			return
-		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"role": "admin",
+			// IMPORTANTE: O landing.js vai enviar o user para aqui
+			// Se o teu dashboard estiver em /?store=slug, mantém assim:
+			"redirect": fmt.Sprintf("/admin?store=%s", store.Slug),
+		})
+		return
 	}
 
-	// 3. É UM CLIENTE FINAL?
-	// Nota: Cliente só entra com nº telemóvel ou email
+	// ---------------------------------------------------------
+	// 4. É UM CLIENTE FINAL? (Carteira / Wallet)
+	// ---------------------------------------------------------
+	// Nota: Esta parte mantém-se igual à tua lógica antiga para clientes
 	slug, cardID, err := repo.GetStoreSlugByCustomerEmail(req.Identifier)
 	if err == nil && slug != "" {
 		log.Printf("✅ Login Cliente: Redirecionar para %s", slug)
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
 			"role":     "customer",
@@ -111,8 +137,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRep
 		return
 	}
 
-	log.Println("❌ Falha de Login")
-	http.Error(w, "Credenciais inválidas", http.StatusUnauthorized)
+	// ---------------------------------------------------------
+	// 5. FALHA TOTAL
+	// ---------------------------------------------------------
+	log.Println("❌ Falha de Login: Credenciais incorretas")
+	http.Error(w, "Email ou Password incorretos", http.StatusUnauthorized)
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
@@ -393,24 +422,21 @@ func PublicRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		return
 	}
 
-	// Validação básica (Sem Slug)
 	if req.Name == "" || req.Email == "" || req.Password == "" {
 		http.Error(w, "Nome, Email e Password são obrigatórios", http.StatusBadRequest)
 		return
 	}
 
-	// --- GERAÇÃO AUTOMÁTICA DO SLUG ---
+	// Gerar Slug automático
 	baseSlug := generateSlug(req.Name)
 	req.Slug = baseSlug
 
-	// Tentar criar. Se der conflito (slug já existe), tentamos adicionar um número.
-	// Esta é uma lógica simples de "retry".
-	err := repo.RegisterStore(req)
+	// Tentar criar a loja e obter o ID
+	id, err := repo.RegisterStore(req)
 	if err != nil {
-		// Se o erro for de duplicado (provavelmente slug repetido), tentamos de novo com sufixo
-		// Ex: "padaria" falhou -> tenta "padaria-2"
+		// Lógica de retry para slug duplicado
 		req.Slug = fmt.Sprintf("%s-%d", baseSlug, rand.Intn(9999))
-		err = repo.RegisterStore(req)
+		id, err = repo.RegisterStore(req)
 
 		if err != nil {
 			log.Printf("Register Error: %v", err)
@@ -419,10 +445,22 @@ func PublicRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		}
 	}
 
+	// --- SUCESSO! AGORA FAZEMOS AUTO-LOGIN ---
+
+	// 1. Criar o Cookie de Sessão com o ID da nova loja
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    id, // O ID que veio do repository
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Now().Add(24 * time.Hour),
+	})
+
+	// 2. Redirecionar DIRETAMENTE para o Painel Admin
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message":  "Loja criada com sucesso!",
-		"redirect": "/?store=" + req.Slug,
+		"message":  "Loja criada! A entrar...",
+		"redirect": "/admin?store=" + req.Slug, // <--- AQUI ESTÁ A MAGIA
 	})
 }
 

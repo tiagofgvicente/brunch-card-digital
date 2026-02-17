@@ -10,6 +10,7 @@ import (
 
 	"brunch-card-digital/internal/api"
 	"brunch-card-digital/internal/database"
+	"brunch-card-digital/internal/models"
 
 	"github.com/joho/godotenv"
 )
@@ -100,22 +101,39 @@ func main() {
 	}
 
 	storeAuth := func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie("session_token")
-			if err == nil && cookie.Value == "authenticated_admin" {
-				next.ServeHTTP(w, r)
-				return
-			}
+        return func(w http.ResponseWriter, r *http.Request) {
+            // 1. Ler o cookie de sessão
+            cookie, err := r.Cookie("session_token")
+            if err != nil {
+                // Se não tem cookie, manda para login
+                http.Redirect(w, r, "/?error=login_required", http.StatusSeeOther)
+                return
+            }
 
-			user, pass, ok := r.BasicAuth()
-			if !ok || (user != "admin" && user != "loja") || !repo.VerifyPassword(pass) {
-				w.Header().Set("WWW-Authenticate", `Basic realm="Store Admin"`)
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-			next.ServeHTTP(w, r)
-		}
-	}
+            // 2. Ir buscar a loja do Contexto (que o tenantMiddleware lá pôs)
+            storeCtx := r.Context().Value("current_store")
+            if storeCtx == nil {
+                http.Error(w, "Store context missing", http.StatusInternalServerError)
+                return
+            }
+            
+            // CORREÇÃO AQUI: Usamos models.Store em vez de database.Store
+            currentStore := storeCtx.(*models.Store)
+
+            // 3. SEGURANÇA MÁXIMA (IDOR PROTECTION)
+            // Comparamos o ID guardado no Cookie (Login) com o ID da Loja atual (URL)
+            if cookie.Value != currentStore.ID {
+                log.Printf("⛔ SEGURANÇA: Tentativa de acesso cruzado. User: %s -> Loja: %s", cookie.Value, currentStore.Slug)
+                
+                // Redireciona para o login se tentar aceder à loja errada
+                http.Redirect(w, r, "/?error=access_denied", http.StatusSeeOther)
+                return
+            }
+
+            // 4. Tudo bate certo, pode passar
+            next.ServeHTTP(w, r)
+        }
+    }
 
 	// --- CONFIGURAÇÃO INTELIGENTE DE FICHEIROS ESTÁTICOS ---
 	// Verifica se a pasta "static" está na diretoria atual (raiz) ou acima (cmd/server)
