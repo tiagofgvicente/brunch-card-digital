@@ -5,137 +5,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Store Admin | Volto</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root { 
-            --primary: #00a896; 
-            --bg-main: #121212; 
-            --bg-side: #1e1e1e; 
-            --text-main: #ffffff; 
-            --text-sub: #888888; 
-            --border-color: #333333; 
+            --primary: #00a896; --bg-main: #121212; --bg-side: #1e1e1e; 
+            --text-main: #ffffff; --text-sub: #888888; --border-color: #333333; 
             --gold: #ffd166; --silver: #bdc3c7; --bronze: #cd7f32; 
-            --red: #ff4444; --orange: #e67e22; --success: #10b981; --danger: #ef4444; --warning: #ffb74d; 
-            --bg-btn: #2d2d2d;
+            --red: #ff4444; --orange: #e67e22; --success: #10b981; 
+            --bg-btn: #2d2d2d; --bg-card: #1e1e1e;
+            --warn-bg: rgba(245, 158, 11, 0.1); --warn-text: #fbbf24; --warn-border: rgba(245, 158, 11, 0.3);
         }
         
-        /* Light Mode Overrides (aplicados via JS) */
         [data-theme="light"] {
             --bg-main: #f8f9fa; --bg-side: #ffffff; 
             --text-main: #1e293b; --text-sub: #64748b; 
-            --border-color: #e2e8f0; --bg-btn: #f1f5f9;
+            --border-color: #e2e8f0; --bg-btn: #f1f5f9; --bg-card: #ffffff;
+            --warn-bg: #fffbeb; --warn-text: #d97706; --warn-border: #fcd34d;
         }
 
         body { background: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
-        
-        /* LAYOUT PRINCIPAL */
         #app { display: flex; height: 100%; width: 100%; overflow: hidden; }
         
         /* SIDEBAR */
-        .sidebar { 
-            width: 260px; 
-            background: var(--bg-side); 
-            border-right: 1px solid var(--border-color); 
-            display: flex; flex-direction: column; 
-            padding: 20px 0; z-index: 100; flex-shrink: 0; box-sizing: border-box; 
-        }
-        
-        /* --- HEADER DA SIDEBAR (CORRIGIDO) --- */
-        .sidebar-header { 
-            padding: 0 25px 25px; 
-            border-bottom: 1px solid var(--border-color); 
-            margin-bottom: 20px; 
-            display: flex; 
-            flex-direction: column; /* Empilha verticalmente */
-            gap: 20px; /* Espaço entre o Nome e os Botões */
-        }
-        
+        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; z-index: 100; flex-shrink: 0; box-sizing: border-box; }
+        .sidebar-header { padding: 0 25px 25px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; display: flex; flex-direction: column; gap: 20px; }
         .brand-row { display: flex; align-items: center; gap: 12px; }
         .brand-row img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: white; border: 1px solid var(--border-color); }
         .brand-row h2 { color: var(--text-main); font-size: 1.1rem; margin: 0; font-weight: 800; }
-        
-        /* LINHA DE BOTÕES (SOL/LUA + PT/EN) */
         .toggle-row { display: flex; align-items: center; gap: 12px; }
 
-        .circle-btn, .square-btn {
-            background: var(--bg-btn);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
+        /* TOGGLES */
+        .theme-btn, .lang-btn { background-color: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden; }
+        .theme-btn { width: 42px; height: 42px; border-radius: 50%; font-size: 1.4rem; }
+        .lang-btn { width: 42px; height: 42px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; background-repeat: no-repeat; background-position: left center; background-size: 0% 100%; }
+        .lang-pt { background-image: url('https://flagcdn.com/w160/pt.png'); }
+        .lang-en { background-image: url('https://flagcdn.com/w160/gb.png'); }
+        
+        @keyframes sun-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes moon-rock { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(15deg); } }
+        
+        [data-theme="light"] .theme-btn:hover { background: #fffacD; border-color: #f59e0b; color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); transform: rotate(15deg); }
+        [data-theme="light"] .theme-btn:hover .icon-sun { animation: sun-spin 4s linear infinite; display: inline-block; }
+        [data-theme="dark"] .theme-btn:hover { background: #1e1e2e; border-color: #a78bfa; color: #a78bfa; box-shadow: 0 0 15px rgba(167, 139, 250, 0.3); transform: rotate(-10deg); }
+        [data-theme="dark"] .theme-btn:hover .icon-moon { animation: moon-rock 2s ease-in-out infinite; display: inline-block; }
+        .lang-btn:hover { background-size: 100% 100%; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.8); border-color: transparent; transform: rotate(-5deg) scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
 
-        /* Botão Redondo (Tema) */
-        .circle-btn {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-        }
-
-        /* Botão Quadrado (Língua) */
-        .square-btn {
-            width: 40px; height: 40px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        .circle-btn:hover, .square-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        /* NAV ITEMS */
-        .nav-item { 
-            padding: 12px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; 
-            color: var(--text-sub); transition: 0.2s; font-weight: 600; font-size: 0.9rem; 
-        }
+        /* NAV */
+        .nav-item { padding: 12px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-sub); transition: 0.2s; font-weight: 600; font-size: 0.9rem; }
         .nav-item:hover { background: var(--bg-btn); color: var(--text-main); }
         .nav-item.active { background: rgba(0, 168, 150, 0.1); color: var(--primary); border-right: 3px solid var(--primary); }
         
-        /* MAIN CONTENT & RESTO (Mantido igual) */
         .main-content { flex: 1; padding: 40px; overflow-y: auto; box-sizing: border-box; background: var(--bg-main); }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .page-header h1 { font-size: 1.8rem; margin: 0; font-weight: 800; letter-spacing: -0.5px; }
-        
-        /* Form elements e Tabelas */
         .search-container { position: relative; }
         .search-input { padding: 12px 40px 12px 15px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-side); color: var(--text-main); font-size: 0.9rem; width: 280px; outline: none; transition: 0.2s; }
         .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 168, 150, 0.1); }
         .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
 
-        table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-side); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; }
-        th, td { padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; vertical-align: middle; }
-        th { background: var(--bg-btn); color: var(--text-sub); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; font-weight: 800; }
-        tr:hover { background: rgba(0,0,0,0.02); }
+        /* TABLE */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-side); border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; }
+        th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; font-weight: 800; padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        td { padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; vertical-align: middle; }
+        tr:hover { background: rgba(0,0,0,0.03); }
         tr:last-child td { border-bottom: none; }
 
-        /* UI Elements */
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; border: 1px solid transparent; display: inline-block; letter-spacing: 0.5px; }
-        .pill-bronze { background: rgba(205, 127, 50, 0.1); color: var(--bronze); border-color: rgba(205, 127, 50, 0.2); }
-        .pill-silver { background: rgba(189, 195, 199, 0.1); color: var(--silver); border-color: rgba(189, 195, 199, 0.2); }
-        .pill-gold { background: rgba(255, 209, 102, 0.1); color: var(--gold); border-color: rgba(255, 209, 102, 0.2); }
-        .pill-new { background: rgba(128,128,128, 0.1); color: var(--text-sub); border-color: var(--border-color); }
-        
-        .member-badge { background: var(--bg-main); color: var(--text-sub); padding: 4px 8px; border-radius: 6px; font-family: monospace; border: 1px solid var(--border-color); font-weight: bold; font-size: 0.8rem; }
-        
-        /* Botões de Ação */
-        .action-stack { display: flex; gap: 8px; }
-        .btn-action { border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.75rem; padding: 6px 12px; text-transform: uppercase; color: white; transition: 0.2s; }
-        .btn-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
-        .btn-edit { background: #475569; }
-        .btn-view { background: var(--gold); color: #1e293b; }
-        .btn-stamp { background: var(--orange); }
-        .btn-redeem { background: var(--primary); }
-        .btn-reset { background: var(--red); }
+        .customer-name { font-weight: 800; font-size: 1rem; margin-bottom: 4px; display: block; color: var(--text-main); }
+        .contact-details { display: flex; flex-direction: column; gap: 2px; }
+        .contact-row { font-size: 0.75rem; color: var(--text-sub); opacity: 0.6; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        .contact-row:hover { opacity: 1; color: var(--primary); }
 
-        /* Skins Grid */
+        .status-pill { padding: 4px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; border: 1px solid transparent; display: inline-block; letter-spacing: 0.5px; margin-right: 5px; }
+        .pill-gold { background: rgba(255, 209, 102, 0.15); color: var(--gold); border-color: rgba(255, 209, 102, 0.3); }
+        .pill-silver { background: rgba(189, 195, 199, 0.15); color: var(--silver); border-color: rgba(189, 195, 199, 0.3); }
+        .pill-bronze { background: rgba(205, 127, 50, 0.15); color: var(--bronze); border-color: rgba(205, 127, 50, 0.3); }
+        .pill-new { background: rgba(255,255,255,0.1); color: var(--text-sub); border: 1px solid var(--border-color); }
+        
+        .consent-wrapper { display: flex; flex-direction: column; gap: 4px; }
+        .consent-btn { padding: 2px 8px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; border: 1px solid var(--border-color); color: var(--text-sub); opacity: 0.5; cursor: pointer; transition: 0.2s; width: fit-content; }
+        .consent-btn:hover { opacity: 1; }
+        .is-rgpd { border-color: var(--primary); color: var(--primary); background: rgba(0, 168, 150, 0.1); opacity: 1; }
+        .is-mkt { border-color: var(--gold); color: var(--gold); background: rgba(255, 209, 102, 0.1); opacity: 1; }
+
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .btn-action { width: 100%; border: none; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 0.65rem; padding: 8px 0; text-transform: uppercase; color: white; transition: 0.2s; text-align: center; }
+        .btn-action:hover { filter: brightness(1.15); transform: translateY(-1px); }
+        .btn-action:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); transform: none; }
+        .btn-edit { background: #444444; border: 1px solid #555; }
+        .btn-view { background: #fbbf24; color: black; }
+        .btn-stamp { background: #f97316; }
+        .btn-redeem { background: #333333; border: 1px solid #444; }
+
+        .reg-container { max-width: 600px; margin: 0 auto; background: var(--bg-card); padding: 40px; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .form-row { margin-bottom: 0; }
+        .form-row label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 6px; text-transform: uppercase; font-weight: 800; }
+        .custom-input { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 0.95rem; transition: 0.2s; box-sizing: border-box; }
+        .custom-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0, 168, 150, 0.1); }
+        .warning-box { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); padding: 10px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; margin-top: 8px; display: flex; align-items: center; gap: 8px; animation: slideIn 0.3s ease; }
+        .checkbox-group { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 30px; }
+        .checkbox-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; cursor: pointer; }
+        .checkbox-item:last-child { margin-bottom: 0; }
+        .checkbox-item input { margin-top: 3px; accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+        .checkbox-item span { font-weight: 700; font-size: 0.9rem; color: var(--text-main); display: block; }
+        .checkbox-item small { color: var(--text-sub); font-size: 0.8rem; font-weight: 400; }
+        .btn-create-card { width: 100%; padding: 15px; border-radius: 10px; border: none; background: var(--primary); color: white; font-size: 1rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: 0.2s; letter-spacing: 1px; }
+        .btn-create-card:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 168, 150, 0.3); }
+        .btn-create-card:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* SKINS */
         .skins-grid { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
         .skin-card { background: var(--bg-side); border-radius: 16px; border: 2px solid var(--border-color); overflow: hidden; position: relative; width: 280px; transition: 0.3s; cursor: pointer; }
         .skin-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
@@ -144,35 +123,65 @@
         .skin-preview { height: 160px; display: flex; align-items: center; justify-content: center; background-color: #f1f5f9; position: relative; background-size: cover; background-position: center; }
         .skin-body { padding: 20px; border-top: 1px solid var(--border-color); }
         .skin-body h3 { margin: 0; font-size: 1rem; margin-bottom: 5px; color: var(--text-main); }
+        
         .skin-actions { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-skin-preview, .btn-skin-act { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
+        .btn-skin-preview, .btn-skin-act, .btn-skin-edit { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
         .btn-skin-preview { background: var(--bg-btn); color: var(--text-main); border: 1px solid var(--border-color); }
         .btn-skin-act { background: var(--primary); color: white; }
+        .btn-skin-edit { background: var(--bg-btn); color: var(--text-main); border: 1px solid var(--border-color); width: 40px; flex: none; font-size: 1rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-skin-edit:hover { border-color: var(--gold); color: var(--gold); }
 
-        /* Settings */
         .settings-container { background: var(--bg-side); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; max-width: 800px; }
         .settings-section { padding: 30px; }
         .section-label { font-size: 0.75rem; text-transform: uppercase; color: var(--primary); letter-spacing: 1.5px; margin-bottom: 25px; font-weight: 800; }
         .setting-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 30px; gap: 40px; }
         .setting-info label { display: block; font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 4px; }
         .setting-info span { font-size: 0.85rem; color: var(--text-sub); display: block; line-height: 1.4; }
-        .custom-input { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 0.95rem; transition: 0.2s; box-sizing: border-box; }
-        .custom-input:focus { border-color: var(--primary); outline: none; }
         .divider { height: 1px; background: var(--border-color); margin: 0 30px; }
         .footer-actions { margin-top: 40px; text-align: right; }
         .save-master-btn { background: var(--primary); color: white; border: none; padding: 16px 45px; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
         
-        /* Modals & Utils */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }
         .modal-content { background: var(--bg-side); padding: 30px; border-radius: 16px; border: 1px solid var(--border-color); width: 450px; text-align: left; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
         .close-modal { position: absolute; top: 20px; right: 20px; cursor: pointer; color: var(--text-sub); font-size: 1.2rem; }
+        .btn-save-modal { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 0.9rem; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 15px; transition: 0.2s; }
+        .btn-save-modal:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 25px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 25px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-
         .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
         .toast { pointer-events: auto; padding: 15px 25px; border-radius: 10px; color: white; font-weight: 600; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 12px; animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); min-width: 280px; }
         .toast-success { background: var(--success); }
         .toast-error { background: var(--danger); }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* --- DESIGNER MODAL STYLES (CORRIGIDO) --- */
+        .designer-modal { width: 850px; max-width: 90vw; padding: 0; display: flex; overflow: hidden; height: 500px; }
+        .designer-left { width: 350px; padding: 30px; border-right: 1px solid var(--border-color); background: var(--bg-side); overflow-y: auto; }
+        .designer-right { flex: 1; background: var(--bg-main); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; position: relative; }
+        
+        .design-label { display: block; font-size: 0.7rem; color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
+        
+        /* Upload Clean */
+        .upload-clean { 
+            border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; 
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            cursor: pointer; background: var(--bg-main); transition: 0.2s;
+        }
+        .upload-clean:hover { border-color: var(--primary); }
+        .upload-clean img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
+        .upload-text { font-weight: 700; font-size: 0.8rem; color: var(--text-main); }
+
+        /* Color Block (Sem Texto RGB) */
+        .color-block-wrapper { margin-bottom: 20px; }
+        input[type="color"].color-block { 
+            -webkit-appearance: none; border: none; padding: 0; 
+            width: 100%; height: 45px; border-radius: 8px; cursor: pointer; 
+            background: none; 
+        }
+        input[type="color"].color-block::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"].color-block::-webkit-color-swatch { border: 1px solid var(--border-color); border-radius: 8px; }
+
+        .zoom-control { display: flex; align-items: center; gap: 10px; margin-top: 15px; width: 100%; max-width: 300px; }
+        .zoom-slider { flex: 1; accent-color: var(--primary); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -190,62 +199,64 @@
                     <span v-else style="font-size: 1.5rem;">⚡</span>
                     <h2>{{ storeConfig.name }}</h2>
                 </div>
-                
                 <div class="toggle-row">
-                    <button class="circle-btn" @click="toggleTheme" :title="storeConfig.themeMode === 'dark' ? 'Mudar para Claro' : 'Mudar para Escuro'">
-                        <span v-if="storeConfig.themeMode === 'dark'">☀️</span>
-                        <span v-else>🌙</span>
+                    <button class="theme-btn" @click="toggleTheme" :title="theme === 'dark' ? 'Light Mode' : 'Dark Mode'">
+                        <span v-if="theme === 'dark'" class="icon-moon">🌙</span>
+                        <span v-else class="icon-sun">☀️</span>
                     </button>
-
-                    <button class="square-btn" @click="toggleLang" title="Mudar Língua">
+                    <button class="lang-btn" :class="'lang-' + lang" @click="toggleLang" title="Switch Language">
                         {{ lang }}
                     </button>
                 </div>
             </div>
             
             <nav>
-                <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 Customers (CRM)</div>
-                <div class="nav-item" :class="{active: currentPage === 'register'}" @click="changePage('register')">➕ New Member</div>
-                <div class="nav-item" :class="{active: currentPage === 'scanner'}" @click="changePage('scanner')">📷 Scan Station</div>
-                <div class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 Card Skins</div>
-                <div class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ Settings</div>
-                <div class="nav-item" @click="logout" style="margin-top:auto; color:var(--red);">🚪 Logout</div>
+                <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 {{ t('nav_customers') }}</div>
+                <div class="nav-item" :class="{active: currentPage === 'register'}" @click="changePage('register')">➕ {{ t('nav_register') }}</div>
+                <div class="nav-item" :class="{active: currentPage === 'scanner'}" @click="changePage('scanner')">📷 {{ t('nav_scanner') }}</div>
+                <div class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 {{ t('nav_skins') }}</div>
+                <div class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ {{ t('nav_settings') }}</div>
+                <div class="nav-item" @click="logout" style="margin-top:auto; color:var(--red);">🚪 {{ t('nav_logout') }}</div>
             </nav>
         </aside>
 
         <main class="main-content">
             <div v-if="currentPage === 'customers'">
                 <div class="header-row">
-                    <div class="page-header"><h1 style="margin:0;">Customer Management</h1></div>
-                    <div class="search-container"><input v-model="searchQuery" class="search-input" placeholder="Search customer..."><span class="search-icon">🔍</span></div>
+                    <div class="page-header"><h1 style="margin:0;">{{ t('title_customers') }}</h1></div>
+                    <div class="search-container"><input v-model="searchQuery" class="search-input" :placeholder="t('search_placeholder')"><span class="search-icon">🔍</span></div>
                 </div>
                 <table>
-                    <thead><tr><th style="width: 80px;">Socio</th><th style="width: 25%;">Name & Contact</th><th style="width: 20%;">Status & Consent</th><th>Available</th><th>Redeemed</th><th>Visits</th><th style="width: 150px; text-align: center;">Actions</th></tr></thead>
+                    <thead><tr><th style="width: 30%;">{{ t('th_name') }}</th><th style="width: 15%;">{{ t('th_status') }}</th><th style="width: 15%;">{{ t('th_consent') }}</th><th>{{ t('th_avail') }}</th><th>{{ t('th_redeem') }}</th><th>Visits</th><th style="width: 140px; text-align: center;">{{ t('th_actions') }}</th></tr></thead>
                     <tbody>
                         <tr v-for="card in filteredCards" :key="card.id">
-                            <td><span class="member-badge">#{{ card.member_number }}</span></td>
-                            <td><div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 4px;">{{ card.customer_id }} {{ card.last_name }}</div><div class="contact-info"><span v-if="card.email">✉️ {{ card.email }}</span><span v-if="card.phone">📞 {{ card.phone }}</span></div></td>
+                            <td>
+                                <span class="customer-name">{{ card.customer_id }} {{ card.last_name }}</span>
+                                <div class="contact-details">
+                                    <div class="contact-row" v-if="card.email"><span>✉️</span>{{ card.email }}</div>
+                                    <div class="contact-row" v-if="card.phone"><span>📞</span>{{ card.phone }}</div>
+                                </div>
+                            </td>
                             <td>
                                 <span v-if="card.total_stamps >= storeConfig.goldThreshold" class="status-pill pill-gold">Gold</span>
                                 <span v-else-if="card.total_stamps >= storeConfig.silverThreshold" class="status-pill pill-silver">Silver</span>
                                 <span v-else-if="card.total_stamps >= storeConfig.bronzeThreshold" class="status-pill pill-bronze">Bronze</span>
                                 <span v-else class="status-pill pill-new">New</span>
-                                <div style="margin-top: 5px; display:flex; gap:5px;">
-                                    <span class="status-pill" :style="{background: card.rgpd_accepted ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: card.rgpd_accepted ? 'var(--success)' : 'var(--danger)', cursor: 'pointer'}" @click="toggleConsent(card, 'rgpd')">RGPD</span>
-                                    <span class="status-pill" :style="{background: card.marketing_accepted ? 'rgba(255, 209, 102, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: card.marketing_accepted ? 'var(--gold)' : 'var(--danger)', cursor: 'pointer'}" @click="toggleConsent(card, 'marketing')">MKT</span>
+                            </td>
+                            <td>
+                                <div class="consent-wrapper">
+                                    <span class="consent-btn" :class="{'is-rgpd': card.rgpd_accepted}" @click="toggleConsent(card, 'rgpd')">RGPD</span>
+                                    <span class="consent-btn" :class="{'is-mkt': card.marketing_accepted}" @click="toggleConsent(card, 'marketing')">MKT</span>
                                 </div>
                             </td>
-                            <td style="color: var(--primary); font-weight: 800;">{{ calculateAvailable(card) }}<span style="font-size:0.8rem; margin-left:5px;">🎁</span></td>
-                            <td style="color: var(--gold); font-weight: 800;">{{ card.total_redeemed_bonuses || 0 }}<span style="font-size:0.8rem; margin-left:5px;">🏆</span></td>
+                            <td style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">{{ calculateAvailable(card) }}<span style="font-size:0.8rem; margin-left:5px;">🎁</span></td>
+                            <td style="color: var(--gold); font-weight: 800; font-size: 1.1rem;">{{ card.total_redeemed_bonuses || 0 }}<span style="font-size:0.8rem; margin-left:5px;">🏆</span></td>
+                            <td><strong>{{ card.total_stamps }} <span v-if="!storeConfig.logo_url">{{ storeConfig.stamp_icon }}</span></strong></td>
                             <td>
-                                <strong>{{ card.total_stamps }}
-                                    <span v-if="!storeConfig.logo_url">{{ storeConfig.stamp_icon }}</span>
-                                </strong>
-                            </td>
-                            <td>
-                                <div class="action-stack">
+                                <div class="action-grid">
                                     <button class="btn-action btn-edit" @click="openEditModal(card)">Edit</button>
-                                    <button class="btn-action btn-stamp" @click="addStampFromAdmin(card)">+1</button>
+                                    <button class="btn-action btn-view" @click="viewCard(card.id)">View</button>
+                                    <button class="btn-action btn-stamp" @click="addStampFromAdmin(card)">Stamp</button>
                                     <button class="btn-action btn-redeem" :disabled="calculateAvailable(card) === 0" @click="redeemFromAdmin(card)">Use</button>
                                 </div>
                             </td>
@@ -255,39 +266,68 @@
             </div>
 
             <div v-else-if="currentPage === 'register'" class="reg-container">
-                <h1 style="text-align: center; margin-bottom: 30px; font-weight: 800;">Register New Member</h1>
-                <div class="form-row"><label>First Name *</label><input v-model="newMember.first_name" class="custom-input"></div>
-                <div class="form-row"><label>Last Name *</label><input v-model="newMember.last_name" class="custom-input"></div>
-                <div class="form-row"><label>Email</label><input v-model="newMember.email" class="custom-input"></div>
-                <div class="form-row"><label>Phone</label><input v-model="newMember.phone" class="custom-input"></div>
-                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer; margin-bottom:10px;"><input type="checkbox" v-model="newMember.rgpd"><span style="font-size:0.8rem; color:var(--text-sub);">Client accepts Privacy Policy *</span></label>
-                    <label v-if="newMember.email" style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox" v-model="newMember.marketing"><span style="font-size:0.8rem; color:var(--text-sub);">Receive offers via email</span></label>
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="margin: 0; font-weight: 800; font-size: 1.8rem; color: var(--primary);">{{ t('title_register') }}</h1>
+                    <p style="color: var(--text-sub); margin-top: 5px;">Fill in the details to create a new digital card.</p>
                 </div>
-                <button class="btn-action btn-redeem" style="padding: 15px; font-size: 1rem; width:100%;" :disabled="!newMember.rgpd" @click="registerMember">CREATE CARD</button>
+                
+                <div class="form-grid">
+                    <div class="form-row"><label>{{ t('lbl_fname') }} *</label><input v-model="newMember.first_name" class="custom-input" placeholder="e.g. John"></div>
+                    <div class="form-row"><label>{{ t('lbl_lname') }} *</label><input v-model="newMember.last_name" class="custom-input" placeholder="e.g. Doe"></div>
+                    
+                    <div class="form-row">
+                        <label>{{ t('lbl_email') }}</label>
+                        <input v-model="newMember.email" class="custom-input" placeholder="john@example.com">
+                        <div v-if="!newMember.email" class="warning-box">
+                            <span style="font-size: 1rem;">⚠️</span> {{ t('msg_no_email') }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-row"><label>{{ t('lbl_phone') }}</label><input v-model="newMember.phone" class="custom-input" placeholder="+351 912 345 678"></div>
+                </div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" v-model="newMember.rgpd">
+                        <div>
+                            <span>{{ t('lbl_rgpd') }} *</span>
+                            <small>Required to store customer data.</small>
+                        </div>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" v-model="newMember.marketing">
+                        <div>
+                            <span>{{ t('lbl_mkt') }}</span>
+                            <small>Allow sending promotions and rewards via email.</small>
+                        </div>
+                    </label>
+                </div>
+
+                <button class="btn-create-card" :disabled="!newMember.rgpd || (!newMember.first_name || !newMember.last_name)" @click="registerMember">{{ t('btn_create') }}</button>
             </div>
 
             <div v-else-if="currentPage === 'scanner'" class="scanner-box">
                 <input ref="scannerInput" type="text" style="opacity:0; position:absolute;" @blur="focusScanner" @keyup.enter="handleScan">
                 <div class="scan-animation" style="width:200px; height:200px; border:4px dashed var(--primary); border-radius:20px; display:flex; align-items:center; justify-content:center; font-size:4rem; color:var(--primary);">📷</div>
-                <h1 style="font-weight: 800; margin-top: 20px;">Ready to Scan</h1>
-                <p style="color: var(--text-sub);">Use the QR Reader. The stamp will be applied automatically.</p>
+                <h1 style="font-weight: 800; margin-top: 20px;">{{ t('title_scanner') }}</h1>
+                <p style="color: var(--text-sub);">{{ t('sub_scanner') }}</p>
                 <div v-if="lastScanStatus" style="margin-top: 20px; padding: 15px; background: rgba(0,168,150,0.1); border: 1px solid var(--primary); border-radius: 8px; color: var(--primary); font-weight: bold;">{{ lastScanStatus }}</div>
             </div>
 
             <div v-else-if="currentPage === 'skins'" class="skins-container">
-                <div class="page-header"><h1>Card Skins</h1><p style="color:var(--text-sub);">Choose the visual style for your customers' digital cards.</p></div>
+                <div class="page-header"><h1>{{ t('title_skins') }}</h1><p style="color:var(--text-sub);">{{ t('sub_skins') }}</p></div>
                 <div class="skins-grid">
                     <div v-for="skin in availableSkins" :key="skin.id" class="skin-card" :class="{'is-active': activeSkin === skin.id}">
-                        <div class="active-badge">ACTIVE</div>
+                        <div class="active-badge">{{ t('active_badge') }}</div>
                         <div class="skin-preview" :style="getPreviewStyle(skin)">
                             <div v-if="!skin.image" style="width:50px; height:30px; border:1px solid rgba(255,255,255,0.3); border-radius:4px;"></div>
                         </div>
                         <div class="skin-body">
                             <h3>{{ skin.name }}</h3>
                             <div class="skin-actions">
-                                <button class="btn-skin-preview" @click="openPreview(skin.id)">Preview</button>
-                                <button class="btn-skin-act" :disabled="activeSkin === skin.id" @click="updateGlobalSkin(skin.id)">ACTIVATE</button>
+                                <button class="btn-skin-preview" @click="openPreview(skin.id)">{{ t('btn_preview') }}</button>
+                                <button v-if="skin.id === 'custom'" class="btn-skin-edit" @click="openCustomDesigner" title="Design Brand">✏️</button>
+                                <button class="btn-skin-act" :disabled="activeSkin === skin.id" @click="updateGlobalSkin(skin.id)">{{ t('btn_activate') }}</button>
                             </div>
                         </div>
                     </div>
@@ -295,54 +335,58 @@
             </div>
 
             <div v-else-if="currentPage === 'settings'" class="settings-wrapper">
-                <div class="page-header"><h1>System Settings</h1><p style="color:var(--text-sub);">Manage your store identity and dashboard appearance.</p></div>
+                <div class="page-header"><h1>{{ t('title_settings') }}</h1><p style="color:var(--text-sub);">{{ t('sub_settings') }}</p></div>
                 <div class="settings-container">
                     <div class="settings-section">
-                        <h3 class="section-label">Branding & Identity</h3>
+                        <h3 class="section-label">{{ t('sec_brand') }}</h3>
                         <div class="setting-row">
-                            <div class="setting-info"><label>Store Name</label><span>How your brand appears across the platform.</span></div>
+                            <div class="setting-info"><label>{{ t('lbl_store_name') }}</label></div>
                             <div class="setting-control"><input type="text" v-model="storeConfig.name" class="custom-input"></div>
                         </div>
+                        
                         <div class="setting-row">
-                            <div class="setting-info"><label>Primary Brand Color</label><span>Used for the "Custom" card skin.</span></div>
-                            <div class="setting-control" style="display:flex; align-items:center; gap:15px;">
-                                <input type="color" v-model="storeConfig.primary_color" style="width:50px; height:50px; border:none; background:none; cursor:pointer;">
-                            </div>
-                        </div>
-                        <div class="setting-row">
-                            <div class="setting-info"><label>Stamp Icon</label><span>Icon used for stamps and rewards.</span></div>
+                            <div class="setting-info"><label>{{ t('lbl_icon') }}</label></div>
                             <div class="setting-control" style="display:flex; align-items:center; gap:15px;">
                                 <div style="font-size: 2rem; background: var(--bg-main); width: 60px; height: 60px; display:flex; align-items:center; justify-content:center; border-radius:12px; border:1px solid var(--border-color);">{{ storeConfig.stamp_icon }}</div>
                                 <button class="btn-action btn-edit" style="width:auto; padding: 10px 20px;" @click="showIconPicker = true">Change Icon</button>
                             </div>
                         </div>
                         <div class="setting-row">
-                            <div class="setting-info"><label>Store Logo</label><span>Upload a file. Used for header and stamps.</span></div>
+                            <div class="setting-info"><label>{{ t('lbl_logo') }}</label></div>
                             <div class="setting-control">
                                 <div v-if="storeConfig.logo_url" style="position:relative; width:80px; height:80px; background:white; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; justify-content:center;">
                                     <img :src="storeConfig.logo_url" style="max-width:100%; max-height:100%;">
                                     <button style="position:absolute; top:-8px; right:-8px; background:red; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer;" @click="removeLogo">✕</button>
                                 </div>
                                 <label style="cursor:pointer; background:var(--bg-main); padding:10px 20px; border-radius:8px; border:1px solid var(--border-color); display:inline-block; font-weight:bold; font-size:0.8rem;">
-                                    UPLOAD NEW IMAGE <input type="file" @change="handleLogoUpload" accept="image/*" hidden>
+                                    {{ t('btn_upload') }} <input type="file" @change="handleLogoUpload" accept="image/*" hidden>
                                 </label>
                             </div>
                         </div>
                     </div>
                     <div class="divider"></div>
                     <div class="settings-section">
-                        <h3 class="section-label">Security</h3>
+                        <h3 class="section-label">{{ t('sec_tiers') }}</h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--bronze); margin-bottom:5px;">BRONZE</label><input type="number" v-model.number="storeConfig.bronzeThreshold" class="custom-input"></div>
+                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--silver); margin-bottom:5px;">SILVER</label><input type="number" v-model.number="storeConfig.silverThreshold" class="custom-input"></div>
+                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--gold); margin-bottom:5px;">GOLD</label><input type="number" v-model.number="storeConfig.goldThreshold" class="custom-input"></div>
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="settings-section">
+                        <h3 class="section-label">{{ t('sec_security') }}</h3>
                         <div class="setting-row">
-                            <div class="setting-info"><label>Staff Access Key</label><span>Password to access this admin.</span></div>
+                            <div class="setting-info"><label>{{ t('lbl_pass_key') }}</label></div>
                             <div class="setting-control">
                                 <input type="password" id="pass-old" placeholder="Current Password" class="custom-input" style="margin-bottom:10px;">
                                 <input type="password" id="pass-new" placeholder="New Password" class="custom-input">
-                                <button class="btn-action btn-view" style="margin-top:10px; width:auto; padding:10px 20px;" @click="updatePassword">Update Password</button>
+                                <button class="btn-action btn-view" style="margin-top:10px; width:auto; padding:10px 20px;" @click="updatePassword">{{ t('btn_change_pass') }}</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="footer-actions"><button class="save-master-btn" @click="saveSettings">SAVE CONFIGURATION</button></div>
+                <div class="footer-actions"><button class="save-master-btn" @click="saveSettings">{{ t('btn_save_config') }}</button></div>
             </div>
 
         </main>
@@ -356,9 +400,83 @@
                     <label>Last Name</label><input v-model="editingCard.last_name" class="custom-input">
                     <label>Email</label><input v-model="editingCard.email" class="custom-input">
                     <label>Phone</label><input v-model="editingCard.phone" class="custom-input">
-                    <label>NIF</label><input v-model="editingCard.nif" class="custom-input">
                 </div>
-                <div style="text-align: right;"><button class="save-btn" @click="saveEdit">SAVE CHANGES</button></div>
+                <div style="text-align: right;"><button class="btn-save-modal" @click="saveEdit">SAVE CHANGES</button></div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" v-if="showCustomDesigner">
+            <div class="modal-content designer-modal">
+                <span class="close-modal" @click="showCustomDesigner = false">✕</span>
+                
+                <div class="designer-left">
+                    <h2 style="margin-top:0; color:var(--text-main);">Theme Designer</h2>
+                    
+                    <span class="design-label">BACKGROUND</span>
+                    <label class="upload-clean">
+                        <img v-if="designForm.image" :src="designForm.image">
+                        <span class="upload-text">{{ designForm.image ? 'CHANGE IMAGE' : 'UPLOAD IMAGE' }}</span>
+                        <input type="file" hidden @change="handleBgUpload" accept="image/*">
+                    </label>
+
+                    <div style="margin-top:20px;">
+                        <span class="design-label">BACKGROUND COLOR (SOLID)</span>
+                        <div class="color-block-wrapper">
+                            <input type="color" v-model="designForm.background" class="color-block">
+                        </div>
+                    </div>
+
+                    <div style="margin-top:15px;">
+                        <span class="design-label">TEXT COLOR</span>
+                        <div class="color-block-wrapper">
+                            <input type="color" v-model="designForm.textColor" class="color-block">
+                        </div>
+                    </div>
+
+                    <div style="margin-top:15px;">
+                        <span class="design-label">STAMP BORDER COLOR</span>
+                        <div class="color-block-wrapper">
+                            <input type="color" v-model="designForm.borderColor" class="color-block">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="designer-right">
+                    <div class="preview-card-shell" 
+                         :style="{
+                             background: designForm.image ? `url(${designForm.image}) center/cover` : designForm.background,
+                             color: designForm.textColor,
+                             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                             transform: `scale(${designForm.zoom / 100})`
+                         }">
+                        
+                        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
+                            <span>BRAND VIP</span>
+                            <span style="color: var(--gold)">2 🎁</span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0;">
+                            <div v-for="n in 10" :key="n" 
+                                 style="width: 35px; height: 35px; border-radius: 50%;" 
+                                 :style="{ 
+                                     border: '2px dashed ' + designForm.borderColor,
+                                     background: n <= 2 ? 'white' : 'transparent'
+                                 }">
+                            </div>
+                        </div>
+                        
+                        <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">
+                            JOHN DOE <br><span style="opacity:0.7; font-size: 0.6rem;">MEMBER Nº 0000</span>
+                        </div>
+                    </div>
+
+                    <div class="zoom-control">
+                        <span style="font-size:0.8rem; font-weight:bold;">ZOOM</span>
+                        <input type="range" min="80" max="130" v-model="designForm.zoom" class="zoom-slider">
+                    </div>
+
+                    <button class="btn-save-modal" style="margin-top: 30px; width: 200px;" @click="saveCustomDesign">SAVE THEME</button>
+                </div>
             </div>
         </div>
 
@@ -390,7 +508,6 @@
             </div>
         </div>
     </div>
-
     <script src="/static/js/admin.js"></script>
 </body>
 </html>

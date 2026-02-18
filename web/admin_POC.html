@@ -5,10 +5,10 @@
     <title>Management Panel</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        /* ... (O teu CSS anterior está aqui igual, só adicionei a classe TOAST) ... */
-        :root { --primary: #00a896; --bg-main: #121212; --bg-side: #1e1e1e; --text-main: #ffffff; --text-sub: #888888; --border-color: #333333; --gold: #ffd166; --silver: #bdc3c7; --bronze: #cd7f32; --red: #ff4444; --orange: #e67e22; --success: #00a896; --danger: #ff4444; --warning: #ffb74d; }
+        :root { --primary: #00a896; --bg-main: #121212; --bg-side: #1e1e1e; --text-main: #ffffff; --text-sub: #888888; --border-color: #333333; --gold: #ffd166; --silver: #bdc3c7; --bronze: #cd7f32; --red: #ff4444; --orange: #e67e22; }
         body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
         
+        /* Layout */
         .sidebar { width: 240px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; z-index: 100; }
         .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         .sidebar-header img { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; background: white; }
@@ -16,8 +16,10 @@
         .nav-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-sub); transition: 0.2s; font-weight: bold; font-size: 0.9rem; }
         .nav-item:hover { background: rgba(0, 168, 150, 0.1); color: var(--text-main); }
         .nav-item.active { background: rgba(0, 168, 150, 0.2); color: var(--primary); border-left: 3px solid var(--primary); }
+        
         .main-content { flex: 1; padding: 30px; overflow-y: auto; }
         
+        /* Header & Search */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .page-header h1 { font-size: 1.5rem; margin: 0; font-weight: 800; }
         .search-container { position: relative; }
@@ -25,12 +27,14 @@
         .search-input:focus { border-color: var(--primary); }
         .search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 0.8rem; }
 
+        /* Table */
         table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-side); border-radius: 8px; border: 1px solid var(--border-color); }
         th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.8rem; vertical-align: middle; }
         th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 1px; font-weight: 800; height: 30px; }
         tr:hover { background: rgba(0, 168, 150, 0.03); }
         tr:last-child td { border-bottom: none; }
 
+        /* Elements */
         .contact-info { display: flex; flex-direction: column; font-size: 0.7rem; color: var(--text-sub); margin-top: 2px; gap: 2px; }
         .status-pill { padding: 2px 8px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; border: 1px solid transparent; display: inline-block; }
         .pill-bronze { background: rgba(205, 127, 50, 0.1); color: var(--bronze); border-color: rgba(205, 127, 50, 0.3); }
@@ -40,14 +44,15 @@
         .member-badge { background: var(--bg-main); color: var(--gold); padding: 2px 6px; border-radius: 4px; font-family: monospace; border: 1px solid var(--border-color); font-weight: bold; font-size: 0.75rem; }
         .stat-cell { font-weight: 700; font-size: 0.85rem; }
         .stat-icon { margin-left: 4px; font-style: normal; }
-        .mini-stamp-logo { width: 18px; height: 18px; object-fit: contain; vertical-align: middle; margin-left: 4px; }
 
+        /* Toggles */
         .consent-toggles { display: flex; gap: 4px; margin-top: 4px; }
         .toggle-btn { cursor: pointer; padding: 1px 5px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; border: 1px solid var(--border-color); color: var(--text-sub); opacity: 0.5; transition: 0.2s; }
         .toggle-btn:hover { opacity: 1; }
         .toggle-btn.is-active-rgpd { border-color: var(--primary); color: var(--primary); background: rgba(0, 168, 150, 0.1); opacity: 1; }
         .toggle-btn.is-active-mkt { border-color: var(--gold); color: var(--gold); background: rgba(255, 209, 102, 0.1); opacity: 1; }
 
+        /* Actions Stack */
         .action-stack { display: flex; flex-direction: column; gap: 3px; }
         .btn-action { width: 100%; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.65rem; padding: 3px 0; text-transform: uppercase; color: white; transition: 0.2s; }
         .btn-action:hover { filter: brightness(1.1); transform: translateX(2px); }
@@ -58,81 +63,32 @@
         .btn-redeem { background: var(--primary); }
         .btn-reset { background: var(--red); }
 
-        .skins-grid { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
-        .skin-card { background: var(--bg-side); border-radius: 15px; border: 2px solid var(--border-color); overflow: hidden; position: relative; width: 260px; transition: 0.3s; }
-        .skin-card.is-active { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 168, 150, 0.4); transform: translateY(-5px); }
-        .skin-card .active-badge { display: none; position: absolute; top: 10px; right: 10px; background: var(--primary); color: white; padding: 4px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; z-index: 10; }
-        .skin-card.is-active .active-badge { display: block; }
-        .skin-preview { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 30px; background-size: cover; background-position: center; position: relative; }
-        .skin-body { padding: 15px; color: var(--text-main); }
-        .skin-body h3 { margin: 0; font-size: 1rem; margin-bottom: 5px; }
-        .skin-body p { margin: 0 0 12px; font-size: 0.7rem; color: var(--text-sub); }
-        .skin-actions { display: flex; gap: 8px; }
-        .btn-skin-preview, .btn-skin-act { flex: 1; padding: 8px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
-        .btn-skin-preview { background: var(--border-color); color: var(--text-main); }
-        .btn-skin-act { background: var(--primary); color: white; }
-        .btn-skin-act:disabled { background: var(--bg-main) !important; color: var(--text-sub) !important; cursor: default; opacity: 0.6; }
-        .mini-card-mock { width: 40px; height: 25px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; }
-
-        .settings-container { background: var(--bg-side); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; max-width: 800px; }
-        .settings-section { padding: 30px; }
-        .section-label { font-size: 0.75rem; text-transform: uppercase; color: var(--primary); letter-spacing: 1.5px; margin-bottom: 25px; font-weight: 800; }
-        .setting-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 30px; gap: 40px; }
-        .setting-info label { display: block; font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 4px; }
-        .setting-info span { font-size: 0.85rem; color: var(--text-sub); display: block; line-height: 1.4; }
-        .setting-control { width: 350px; }
-        .custom-input { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 0.95rem; transition: 0.2s; box-sizing: border-box; }
-        .divider { height: 1px; background: var(--border-color); margin: 0 30px; }
-        .footer-actions { margin-top: 40px; text-align: right; }
-        .save-master-btn { background: var(--primary); color: white; border: none; padding: 16px 45px; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
-        .save-master-btn:hover { filter: brightness(1.1); }
-        .upload-btn-styled { display: block; width: 100%; padding: 12px; text-align: center; border-radius: 8px; background: var(--border-color); color: var(--text-main); cursor: pointer; font-weight: 800; font-size: 0.8rem; transition: 0.2s; border: 1px solid transparent; box-sizing: border-box; }
-        
-        .logo-preview-box { position: relative; width: 80px; height: 80px; border-radius: 12px; background: white; border: 2px solid var(--border-color); padding: 5px; flex-shrink: 0; display: none; }
-        .logo-preview-box.has-logo { display: block; }
-        .logo-preview-box img { width: 100%; height: 100%; object-fit: contain; }
-        .remove-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: #ff4444; color: white; border: none; cursor: pointer; font-weight: bold; }
-
+        /* REGISTO & SCANNER STYLES */
         .reg-container { max-width: 500px; margin: 0 auto; background: var(--bg-side); padding: 40px; border-radius: 16px; border: 1px solid var(--border-color); }
         .form-row { margin-bottom: 15px; }
         .form-row label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
+        .custom-input { width: 100%; padding: 12px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; box-sizing: border-box; }
+        
         .scanner-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
         .scan-animation { width: 200px; height: 200px; border: 4px dashed var(--primary); border-radius: 20px; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--primary); animation: pulse 2s infinite; }
         .hidden-input { opacity: 0; position: absolute; pointer-events: none; }
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
 
+        /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--bg-side); padding: 30px; border-radius: 16px; border: 1px solid var(--border-color); width: 400px; text-align: left; position: relative; max-height: 80vh; overflow-y: auto; }
+        .modal-content { background: var(--bg-side); padding: 30px; border-radius: 16px; border: 1px solid var(--border-color); width: 400px; text-align: left; position: relative; }
         .close-modal { position: absolute; top: 15px; right: 15px; cursor: pointer; color: var(--text-sub); }
         .modal-form label { display: block; font-size: 0.7rem; color: var(--text-sub); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; }
         .modal-form input { width: 100%; padding: 10px; margin-bottom: 12px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; box-sizing: border-box; }
         .save-btn { background: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
         .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 25px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); }
-
-        .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 20px; }
-        .icon-opt { font-size: 1.5rem; cursor: pointer; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid transparent; transition: 0.2s; }
-        .icon-opt:hover { background: rgba(0, 168, 150, 0.2); transform: scale(1.1); border-color: var(--primary); }
-
-        /* --- TOAST NOTIFICATIONS --- */
-        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .toast { pointer-events: auto; padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; font-size: 0.9rem; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; min-width: 250px; }
-        .toast-success { background: var(--success); }
-        .toast-error { background: var(--danger); }
-        .toast-warning { background: var(--warning); color: #1e293b; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="app" style="display: contents;">
-        <div class="toast-container">
-            <div v-for="(t, i) in toasts" :key="i" class="toast" :class="'toast-' + t.type">
-                <span>{{ t.message }}</span>
-            </div>
-        </div>
-
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" alt="Store Logo">
+                <img v-if="storeConfig.logo" :src="storeConfig.logo" alt="Store Logo">
                 <h2>{{ storeConfig.name }}</h2>
             </div>
             <nav>
@@ -146,33 +102,54 @@
         </aside>
 
         <main class="main-content">
-            
             <div v-if="currentPage === 'customers'">
                 <div class="header-row">
                     <div class="page-header"><h1 style="margin:0;">Customer Management</h1></div>
-                    <div class="search-container"><input v-model="searchQuery" class="search-input" placeholder="Search customer..."><span class="search-icon">🔍</span></div>
+                    <div class="search-container">
+                        <input v-model="searchQuery" class="search-input" placeholder="Search customer...">
+                        <span class="search-icon">🔍</span>
+                    </div>
                 </div>
+
                 <table>
-                    <thead><tr><th style="width: 70px;">Socio</th><th style="width: 25%;">Name & Contact</th><th style="width: 15%;">Status & Consent</th><th>Available</th><th>Redeemed</th><th>Visits</th><th style="width: 80px; text-align: center;">Actions</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Socio</th>
+                            <th style="width: 25%;">Name & Contact</th>
+                            <th style="width: 15%;">Status & Consent</th>
+                            <th>Available</th>
+                            <th>Redeemed</th>
+                            <th>Visits</th>
+                            <th style="width: 80px; text-align: center;">Actions</th> 
+                        </tr>
+                    </thead>
                     <tbody>
                         <tr v-for="card in filteredCards" :key="card.id">
                             <td><span class="member-badge">#{{ card.member_number }}</span></td>
-                            <td><div style="font-weight: 800; font-size: 0.9rem; margin-bottom: 4px;">{{ card.customer_id }} {{ card.last_name }}</div><div class="contact-info"><span v-if="card.email">✉️ {{ card.email }}</span><span v-if="card.phone">📞 {{ card.phone }}</span></div></td>
+                            <td>
+                                <div style="font-weight: 800; font-size: 0.9rem; margin-bottom: 4px;">{{ card.customer_id }} {{ card.last_name }}</div>
+                                <div class="contact-info">
+                                    <span v-if="card.email">✉️ {{ card.email }}</span>
+                                    <span v-if="card.phone">📞 {{ card.phone }}</span>
+                                </div>
+                            </td>
                             <td>
                                 <span v-if="card.total_stamps >= storeConfig.goldThreshold" class="status-pill pill-gold">Gold</span>
                                 <span v-else-if="card.total_stamps >= storeConfig.silverThreshold" class="status-pill pill-silver">Silver</span>
                                 <span v-else-if="card.total_stamps >= storeConfig.bronzeThreshold" class="status-pill pill-bronze">Bronze</span>
                                 <span v-else class="status-pill pill-new">New</span>
-                                <div class="consent-toggles"><span class="toggle-btn" :class="{'is-active-rgpd': card.rgpd_accepted}" @click="toggleConsent(card, 'rgpd')">{{ card.rgpd_accepted ? '✓' : '○' }} RGPD</span><span class="toggle-btn" :class="{'is-active-mkt': card.marketing_accepted}" @click="toggleConsent(card, 'marketing')">{{ card.marketing_accepted ? '✓' : '○' }} MKT</span></div>
+                                <div class="consent-toggles">
+                                    <span class="toggle-btn" :class="{'is-active-rgpd': card.rgpd_accepted}" @click="toggleConsent(card, 'rgpd')">
+                                        {{ card.rgpd_accepted ? '✓' : '○' }} RGPD
+                                    </span>
+                                    <span class="toggle-btn" :class="{'is-active-mkt': card.marketing_accepted}" @click="toggleConsent(card, 'marketing')">
+                                        {{ card.marketing_accepted ? '✓' : '○' }} MKT
+                                    </span>
+                                </div>
                             </td>
                             <td class="stat-cell" style="color: var(--primary);">{{ calculateAvailable(card) }}<i class="stat-icon">🎁</i></td>
                             <td class="stat-cell" style="color: var(--gold);">{{ card.total_redeemed_bonuses || 0 }}<i class="stat-icon">🏆</i></td>
-                            <td class="stat-cell">
-                                <strong>{{ card.total_stamps }}
-                                    <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" class="mini-stamp-logo">
-                                    <i v-else class="stat-icon">{{ storeConfig.stamp_icon }}</i>
-                                </strong>
-                            </td>
+                            <td class="stat-cell"><strong>{{ card.total_stamps }}<i class="stat-icon">🍳</i></strong></td>
                             <td>
                                 <div class="action-stack">
                                     <button class="btn-action btn-edit" @click="openEditModal(card)">Edit</button>
@@ -193,9 +170,16 @@
                 <div class="form-row"><label>Last Name *</label><input v-model="newMember.last_name" class="custom-input"></div>
                 <div class="form-row"><label>Email</label><input v-model="newMember.email" class="custom-input"></div>
                 <div class="form-row"><label>Phone</label><input v-model="newMember.phone" class="custom-input"></div>
+                
                 <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer; margin-bottom:10px;"><input type="checkbox" v-model="newMember.rgpd"><span style="font-size:0.75rem; color:var(--text-sub);">Client accepts Privacy Policy *</span></label>
-                    <label v-if="newMember.email" style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox" v-model="newMember.marketing"><span style="font-size:0.75rem; color:var(--text-sub);">Receive offers via email</span></label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer; margin-bottom:10px;">
+                        <input type="checkbox" v-model="newMember.rgpd">
+                        <span style="font-size:0.75rem; color:var(--text-sub);">Client accepts Privacy Policy & Data Processing *</span>
+                    </label>
+                    <label v-if="newMember.email" style="display:flex; gap:10px; align-items:center; cursor:pointer;">
+                        <input type="checkbox" v-model="newMember.marketing">
+                        <span style="font-size:0.75rem; color:var(--text-sub);">Client wants to receive offers via email</span>
+                    </label>
                 </div>
                 <button class="btn-action btn-redeem" style="padding: 15px; font-size: 1rem;" :disabled="!newMember.rgpd" @click="registerMember">CREATE CARD</button>
             </div>
@@ -205,103 +189,12 @@
                 <div class="scan-animation">📷</div>
                 <h1 style="font-weight: 800; margin-bottom: 10px;">Ready to Scan</h1>
                 <p style="color: var(--text-sub);">Use the QR Reader. The stamp will be applied automatically.</p>
-                <div v-if="lastScanStatus" style="margin-top: 20px; padding: 15px; background: rgba(0,168,150,0.1); border: 1px solid var(--primary); border-radius: 8px; color: var(--primary); font-weight: bold;">{{ lastScanStatus }}</div>
-            </div>
-
-            <div v-else-if="currentPage === 'skins'" class="skins-container">
-                <div class="page-header"><h1>Card Skins</h1><p>Choose the visual style for your customers' digital cards.</p></div>
-                <div class="skins-grid">
-                    
-                    <div v-for="skin in availableSkins" :key="skin.id" class="skin-card" :class="{'is-active': activeSkin === skin.id}">
-                        <div class="active-badge">ACTIVE</div>
-                        <div class="skin-preview" :style="getPreviewStyle(skin)">
-                            <div v-if="!skin.image" class="mini-card-mock" :style="getMockStyle(skin)"></div>
-                        </div>
-                        <div class="skin-body">
-                            <h3>{{ skin.name }}</h3>
-                            <p v-if="skin.type === 'seasonal'">📅 Limited Time Collection</p>
-                            <p v-else>✨ Standard Collection</p>
-                            
-                            <div class="skin-actions">
-                                <button class="btn-skin-preview" @click="openPreview(skin.id)">Preview</button>
-                                <button class="btn-skin-act" :disabled="activeSkin === skin.id" @click="updateGlobalSkin(skin.id)">ACTIVATE</button>
-                            </div>
-                        </div>
-                    </div>
-
+                <div v-if="lastScanStatus" style="margin-top: 20px; padding: 15px; background: rgba(0,168,150,0.1); border: 1px solid var(--primary); border-radius: 8px; color: var(--primary); font-weight: bold;">
+                    {{ lastScanStatus }}
                 </div>
             </div>
 
-            <div v-else-if="currentPage === 'settings'" class="settings-wrapper">
-                <div class="page-header"><h1>System Settings</h1><p>Manage your store identity and dashboard appearance.</p></div>
-                <div class="settings-container">
-                    <div class="settings-section">
-                        <h3 class="section-label">Branding & Identity</h3>
-                        <div class="setting-row">
-                            <div class="setting-info"><label>Store Name</label><span>How your brand appears across the platform.</span></div>
-                            <div class="setting-control"><input type="text" v-model="storeConfig.name" class="custom-input"></div>
-                        </div>
-                        <div class="setting-row">
-                            <div class="setting-info"><label>Primary Brand Color</label><span>Used for the "Custom" card skin.</span></div>
-                            <div class="setting-control" style="display:flex; align-items:center; gap:15px;">
-                                <input type="color" v-model="storeConfig.primary_color" style="width:60px; height:60px; border:none; background:none; cursor:pointer;">
-                            </div>
-                        </div>
-                        <div class="setting-row">
-                            <div class="setting-info"><label>Stamp Icon</label><span>Icon used for stamps and rewards.</span></div>
-                            <div class="setting-control" style="display:flex; align-items:center; gap:15px;">
-                                <div style="font-size: 2.5rem; background: var(--bg-main); width: 60px; height: 60px; display:flex; align-items:center; justify-content:center; border-radius:12px; border:1px solid var(--border-color);">{{ storeConfig.stamp_icon }}</div>
-                                <button class="btn-action btn-edit" style="width:auto; padding: 10px 20px; font-size:0.8rem;" @click="showIconPicker = true">Change Icon ⇩</button>
-                            </div>
-                        </div>
-                        <div class="setting-row">
-                            <div class="setting-info"><label>Store Logo</label><span>Upload a file. Used for header and stamps.</span></div>
-                            <div class="setting-control logo-management-v2">
-                                <div class="logo-preview-box" :class="{'has-logo': storeConfig.logo_url}" id="logo-preview-container">
-                                    <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url">
-                                    <button v-if="storeConfig.logo_url" class="remove-btn" @click="removeLogo">✕</button>
-                                </div>
-                                <div class="logo-actions">
-                                    <label class="upload-btn-styled"><input type="file" @change="handleLogoUpload" accept="image/*" hidden><span>ADD IMAGE FILE</span></label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="divider"></div>
-                    <div class="settings-section">
-                        <h3 class="section-label">Loyalty Tiers</h3>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--bronze); margin-bottom:5px;">BRONZE</label><input type="number" v-model.number="storeConfig.bronzeThreshold" class="custom-input"></div>
-                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--silver); margin-bottom:5px;">SILVER</label><input type="number" v-model.number="storeConfig.silverThreshold" class="custom-input"></div>
-                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--gold); margin-bottom:5px;">GOLD</label><input type="number" v-model.number="storeConfig.goldThreshold" class="custom-input"></div>
-                        </div>
-                    </div>
-                    <div class="divider"></div>
-                    <div class="settings-section">
-                        <h3 class="section-label">Security</h3>
-                        <div class="setting-row">
-                            <div class="setting-info"><label>Staff Access Key</label><span>Password to access this admin.</span></div>
-                            <div class="setting-control">
-                                <input type="password" id="pass-old" placeholder="Current Password" class="custom-input" style="margin-bottom:10px;">
-                                <input type="password" id="pass-new" placeholder="New Password" class="custom-input">
-                                <button class="btn-action btn-view" style="margin-top:10px; width:auto; padding:10px 20px;" @click="updatePassword">Update Password</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="settings-section">
-                        <h3 class="section-label">Appearance</h3>
-                        <div class="setting-row">
-                            <div class="setting-info"><label>Interface Theme</label><span>Switch light/dark mode.</span></div>
-                            <div class="setting-control" style="display:flex; gap:10px;">
-                                <button class="btn-action" style="background:#ddd; color:#333;" @click="setTheme('light')">☀️ Light</button>
-                                <button class="btn-action" style="background:#333;" @click="setTheme('dark')">🌙 Dark</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="footer-actions"><button class="save-master-btn" @click="saveSettings">SAVE CONFIGURATION</button></div>
-            </div>
-
+            <div v-else v-html="subPageHtml"></div>
         </main>
 
         <div class="modal-overlay" v-if="editingCard">
@@ -315,16 +208,8 @@
                     <label>Phone</label><input v-model="editingCard.phone" class="custom-input">
                     <label>NIF</label><input v-model="editingCard.nif" class="custom-input">
                 </div>
-                <div style="text-align: right;"><button class="save-btn" @click="saveEdit">SAVE CHANGES</button></div>
-            </div>
-        </div>
-
-        <div class="modal-overlay" v-if="showIconPicker">
-            <div class="modal-content" style="width: 500px;">
-                <span class="close-modal" @click="showIconPicker = false">✕</span>
-                <h2 style="margin-top:0; color:var(--primary);">Select Stamp Icon</h2>
-                <div class="icon-grid">
-                    <div v-for="icon in icons" :key="icon" class="icon-opt" @click="selectIcon(icon)">{{ icon }}</div>
+                <div style="text-align: right;">
+                    <button class="save-btn" @click="saveEdit">SAVE CHANGES</button>
                 </div>
             </div>
         </div>
@@ -333,7 +218,10 @@
             <div class="modal-content">
                 <span class="close-modal" @click="showPreview = false">✕</span>
                 <div class="preview-card-shell" :style="{ backgroundColor: previewColors.bg, color: previewColors.text }">
-                    <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;"><span>{{ storeConfig.name }} VIP</span><span style="color: var(--gold)">2 🎁</span></div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
+                        <span>{{ storeConfig.name }} VIP</span>
+                        <span style="color: var(--gold)">2 🎁</span>
+                    </div>
                     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0;">
                         <div v-for="n in 10" :key="n" style="width: 35px; height: 35px; border-radius: 50%;" :style="{ background: n <= 6 ? 'white' : 'rgba(255,255,255,0.2)', border: n <= 6 ? '1px solid gold' : '1px dashed rgba(255,255,255,0.4)' }"></div>
                     </div>
@@ -348,144 +236,121 @@
         const { createApp, ref, onMounted, nextTick, watch, computed } = Vue;
         createApp({
             setup() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const currentStore = urlParams.get('store');
-                const api = (url) => currentStore ? `${url}${url.includes('?') ? '&' : '?'}store=${currentStore}` : url;
-
                 const cards = ref([]);
                 const currentPage = ref('customers');
                 const searchQuery = ref('');
+                const subPageHtml = ref('');
+                const loadingSubPage = ref(false);
                 const activeSkin = ref('default');
                 const showPreview = ref(false);
                 const previewDesign = ref('default');
-                const toasts = ref([]);
-                
-                const showIconPicker = ref(false);
-                const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'];
-
-                const storeConfig = ref({ 
-                    name: 'Brunch.co', logo_url: '', themeMode: 'dark', 
-                    primary_color: '#00a896', stamp_icon: '🍳',
-                    bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 
-                });
-                
+                const storeConfig = ref({ name: 'Brunch.co', logo: '', themeMode: 'dark', bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 });
                 const newMember = ref({ first_name: '', last_name: '', email: '', phone: '', rgpd: false, marketing: false });
                 const editingCard = ref(null);
                 const lastScanStatus = ref('');
                 const scannerInput = ref(null);
+                let hasJustUploaded = false;
 
-                const availableSkins = ref([]);
-
-                const showToast = (message, type = 'success') => {
-                    const id = Date.now();
-                    toasts.value.push({ id, message, type });
-                    setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000);
-                };
-
-                const fetchCards = async () => { const res = await fetch(api('/api/v1/admin/cards')); if (res.ok) cards.value = await res.json(); };
-                
-                const fetchAvailableSkins = async () => {
-                    const res = await fetch(api('/api/v1/system/skins'));
-                    if(res.ok) {
-                        const globals = await res.json();
-                        const customSkin = { id: 'custom', name: 'Custom Brand', type: 'standard', style: `background: ${storeConfig.value.primary_color || '#00a896'}` };
-                        availableSkins.value = [customSkin, ...globals];
-                    }
+                const fetchCards = async () => {
+                    const res = await fetch('/api/v1/admin/cards');
+                    if (res.ok) cards.value = await res.json();
                 };
 
                 const filteredCards = computed(() => {
                     if (!searchQuery.value) return cards.value;
                     const q = searchQuery.value.toLowerCase();
-                    return cards.value.filter(c => c.customer_id.toLowerCase().includes(q) || c.last_name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q)));
+                    return cards.value.filter(c => 
+                        c.customer_id.toLowerCase().includes(q) || 
+                        c.last_name.toLowerCase().includes(q) ||
+                        (c.email && c.email.toLowerCase().includes(q)) ||
+                        (c.phone && c.phone.includes(q))
+                    );
                 });
 
-                const getPreviewStyle = (skin) => {
-                    if (!skin) return {};
-                    if (skin.image) return { backgroundImage: `url(${skin.image})`, backgroundSize: 'cover', backgroundPosition: 'center' };
-                    if(skin.id === 'default') return { background: '#00a896', color: '#fff' };
-                    if(skin.id === 'black') return { background: '#1a1a1a', borderBottom: '3px solid #ffd166', color: '#fff' };
-                    if(skin.id === 'custom') return { backgroundColor: storeConfig.value.primary_color || '#00a896', color: '#fff' };
-                    if(skin.style) return { background: skin.style.replace('background:', '').replace(';', ''), color: '#fff' };
-                    return { background: '#ccc' };
-                };
-                
-                const getMockStyle = (skin) => {
-                    if(skin.id === 'black') return { borderColor: '#ffd166' };
-                    return {};
-                }
-
-                const changePage = (page) => {
+                const changePage = async (page) => {
                     currentPage.value = page;
                     if (page === 'scanner') nextTick(() => focusScanner());
-                    if (page !== 'settings' && page !== 'skins') fetchCards();
+                    else if (page === 'skins' || page === 'settings') {
+                        subPageHtml.value = await (await fetch(`/${page}.html`)).text();
+                        if (page === 'settings') setTimeout(syncSettingsUI, 50);
+                    } else fetchCards();
                 };
 
-                const selectIcon = (icon) => { storeConfig.value.stamp_icon = icon; showIconPicker.value = false; };
+                // Funções de Ação
+                const openEditModal = (c) => editingCard.value = { ...c };
+                const saveEdit = async () => {
+                    const res = await fetch('/api/v1/admin/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) });
+                    if(res.ok) { alert("Updated!"); editingCard.value = null; fetchCards(); } else alert("Error");
+                };
+                const toggleConsent = async (c, type) => {
+                    const field = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted';
+                    c[field] = !c[field];
+                    await fetch('/api/v1/admin/update-consent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, [field]: c[field] }) });
+                };
+                const registerMember = async () => {
+                    const res = await fetch('/api/v1/cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: newMember.value.first_name, last_name: newMember.value.last_name, email: newMember.value.email, phone: newMember.value.phone, rgpd_accepted: newMember.value.rgpd, marketing_accepted: newMember.value.marketing }) });
+                    if(res.ok) { alert("Registered!"); newMember.value = {first_name:'', last_name:'', email:'', phone:'', rgpd:false, marketing:false}; changePage('customers'); }
+                };
+                const logout = async () => { await fetch('/api/v1/auth/logout', { method: 'POST' }); window.location.href = "/"; };
+                
+                // Scanner
+                const focusScanner = () => { if(scannerInput.value) scannerInput.value.focus(); };
+                const handleScan = async (e) => {
+                    let id = e.target.value; e.target.value = '';
+                    if(id.includes('id=')) id = id.split('id=')[1].split('&')[0];
+                    if(id.length>5) {
+                        const res = await fetch(`/api/v1/cards/stamp?id=${id}`, { method: 'POST' });
+                        if(res.ok) { const data = await res.json(); lastScanStatus.value = `Success: ${data.customer_id}`; setTimeout(()=>lastScanStatus.value='',3000); }
+                        else lastScanStatus.value = "Error";
+                    }
+                };
 
-                const saveSettings = async () => { 
-                    if (activeSkin.value !== 'custom') { await updateGlobalSkin('custom'); }
-                    
-                    await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); 
-                    showToast("Configuration Saved & Custom Skin Activated!", "success"); 
-                    fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
-                        storeConfig.value = { ...storeConfig.value, ...d }; 
-                        fetchAvailableSkins();
+                // Globais & Utils
+                const calculateAvailable = (c) => Math.max(0, Math.floor(c.total_stamps / 10) - (c.total_redeemed_bonuses || 0));
+                const addStampFromAdmin = async (c) => { await fetch(`/api/v1/cards/stamp?id=${c.id}`, {method:'POST'}); fetchCards(); };
+                const redeemFromAdmin = async (c) => { await fetch(`/api/v1/cards/use-reward?id=${c.id}`, {method:'POST'}); fetchCards(); };
+                const resetCard = async (id) => { if(confirm("Reset?")) await fetch(`/api/v1/admin/reset?id=${id}`, {method:'POST'}); fetchCards(); };
+                const viewCard = (id) => window.open(`/card?id=${id}`, '_blank');
+                
+                const syncSettingsUI = () => {
+                    if (currentPage.value !== 'settings') return;
+                    nextTick(() => {
+                        const nI = document.getElementById('store-name-input');
+                        if (nI) {
+                            nI.value = storeConfig.value.name;
+                            document.getElementById('store-logo-url').value = storeConfig.value.logo.startsWith('data:') ? '' : storeConfig.value.logo;
+                            document.getElementById('threshold-bronze').value = storeConfig.value.bronzeThreshold;
+                            document.getElementById('threshold-silver').value = storeConfig.value.silverThreshold;
+                            document.getElementById('threshold-gold').value = storeConfig.value.goldThreshold;
+                            updateLogoPreview();
+                        }
                     });
                 };
-
-                const handleLogoUpload = (e) => { const r=new FileReader(); r.onload=(ev)=>{ storeConfig.value.logo_url=ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
-                const removeLogo = () => { storeConfig.value.logo_url=''; };
-
-                const updatePassword = async () => { 
-                    const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value; 
-                    const res = await fetch(api('/api/v1/admin/update-password'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n})}); 
-                    if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error");
+                const updateLogoPreview = () => {
+                    const c = document.getElementById('logo-preview-container');
+                    if(c && storeConfig.value.logo) { c.innerHTML = `<img src="${storeConfig.value.logo}" style="width:100%;height:100%;object-fit:contain;"><button onclick="window.removeLogo()" style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:#ff4444;color:white;border:none;cursor:pointer;">✕</button>`; c.classList.add('has-logo'); }
                 };
 
-                const setTheme = (m) => { storeConfig.value.themeMode = m; };
+                window.updatePassword = async () => { const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value; const res = await fetch('/api/v1/admin/update-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n})}); alert(res.ok?"Updated!":"Error"); };
+                window.setTheme = (m) => { storeConfig.value.themeMode = m; applyTheme(); };
+                window.handleLogoUpload = (e) => { const r=new FileReader(); r.onload=(ev)=>{ storeConfig.value.logo=ev.target.result; hasJustUploaded=true; updateLogoPreview(); }; r.readAsDataURL(e.target.files[0]); };
+                window.removeLogo = () => { storeConfig.value.logo=''; hasJustUploaded=false; updateLogoPreview(); };
+                window.saveSettings = async () => { storeConfig.value.name = document.getElementById('store-name-input').value; if(!hasJustUploaded) storeConfig.value.logo = document.getElementById('store-logo-url').value || storeConfig.value.logo; storeConfig.value.bronzeThreshold = parseInt(document.getElementById('threshold-bronze').value); storeConfig.value.silverThreshold = parseInt(document.getElementById('threshold-silver').value); storeConfig.value.goldThreshold = parseInt(document.getElementById('threshold-gold').value); await fetch('/api/v1/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); alert("Saved!"); };
+                window.updateGlobalSkin = async (s) => { await fetch('/api/v1/admin/update-skin', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); activeSkin.value=s; updateSkinUI(); };
+                window.openPreview = (d) => { previewDesign.value = d; showPreview.value = true; };
 
-                const updateGlobalSkin = async (s) => { 
-                    await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); 
-                    activeSkin.value = s; 
-                    showToast("Card Skin Activated!", "success");
-                };
-                const openPreview = (d) => { previewDesign.value = d; showPreview.value = true; };
+                const updateSkinUI = () => { nextTick(() => { document.querySelectorAll('.skin-card').forEach(e => e.classList.remove('is-active')); document.querySelectorAll('.btn-skin-act').forEach(b => {b.innerText='ACTIVATE'; b.disabled=false;}); const el = document.getElementById(`skin-${activeSkin.value}`), btn = document.getElementById(`btn-${activeSkin.value}`); if(el) el.classList.add('is-active'); if(btn) { btn.innerText='ACTIVE'; btn.disabled=true; } }); };
+                const applyTheme = () => { const r = document.documentElement, m = storeConfig.value.themeMode; if(m==='light') { r.style.setProperty('--bg-main','#f8f9fa'); r.style.setProperty('--bg-side','#fff'); r.style.setProperty('--text-main','#212529'); r.style.setProperty('--text-sub','#6c757d'); r.style.setProperty('--border-color','#dee2e6'); } else { r.style.setProperty('--bg-main','#121212'); r.style.setProperty('--bg-side','#1e1e1e'); r.style.setProperty('--text-main','#fff'); r.style.setProperty('--text-sub','#888888'); r.style.setProperty('--border-color','#333333'); } nextTick(() => { const bL=document.getElementById('theme-btn-light'), bD=document.getElementById('theme-btn-dark'); if(bL && bD) { bL.classList.toggle('is-active', m==='light'); bD.classList.toggle('is-active', m==='dark'); } }); };
 
-                const openEditModal = (c) => editingCard.value = { ...c };
-                const saveEdit = async () => { await fetch(api('/api/v1/admin/update'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) }); showToast("Customer Updated!", "success"); editingCard.value = null; fetchCards(); };
-                const toggleConsent = async (c, type) => { const f = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted'; c[f] = !c[f]; await fetch(api('/api/v1/admin/update-consent'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, [f]: c[f] }) }); };
-                const registerMember = async () => { const res = await fetch(api('/api/v1/cards'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: newMember.value.first_name, last_name: newMember.value.last_name, email: newMember.value.email, phone: newMember.value.phone, rgpd_accepted: newMember.value.rgpd, marketing_accepted: newMember.value.marketing }) }); if(res.ok) { showToast("Member Registered Successfully!", "success"); newMember.value = {first_name:'', last_name:'', email:'', phone:'', rgpd:false, marketing:false}; changePage('customers'); } };
-                const logout = async () => { await fetch(api('/api/v1/auth/logout'), { method: 'POST' }); window.location.href = "/"; };
-                const focusScanner = () => { if(scannerInput.value) scannerInput.value.focus(); };
-                const handleScan = async (e) => { let id = e.target.value; e.target.value = ''; if(id.includes('id=')) id = id.split('id=')[1].split('&')[0]; if(id.length>5) { const res = await fetch(api(`/api/v1/cards/stamp?id=${id}`), { method: 'POST' }); if(res.ok) { const d = await res.json(); lastScanStatus.value = `Success: ${d.customer_id}`; setTimeout(()=>lastScanStatus.value='',3000); } else lastScanStatus.value = "Error"; } };
-                const calculateAvailable = (c) => Math.max(0, Math.floor(c.total_stamps / 10) - (c.total_redeemed_bonuses || 0));
-                const addStampFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/stamp?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Stamp Added", "success"); };
-                const redeemFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/use-reward?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Reward Redeemed", "success"); };
-                const resetCard = async (id) => { if(confirm("Reset?")) { await fetch(api(`/api/v1/admin/reset?id=${id}`), {method:'POST'}); fetchCards(); showToast("Card Reset", "warning"); } };
-                const viewCard = (id) => window.open(`/card?store=${currentStore}&id=${id}`, '_blank');
-                const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-
-                const applyTheme = () => { const r = document.documentElement, m = storeConfig.value.themeMode; if(m==='light') { r.style.setProperty('--bg-main','#f8f9fa'); r.style.setProperty('--bg-side','#fff'); r.style.setProperty('--text-main','#212529'); r.style.setProperty('--text-sub','#6c757d'); r.style.setProperty('--border-color','#dee2e6'); } else { r.style.setProperty('--bg-main','#121212'); r.style.setProperty('--bg-side','#1e1e1e'); r.style.setProperty('--text-main','#fff'); r.style.setProperty('--text-sub','#888888'); r.style.setProperty('--border-color','#333333'); } };
-                watch(() => storeConfig.value.themeMode, applyTheme);
-
-                onMounted(() => { 
-                    fetchCards(); 
-                    fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
-                        storeConfig.value = { ...storeConfig.value, ...d }; 
-                        activeSkin.value = d.card_skin || 'default';
-                        applyTheme(); 
-                        fetchAvailableSkins();
-                    }); 
-                });
+                watch([subPageHtml, currentPage], () => applyTheme());
+                onMounted(() => { fetchCards(); fetch('/api/v1/system/config').then(r => r.json()).then(d => { storeConfig.value = { ...storeConfig.value, ...d }; applyTheme(); }); });
 
                 return { 
-                    cards, currentPage, searchQuery, filteredCards, storeConfig, 
-                    newMember, editingCard, lastScanStatus, scannerInput, activeSkin,
-                    showIconPicker, icons, selectIcon, saveSettings, handleLogoUpload, removeLogo,
+                    cards, currentPage, searchQuery, filteredCards, subPageHtml, loadingSubPage, storeConfig, 
+                    newMember, editingCard, lastScanStatus, scannerInput,
                     changePage, logout, registerMember, focusScanner, handleScan, openEditModal, saveEdit, toggleConsent,
-                    calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, resetCard, updatePassword, setTheme,
-                    updateGlobalSkin, openPreview, showPreview, previewColors, availableSkins, getPreviewStyle, getMockStyle, formatDate,
-                    toasts, showToast
+                    calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, resetCard,
+                    showPreview, previewColors: computed(() => ({'default':{bg:'#00a896',text:'#fff'},'loja':{bg:'#1a1a1a',text:'#fff'},'valentine':{bg:'#ff4d6d',text:'#fff'}}[previewDesign.value] || {bg:'#00a896',text:'#fff'}))
                 };
             }
         }).mount('#app');
