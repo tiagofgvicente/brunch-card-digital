@@ -19,9 +19,14 @@ const AdminApp = {
         const showIconPicker = ref(false);
         const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'];
 
+        // ADICIONEI OS NOVOS CAMPOS AO DEFAULT STATE
         const storeConfig = ref({ 
             name: 'Store', logo_url: '', themeMode: 'dark', 
-            primary_color: '#00a896', stamp_icon: '🍳',
+            primary_color: '#00a896', 
+            text_color: '#ffffff', // Novo
+            border_color: '#ffffff', // Novo
+            card_image_url: '', // Novo
+            stamp_icon: '🍳',
             bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 
         });
         
@@ -106,7 +111,15 @@ const AdminApp = {
         // --- COMPUTED PREVIEW ---
         const previewColors = computed(() => {
             const skinId = previewDesign.value;
-            if (skinId === 'custom') return { bg: storeConfig.value.primary_color || '#00a896', text: '#ffffff' };
+            
+            // Se for custom, usa as cores da config
+            if (skinId === 'custom') {
+                return { 
+                    bg: storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : (storeConfig.value.primary_color || '#00a896'), 
+                    text: storeConfig.value.text_color || '#ffffff' 
+                };
+            }
+            
             const skin = availableSkins.value.find(s => s.id === skinId);
             if (skin) {
                 if (skin.image) return { bg: `url(${skin.image})`, text: '#ffffff' };
@@ -115,9 +128,12 @@ const AdminApp = {
                      return { bg: bg, text: '#ffffff' };
                 }
             }
+            // Fallback para Default (agora isolado)
             if (skinId === 'black') return { bg: '#1a1a1a', text: '#ffd166' };
             if (skinId === 'gold') return { bg: 'linear-gradient(45deg, #FFD700, #FDB931)', text: '#000000' };
-            return { bg: storeConfig.value.primary_color || '#00a896', text: '#ffffff' };
+            
+            // DEFAULT PURO
+            return { bg: '#00a896', text: '#ffffff' };
         });
 
         const filteredCards = computed(() => {
@@ -145,8 +161,9 @@ const AdminApp = {
         const getPreviewStyle = (skin) => {
             if (!skin) return {};
             if (skin.image) return { backgroundImage: `url(${skin.image})`, backgroundSize: 'cover', backgroundPosition: 'center' };
-            // FIX: Default agora é sempre Teal/Branco estático
+            // FIX: Default agora é sempre estático
             if(skin.id === 'default') return { background: '#00a896', color: '#fff' };
+            
             if(skin.id === 'black') return { background: '#1a1a1a', borderBottom: '3px solid #ffd166', color: '#fff' };
             if(skin.id === 'custom') return { backgroundColor: storeConfig.value.primary_color || '#00a896', color: '#fff' };
             if(skin.style) return { background: skin.style.replace('background:', '').replace(';', ''), color: '#fff' };
@@ -174,12 +191,12 @@ const AdminApp = {
 
         // --- CUSTOM DESIGNER LOGIC ---
         const openCustomDesigner = () => {
-            // Inicializar com os valores atuais
+            // Inicializar com os valores atuais do storeConfig
             designForm.value = {
                 background: storeConfig.value.primary_color || '#00a896',
-                textColor: '#ffffff', 
-                borderColor: '#ffffff',
-                image: null,
+                textColor: storeConfig.value.text_color || '#ffffff', 
+                borderColor: storeConfig.value.border_color || '#ffffff',
+                image: storeConfig.value.card_image_url || null,
                 zoom: 100
             };
             showCustomDesigner.value = true;
@@ -194,12 +211,21 @@ const AdminApp = {
         };
 
         const saveCustomDesign = async () => {
+            // 1. Atualizar o config local com TODAS as propriedades
             storeConfig.value.primary_color = designForm.value.background;
+            storeConfig.value.text_color = designForm.value.textColor;
+            storeConfig.value.border_color = designForm.value.borderColor;
+            if(designForm.value.image) {
+                storeConfig.value.card_image_url = designForm.value.image;
+            }
+
+            // 2. Enviar para a API
             await fetch(api('/api/v1/admin/settings'), { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify(storeConfig.value) 
             });
+            
             showToast("Custom Brand Updated!", "success");
             showCustomDesigner.value = false;
             fetchAvailableSkins();
