@@ -18,61 +18,93 @@ const AdminApp = {
         const showIconPicker = ref(false);
         const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'];
 
-        // STATE DA CONFIGURAÇÃO (Coincide com a Base de Dados)
         const storeConfig = ref({ 
             name: 'Store', logo_url: '', themeMode: 'dark', 
-            primary_color: '#00a896', 
-            text_color: '#ffffff',      
-            border_color: '#ffffff',    
-            card_image_url: '',
-            card_image_zoom: 100,
-            card_image_pos_x: 0,
-            card_image_pos_y: 0,
-            stamp_icon: '🍳',
-            bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 
+            primary_color: '#00a896', text_color: '#ffffff', border_color: '#ffffff',    
+            card_image_url: '', card_image_zoom: 100, card_image_pos_x: 0, card_image_pos_y: 0,
+            stamp_icon: '🍳', bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 
         });
 
-        // --- RASCUNHO PARA O MENU SETTINGS ---
         const settingsForm = ref({});
-        
         const newMember = ref({ first_name: '', last_name: '', email: '', phone: '', rgpd: false, marketing: false });
         const editingCard = ref(null);
-        const lastScanStatus = ref('');
-        const scannerInput = ref(null);
-        const availableSkins = ref([]);
+        const availableSkins = ref([]); 
 
-        // --- DRAG & DROP STATE ---
+        // --- NOVA LÓGICA DE SCANNER INVISÍVEL (Html5Qrcode CORE) ---
+        const lastScanStatus = ref('');
+        let html5Qrcode = null;
+        let isScanning = false;
+
+        const startScanner = () => {
+            nextTick(() => {
+                if (!html5Qrcode) {
+                    html5Qrcode = new Html5Qrcode("reader");
+                }
+                
+                if (!html5Qrcode.isScanning) {
+                    // Liga diretamente a câmara traseira ("environment")
+                    html5Qrcode.start(
+                        { facingMode: "environment" }, 
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        onScanSuccess,
+                        (errorMessage) => { /* Ignorar erros de não encontrar QR momentaneamente */ }
+                    ).catch(err => {
+                        lastScanStatus.value = "⚠️ Por favor, permita o acesso à câmara do seu dispositivo.";
+                        console.error("Camera start error", err);
+                    });
+                }
+            });
+        };
+
+        const stopScanner = () => {
+            if (html5Qrcode && html5Qrcode.isScanning) {
+                html5Qrcode.stop().then(() => {
+                    html5Qrcode.clear();
+                }).catch(err => console.error("Failed to stop scanner", err));
+            }
+        };
+
+        const onScanSuccess = async (decodedText) => {
+            if (isScanning) return; 
+            isScanning = true;
+
+            let id = decodedText;
+            if(id.includes('id=')) id = id.split('id=')[1].split('&')[0];
+            
+            if(id.length > 5) {
+                try {
+                    const res = await fetch(api(`/api/v1/cards/stamp?id=${id}`), { method: 'POST' });
+                    if(res.ok) {
+                        const d = await res.json();
+                        lastScanStatus.value = `✅ Selo adicionado a ${d.customer_id}!`;
+                        showToast(`Selo adicionado a ${d.customer_id}`, "success");
+                    } else {
+                        lastScanStatus.value = "❌ Erro ao adicionar selo.";
+                    }
+                } catch(e) {
+                    lastScanStatus.value = "❌ Erro de ligação.";
+                }
+            } else {
+                lastScanStatus.value = "❌ QR Code Inválido.";
+            }
+
+            // Aguarda 3 segundos antes de permitir novo scan para evitar scans duplos acidentais
+            setTimeout(() => {
+                lastScanStatus.value = '';
+                isScanning = false;
+            }, 3000);
+        };
+        // ------------------------------------
+
         const isDragging = ref(false);
         const dragStart = ref({ x: 0, y: 0 });
-
         const showCustomDesigner = ref(false);
-        const designForm = ref({
-            background: '#00a896',
-            textColor: '#ffffff',
-            borderColor: '#ffffff',
-            image: null,
-            zoom: 100,
-            posX: 0,
-            posY: 0
-        });
+        const designForm = ref({ background: '#00a896', textColor: '#ffffff', borderColor: '#ffffff', image: null, zoom: 100, posX: 0, posY: 0 });
 
-        // --- DRAG LOGIC ---
-        const startDrag = (e) => {
-            if (!designForm.value.image) return;
-            isDragging.value = true;
-            dragStart.value.x = e.clientX - designForm.value.posX;
-            dragStart.value.y = e.clientY - designForm.value.posY;
-        };
-
-        const onDrag = (e) => {
-            if (!isDragging.value) return;
-            designForm.value.posX = e.clientX - dragStart.value.x;
-            designForm.value.posY = e.clientY - dragStart.value.y;
-        };
-
+        const startDrag = (e) => { if (!designForm.value.image) return; isDragging.value = true; dragStart.value.x = e.clientX - designForm.value.posX; dragStart.value.y = e.clientY - designForm.value.posY; };
+        const onDrag = (e) => { if (!isDragging.value) return; designForm.value.posX = e.clientX - dragStart.value.x; designForm.value.posY = e.clientY - dragStart.value.y; };
         const stopDrag = () => { isDragging.value = false; };
 
-        // --- TRADUÇÕES ---
         const translations = {
             en: { 
                 nav_customers: "Customers", nav_register: "New Member", nav_scanner: "Scan Station", nav_skins: "Card Skins", nav_settings: "Settings", nav_logout: "Logout", 
@@ -80,10 +112,7 @@ const AdminApp = {
                 sub_skins: "Choose the visual style for your customers' digital cards.", sub_settings: "Manage your store identity and dashboard appearance.", sub_scanner: "Use the QR Reader. The stamp will be applied automatically.", 
                 th_name: "Name & Contact", th_status: "Status", th_consent: "Consent", th_avail: "Available", th_redeem: "Redeemed", th_actions: "Actions", 
                 sec_brand: "Branding & Identity", lbl_store_name: "Store Name", lbl_color: "Primary Brand Color", lbl_icon: "Stamp Icon", lbl_logo: "Store Logo", btn_upload: "UPLOAD NEW IMAGE", 
-                sec_tiers: "Loyalty Tiers", sec_security: "Security", 
-                lbl_pass_key: "Dashboard Login Password", 
-                sub_pass_key: "The password you use to log into this management platform.",
-                btn_save_config: "SAVE CONFIGURATION", btn_change_pass: "Update Password", 
+                sec_tiers: "Loyalty Tiers", sec_security: "Security", lbl_pass_key: "Dashboard Login Password", sub_pass_key: "The password you use to log into this management platform.", btn_save_config: "SAVE CONFIGURATION", btn_change_pass: "Update Password", 
                 lbl_fname: "First Name", lbl_lname: "Last Name", lbl_email: "Email", lbl_phone: "Phone", lbl_rgpd: "Client accepts Privacy Policy", lbl_mkt: "Receive offers via email", btn_create: "CREATE CARD", 
                 search_placeholder: "Search customer...", active_badge: "ACTIVE", btn_preview: "Preview", btn_activate: "ACTIVATE", 
                 msg_no_email: "Without email, the customer won't receive the digital card or rewards. They will only be registered in the system." 
@@ -91,13 +120,10 @@ const AdminApp = {
             pt: { 
                 nav_customers: "Clientes", nav_register: "Novo Membro", nav_scanner: "Scanner", nav_skins: "Estilo Cartão", nav_settings: "Definições", nav_logout: "Sair", 
                 title_customers: "Gestão de Clientes", title_register: "Registar Novo Membro", title_scanner: "Pronto a Ler", title_skins: "Estilo do Cartão", title_settings: "Definições de Sistema", 
-                sub_skins: "Escolha o visual do cartão digital dos seus clientes.", sub_settings: "Gerira a identidade e aparência da loja.", sub_scanner: "Use o leitor QR. O selo será aplicado automaticamente.", 
+                sub_skins: "Escolha o visual do cartão digital dos seus clientes.", sub_settings: "Gerira a identidade e aparência da loja.", sub_scanner: "Aponte a câmara para o QRCode do cliente.", 
                 th_name: "Nome & Contacto", th_status: "Estado", th_consent: "Privacidade", th_avail: "Disponível", th_redeem: "Usados", th_actions: "Ações", 
                 sec_brand: "Marca & Identidade", lbl_store_name: "Nome da Loja", lbl_color: "Cor Principal", lbl_icon: "Ícone Selo", lbl_logo: "Logótipo", btn_upload: "CARREGAR IMAGEM", 
-                sec_tiers: "Níveis de Fidelidade", sec_security: "Segurança", 
-                lbl_pass_key: "Password de Acesso (Login)", 
-                sub_pass_key: "A password que utiliza para entrar nesta plataforma de gestão.",
-                btn_save_config: "GUARDAR CONFIGURAÇÃO", btn_change_pass: "Atualizar Password", 
+                sec_tiers: "Níveis de Fidelidade", sec_security: "Segurança", lbl_pass_key: "Password de Acesso (Login)", sub_pass_key: "A password que utiliza para entrar nesta plataforma de gestão.", btn_save_config: "GUARDAR CONFIGURAÇÃO", btn_change_pass: "Atualizar Password", 
                 lbl_fname: "Primeiro Nome", lbl_lname: "Último Nome", lbl_email: "Email", lbl_phone: "Telemóvel", lbl_rgpd: "Cliente aceita Política de Privacidade", lbl_mkt: "Receber ofertas por email", btn_create: "CRIAR CARTÃO", 
                 search_placeholder: "Procurar cliente...", active_badge: "ATIVO", btn_preview: "Ver", btn_activate: "ATIVAR", 
                 msg_no_email: "Sem email, o cliente não recebe o cartão digital nem prémios. Apenas fica registado no sistema." 
@@ -156,10 +182,18 @@ const AdminApp = {
         };
 
         const changePage = (page) => { 
+            if (currentPage.value === 'scanner' && page !== 'scanner') {
+                stopScanner();
+            }
+
             currentPage.value = page; 
             if (page === 'settings') { settingsForm.value = { ...storeConfig.value }; }
-            if (page === 'scanner') nextTick(() => focusScanner()); 
-            if (page !== 'settings' && page !== 'skins') fetchCards(); 
+            
+            if (page === 'scanner') {
+                startScanner();
+            }
+
+            if (page !== 'settings' && page !== 'skins' && page !== 'scanner') fetchCards(); 
         };
 
         const selectIcon = (icon) => { settingsForm.value.stamp_icon = icon; showIconPicker.value = false; };
@@ -178,50 +212,21 @@ const AdminApp = {
 
         const openCustomDesigner = () => {
             designForm.value = {
-                background: storeConfig.value.primary_color || '#00a896',
-                textColor: storeConfig.value.text_color || '#ffffff', 
-                borderColor: storeConfig.value.border_color || '#ffffff',
-                image: storeConfig.value.card_image_url || null,
-                zoom: storeConfig.value.card_image_zoom || 100,
-                posX: storeConfig.value.card_image_pos_x || 0,
-                posY: storeConfig.value.card_image_pos_y || 0
+                background: storeConfig.value.primary_color || '#00a896', textColor: storeConfig.value.text_color || '#ffffff', borderColor: storeConfig.value.border_color || '#ffffff',
+                image: storeConfig.value.card_image_url || null, zoom: storeConfig.value.card_image_zoom || 100, posX: storeConfig.value.card_image_pos_x || 0, posY: storeConfig.value.card_image_pos_y || 0
             };
             showCustomDesigner.value = true;
         };
 
-        const handleBgUpload = (e) => { 
-            const file = e.target.files[0]; 
-            if (!file) return; 
-            const reader = new FileReader(); 
-            reader.onload = (ev) => { 
-                designForm.value.image = ev.target.result; 
-                designForm.value.posX = 0; 
-                designForm.value.posY = 0; 
-                designForm.value.zoom = 100; 
-            }; 
-            reader.readAsDataURL(file); 
-        };
-
-        const removeBgImage = () => { 
-            designForm.value.image = null; 
-            designForm.value.zoom = 100; 
-            designForm.value.posX = 0; 
-            designForm.value.posY = 0; 
-        };
+        const handleBgUpload = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { designForm.value.image = ev.target.result; designForm.value.posX = 0; designForm.value.posY = 0; designForm.value.zoom = 100; }; reader.readAsDataURL(file); };
+        const removeBgImage = () => { designForm.value.image = null; designForm.value.zoom = 100; designForm.value.posX = 0; designForm.value.posY = 0; };
 
         const saveCustomDesign = async () => {
             const newConfig = {
-                primary_color: designForm.value.background,
-                text_color: designForm.value.textColor,
-                border_color: designForm.value.borderColor,
-                card_image_url: designForm.value.image || '',
-                card_image_zoom: parseInt(designForm.value.zoom) || 100,
-                card_image_pos_x: parseInt(designForm.value.posX) || 0,
-                card_image_pos_y: parseInt(designForm.value.posY) || 0
+                primary_color: designForm.value.background, text_color: designForm.value.textColor, border_color: designForm.value.borderColor,
+                card_image_url: designForm.value.image || '', card_image_zoom: parseInt(designForm.value.zoom) || 100, card_image_pos_x: parseInt(designForm.value.posX) || 0, card_image_pos_y: parseInt(designForm.value.posY) || 0
             };
-
             storeConfig.value = { ...storeConfig.value, ...newConfig };
-
             await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) });
             showToast("Custom Brand Updated!", "success");
             showCustomDesigner.value = false;
@@ -236,8 +241,6 @@ const AdminApp = {
         const toggleConsent = async (c, type) => { const f = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted'; c[f] = !c[f]; await fetch(api('/api/v1/admin/update-consent'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, [f]: c[f] }) }); };
         const registerMember = async () => { const res = await fetch(api('/api/v1/cards'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: newMember.value.first_name, last_name: newMember.value.last_name, email: newMember.value.email, phone: newMember.value.phone, rgpd_accepted: newMember.value.rgpd, marketing_accepted: newMember.value.marketing }) }); if(res.ok) { showToast("Member Registered!", "success"); newMember.value = {first_name:'', last_name:'', email:'', phone:'', rgpd:false, marketing:false}; changePage('customers'); } };
         const logout = async () => { await fetch(api('/api/v1/auth/logout'), { method: 'POST' }); window.location.href = "/"; };
-        const focusScanner = () => { if(scannerInput.value) scannerInput.value.focus(); };
-        const handleScan = async (e) => { let id = e.target.value; e.target.value = ''; if(id.includes('id=')) id = id.split('id=')[1].split('&')[0]; if(id.length>5) { const res = await fetch(api(`/api/v1/cards/stamp?id=${id}`), { method: 'POST' }); if(res.ok) { const d = await res.json(); lastScanStatus.value = `Success: ${d.customer_id}`; setTimeout(()=>lastScanStatus.value='',3000); } else lastScanStatus.value = "Error"; } };
         const calculateAvailable = (c) => Math.max(0, Math.floor(c.total_stamps / 10) - (c.total_redeemed_bonuses || 0));
         const addStampFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/stamp?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Stamp Added", "success"); };
         const redeemFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/use-reward?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Reward Redeemed", "success"); };
@@ -250,7 +253,6 @@ const AdminApp = {
             fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
                 storeConfig.value = { ...storeConfig.value, ...d }; 
                 settingsForm.value = { ...storeConfig.value }; 
-
                 activeSkin.value = d.card_skin || 'default';
                 const localTheme = localStorage.getItem('theme');
                 if (localTheme) { setTheme(localTheme); } else { setTheme(d.themeMode || 'dark'); }
@@ -261,11 +263,11 @@ const AdminApp = {
 
         return { 
             cards, currentPage, searchQuery, filteredCards, storeConfig, settingsForm,
-            newMember, editingCard, lastScanStatus, scannerInput, activeSkin,
+            newMember, editingCard, lastScanStatus, activeSkin, availableSkins,
             showIconPicker, icons, selectIcon, saveSettings, handleLogoUpload, removeLogo,
-            changePage, logout, registerMember, focusScanner, handleScan, openEditModal, saveEdit, toggleConsent,
+            changePage, logout, registerMember, openEditModal, saveEdit, toggleConsent,
             calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, resetCard, updatePassword, setTheme, toggleTheme,
-            updateGlobalSkin, openPreview, showPreview, previewColors, availableSkins, getPreviewStyle,
+            updateGlobalSkin, openPreview, showPreview, previewColors, getPreviewStyle,
             toasts, showToast, lang, toggleLang, t,
             showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, removeBgImage, saveCustomDesign,
             theme, isDragging, startDrag, onDrag, stopDrag
