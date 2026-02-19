@@ -129,8 +129,23 @@ const AdminApp = {
 
         const changePage = (page) => { currentPage.value = page; if (page === 'scanner') nextTick(() => focusScanner()); if (page !== 'settings' && page !== 'skins') fetchCards(); };
         const selectIcon = (icon) => { storeConfig.value.stamp_icon = icon; showIconPicker.value = false; };
-        const saveSettings = async () => { if (activeSkin.value !== 'custom') { await updateGlobalSkin('custom'); } await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); showToast("Configuration Saved!", "success"); fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { storeConfig.value = { ...storeConfig.value, ...d }; fetchAvailableSkins(); document.title = `Volto Store Admin | ${d.name}`; }); };
-
+        const saveSettings = async () => { 
+            // REMOVIDA: A linha que forçava updateGlobalSkin('custom')
+            
+            await fetch(api('/api/v1/admin/settings'), { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(storeConfig.value) 
+            }); 
+            
+            showToast("Configuration Saved!", "success"); 
+            
+            fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
+                storeConfig.value = { ...storeConfig.value, ...d }; 
+                fetchAvailableSkins();
+                document.title = `Volto Store Admin | ${d.name}`;
+            });
+        };
         const openCustomDesigner = () => {
             designForm.value = {
                 background: storeConfig.value.primary_color || '#00a896',

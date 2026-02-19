@@ -61,28 +61,65 @@ func (r *CardRepository) GetStoreSlugByCustomerEmail(identifier string) (string,
 
 func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
 	var s models.Store
-	var logoURL sql.NullString
+	var logoURL, textCol, borderCol, cardImgUrl sql.NullString
+	var imgZoom, imgPosX, imgPosY sql.NullInt32 // NullInt32 porque são inteiros
 
+	// MUDANÇA: Adicionados todos os campos novos de design à query SELECT
 	query := `
         SELECT 
             id, name, slug, admin_username, admin_email, admin_password,
             logo_url, primary_color, stamp_icon, 
             card_skin, theme_mode, 
             bronze_threshold, silver_threshold, gold_threshold,
-            tier, tier_expiration, billing_cycle, max_users, account_activated, status, is_active
+            tier, tier_expiration, billing_cycle, max_users, account_activated, status, is_active,
+            
+            -- NOVOS CAMPOS AQUI:
+            text_color, border_color, card_image_url, 
+            card_image_zoom, card_image_pos_x, card_image_pos_y
         FROM stores 
         WHERE slug = $1
     `
+
+	// MUDANÇA: Adicionados os ponteiros para receber os novos campos no Scan
 	err := r.db.QueryRow(query, slug).Scan(
 		&s.ID, &s.Name, &s.Slug, &s.AdminUsername, &s.AdminEmail, &s.AdminPassword,
 		&logoURL, &s.PrimaryColor, &s.StampIcon,
 		&s.CardSkin, &s.ThemeMode, &s.Bronze, &s.Silver, &s.Gold,
 		&s.Tier, &s.TierExpiration, &s.BillingCycle, &s.MaxUsers, &s.AccountActivated, &s.Status, &s.IsActive,
+
+		// SCAN DOS NOVOS CAMPOS:
+		&textCol, &borderCol, &cardImgUrl,
+		&imgZoom, &imgPosX, &imgPosY,
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	// Limpeza/Tratamento de dados nulos (se vierem vazios da BD)
 	s.LogoURL = logoURL.String
+	if textCol.Valid && textCol.String != "" {
+		s.TextColor = textCol.String
+	} else {
+		s.TextColor = "#ffffff" // Fallback seguro
+	}
+	if borderCol.Valid && borderCol.String != "" {
+		s.BorderColor = borderCol.String
+	} else {
+		s.BorderColor = "#ffffff"
+	}
+	s.CardImageUrl = cardImgUrl.String
+	if imgZoom.Valid {
+		s.CardImageZoom = int(imgZoom.Int32)
+	} else {
+		s.CardImageZoom = 100
+	}
+	if imgPosX.Valid {
+		s.CardImagePosX = int(imgPosX.Int32)
+	}
+	if imgPosY.Valid {
+		s.CardImagePosY = int(imgPosY.Int32)
+	}
+
 	return &s, nil
 }
 
@@ -117,9 +154,6 @@ func (r *CardRepository) CreateStore(s models.Store) error {
 	if s.BillingCycle == "" {
 		s.BillingCycle = "monthly"
 	}
-
-	// Calcula expiração se estiver vazia (ex: 30 dias)
-	// Se s.TierExpiration for zero, define manual aqui
 
 	var logoURL interface{} = nil
 	if s.LogoURL != "" {
@@ -423,49 +457,42 @@ func (r *CardRepository) ToggleStoreStatus(id string, status bool) error {
 
 func (repo *CardRepository) UpdateStore(s models.Store) error {
 
-	// Se a password vier preenchida
 	if s.NewPassword != "" {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(s.NewPassword), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
 		query := `
-			UPDATE stores 
-			SET name=$1, tier=$2, tier_expiration=$3, billing_cycle=$4, 
-			    logo_url=$5, card_skin=$6, primary_color=$7, stamp_icon=$8, 
-			    admin_password=$9, updated_at=CURRENT_TIMESTAMP
-			WHERE id=$10
-		`
-		// CORREÇÃO DO ERR: Usar := porque estamos a declarar 'result' (ignorado) e 'err'
+            UPDATE stores 
+            SET name=$1, tier=$2, tier_expiration=$3, billing_cycle=$4, 
+                logo_url=$5, card_skin=$6, primary_color=$7, stamp_icon=$8, 
+                admin_password=$9, updated_at=CURRENT_TIMESTAMP
+            WHERE id=$10
+        `
 		_, err = repo.db.Exec(query, s.Name, s.Tier, s.TierExpiration, s.BillingCycle, s.LogoURL, s.CardSkin, s.PrimaryColor, s.StampIcon, string(hashed), s.ID)
 		return err
 	}
 
-	// Sem password nova
 	query := `
-		UPDATE stores 
-		SET name=$1, tier=$2, tier_expiration=$3, billing_cycle=$4, 
-		    logo_url=$5, card_skin=$6, primary_color=$7, stamp_icon=$8, 
-		    updated_at=CURRENT_TIMESTAMP
-		WHERE id=$9
-	`
-	// CORREÇÃO DO ERR: Aqui usamos :=
+        UPDATE stores 
+        SET name=$1, tier=$2, tier_expiration=$3, billing_cycle=$4, 
+            logo_url=$5, card_skin=$6, primary_color=$7, stamp_icon=$8, 
+            updated_at=CURRENT_TIMESTAMP
+        WHERE id=$9
+    `
 	_, err := repo.db.Exec(query, s.Name, s.Tier, s.TierExpiration, s.BillingCycle, s.LogoURL, s.CardSkin, s.PrimaryColor, s.StampIcon, s.ID)
 	return err
 }
 
 func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (string, error) {
-	// 1. Encriptar Password
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
 
-	// 2. Gerar ID e Data
 	id := uuid.New().String()
 	expiration := time.Now().AddDate(0, 0, 30)
 
-	// 3. Inserir na BD
 	query := `
         INSERT INTO stores (
             id, name, slug, 
@@ -481,7 +508,6 @@ func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (stri
             'default', '#00a896', '🍳', 'dark'
         )
     `
-	// Nota: $4 é usado duas vezes (email e username)
 	_, err = repo.db.Exec(query,
 		id, req.Name, req.Slug,
 		req.Email, string(hashed),
@@ -492,7 +518,6 @@ func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (stri
 		return "", err
 	}
 
-	// Retorna o ID para o Handler poder criar o cookie
 	return id, nil
 }
 
@@ -500,7 +525,6 @@ func (repo *CardRepository) AuthenticateStore(email, password string) (*models.S
 	var store models.Store
 	var hashedPassword string
 
-	// MUDANÇA: Query simplificada para procurar apenas por admin_email
 	query := `
         SELECT id, slug, admin_password, tier, is_active 
         FROM stores 
@@ -550,8 +574,8 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
             border_color = $10,
             card_image_url = $11,
             card_image_zoom = $12,
-			card_image_pos_x = $13, 
-			card_image_pos_y = $14
+            card_image_pos_x = $13, 
+            card_image_pos_y = $14
         WHERE id = $15
     `
 
@@ -568,9 +592,9 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
 		s.BorderColor,
 		s.CardImageUrl,
 		s.CardImageZoom,
-		s.CardImagePosX, 
-        s.CardImagePosY, 
-		s.ID,           
+		s.CardImagePosX,
+		s.CardImagePosY,
+		s.ID,
 	)
 
 	return err
