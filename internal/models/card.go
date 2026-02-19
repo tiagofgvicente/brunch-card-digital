@@ -58,29 +58,38 @@ type Store struct {
 	AdminEmail    string `json:"admin_email"`
 	AdminPassword string `json:"admin_password"`
 
-	// Campo usado APENAS para receber nova password no Update (não vem da BD)
+	// Campo usado APENAS para receber nova password no Update
 	NewPassword string `json:"new_password,omitempty"`
 
-	LogoURL      string    `json:"logo_url"`
-	PrimaryColor string    `json:"primary_color"`
-	StampIcon    string    `json:"stamp_icon"`
-	CardSkin     string    `json:"card_skin"`
-	ThemeMode    string    `json:"theme_mode"`
-	Bronze       int       `json:"bronze_threshold"`
-	Silver       int       `json:"silver_threshold"`
-	Gold         int       `json:"gold_threshold"`
-	CreatedAt    time.Time `json:"created_at"`
+	// BRANDING
+	LogoURL      string `json:"logo_url"`
+	PrimaryColor string `json:"primary_color"`
+	StampIcon    string `json:"stamp_icon"`
+	CardSkin     string `json:"card_skin"`
+	ThemeMode    string `json:"theme_mode"`
 
-	// SaaS & Tiers (JSON Tags ajustadas para bater certo com o Vue.js)
+	// --- NOVOS CAMPOS DE DESIGN ---
+	TextColor    string `json:"text_color"`
+	BorderColor  string `json:"border_color"`
+	CardImageUrl string `json:"card_image_url"`
+
+	// THRESHOLDS
+	Bronze int `json:"bronze_threshold"`
+	Silver int `json:"silver_threshold"`
+	Gold   int `json:"gold_threshold"`
+
+	CreatedAt time.Time `json:"created_at"`
+
+	// SaaS & Tiers
 	IsActive         bool      `json:"isActive" db:"is_active"`
 	Status           string    `json:"status"`
 	Tier             string    `json:"tier"`
-	TierExpiration   time.Time `json:"tier_expiration"`   // Corrigido para snake_case
-	BillingCycle     string    `json:"billing_cycle"`     // Corrigido para snake_case
-	MaxUsers         int       `json:"max_users"`         // Corrigido para snake_case
-	AccountActivated bool      `json:"account_activated"` // Corrigido para snake_case
+	TierExpiration   time.Time `json:"tier_expiration"`
+	BillingCycle     string    `json:"billing_cycle"`
+	MaxUsers         int       `json:"max_users"`
+	AccountActivated bool      `json:"account_activated"`
 
-	// Métricas (lidas via COUNT)
+	// Métricas
 	TotalMembers int `json:"totalMembers" db:"total_members"`
 }
 
@@ -106,11 +115,11 @@ type RegisterStoreRequest struct {
 }
 
 type LoginRequest struct {
-    Email    string `json:"identifier"` 
-    Password string `json:"password"`
+	Email    string `json:"identifier"`
+	Password string `json:"password"`
 }
 
 type LoginResponse struct {
-    Token    string `json:"token"`
-    Redirect string `json:"redirect"`
+	Token    string `json:"token"`
+	Redirect string `json:"redirect"`
 }

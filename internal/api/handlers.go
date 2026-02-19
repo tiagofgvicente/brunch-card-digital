@@ -234,7 +234,7 @@ func GetSettingsHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 }
 
 func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	store := getCurrentStore(r) // Vai buscar a loja atual ao contexto
+	store := getCurrentStore(r) // Recupera a loja atual (que tem o ID correto)
 
 	var input models.Store
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -242,17 +242,22 @@ func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		return
 	}
 
-	// Atualizar os campos com o que vem do Frontend
+	// Atualizar os campos da loja com o que veio do Frontend
 	store.Name = input.Name
 	store.LogoURL = input.LogoURL
-	store.PrimaryColor = input.PrimaryColor // <--- Importante
-	store.StampIcon = input.StampIcon       // <--- Importante
+	store.PrimaryColor = input.PrimaryColor
+	store.StampIcon = input.StampIcon
 	store.ThemeMode = input.ThemeMode
 	store.Bronze = input.Bronze
 	store.Silver = input.Silver
 	store.Gold = input.Gold
 
-	// Gravar na BD
+	// --- NOVOS CAMPOS (Correção) ---
+	store.TextColor = input.TextColor
+	store.BorderColor = input.BorderColor
+	store.CardImageUrl = input.CardImageUrl
+
+	// Chamar o repositório para gravar na BD
 	if err := repo.UpdateSettings(*store); err != nil {
 		log.Printf("Erro ao atualizar settings: %v", err)
 		http.Error(w, "DB Error", 500)
@@ -260,6 +265,7 @@ func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *databas
 	}
 
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }
 
 func UpdateSkinHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {

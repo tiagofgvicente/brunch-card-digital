@@ -170,26 +170,6 @@ func (r *CardRepository) GetAllStores() ([]models.Store, error) {
 	return stores, nil
 }
 
-func (r *CardRepository) UpdateSettings(s models.Store) error {
-	query := `
-        UPDATE stores 
-        SET name = $1, 
-            logo_url = $2, 
-            primary_color = $3, 
-            stamp_icon = $4, 
-            theme_mode = $5,
-            bronze_threshold = $6, 
-            silver_threshold = $7, 
-            gold_threshold = $8
-        WHERE id = $9`
-
-	_, err := r.db.Exec(query,
-		s.Name, s.LogoURL, s.PrimaryColor, s.StampIcon, s.ThemeMode,
-		s.Bronze, s.Silver, s.Gold, s.ID,
-	)
-	return err
-}
-
 func (r *CardRepository) UpdateSkin(storeID, skin string) error {
 	_, err := r.db.Exec("UPDATE stores SET card_skin = $1 WHERE id = $2", skin, storeID)
 	return err
@@ -552,4 +532,47 @@ func (repo *CardRepository) AuthenticateStore(email, password string) (*models.S
 	}
 
 	return &store, nil
+}
+
+func (r *CardRepository) UpdateSettings(s models.Store) error {
+	query := `
+        UPDATE stores 
+        SET 
+            name = $1, 
+            primary_color = $2, 
+            stamp_icon = $3,
+            bronze_threshold = $4,
+            silver_threshold = $5,
+            gold_threshold = $6,
+            logo_url = $7,
+            theme_mode = $8,
+            
+            -- NOVOS CAMPOS
+            text_color = $9,
+            border_color = $10,
+            card_image_url = $11
+            
+        WHERE id = $12
+    `
+
+	// Atenção: r.db (minúsculo) é a conexão à base de dados dentro do repositório
+	_, err := r.db.Exec(query,
+		s.Name,
+		s.PrimaryColor,
+		s.StampIcon,
+		s.Bronze,
+		s.Silver,
+		s.Gold,
+		s.LogoURL,
+		s.ThemeMode,
+
+		// Novos argumentos
+		s.TextColor,
+		s.BorderColor,
+		s.CardImageUrl,
+
+		s.ID, // O ID da loja para o WHERE
+	)
+
+	return err
 }

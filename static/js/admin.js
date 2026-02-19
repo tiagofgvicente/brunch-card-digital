@@ -14,18 +14,18 @@ const AdminApp = {
         const showPreview = ref(false);
         const previewDesign = ref('default');
         const toasts = ref([]);
-        const lang = ref('pt'); // Default
+        const lang = ref('pt');
         
         const showIconPicker = ref(false);
         const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'];
 
-        // ADICIONEI OS NOVOS CAMPOS AO DEFAULT STATE
+        // STATE DA CONFIGURAÇÃO (Coincide com a Base de Dados)
         const storeConfig = ref({ 
             name: 'Store', logo_url: '', themeMode: 'dark', 
             primary_color: '#00a896', 
-            text_color: '#ffffff', // Novo
-            border_color: '#ffffff', // Novo
-            card_image_url: '', // Novo
+            text_color: '#ffffff',      // BD: text_color
+            border_color: '#ffffff',    // BD: border_color
+            card_image_url: '',         // BD: card_image_url
             stamp_icon: '🍳',
             bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 
         });
@@ -36,7 +36,7 @@ const AdminApp = {
         const scannerInput = ref(null);
         const availableSkins = ref([]);
 
-        // --- CUSTOM DESIGNER STATE ---
+        // --- CUSTOM DESIGNER STATE (Formulário Temporário) ---
         const showCustomDesigner = ref(false);
         const designForm = ref({
             background: '#00a896',
@@ -75,6 +75,10 @@ const AdminApp = {
         const t = (key) => translations[lang.value][key] || key;
 
         // --- ACTIONS ---
+        
+        // COMPUTED PROPERTY "THEME" (CORREÇÃO DO ERRO VUE WARN)
+        const theme = computed(() => storeConfig.value.themeMode);
+
         const setTheme = (m) => { 
             storeConfig.value.themeMode = m; 
             document.documentElement.setAttribute('data-theme', m);
@@ -94,12 +98,8 @@ const AdminApp = {
         const initSettings = () => {
             const savedLang = localStorage.getItem('lang');
             if (savedLang) lang.value = savedLang;
-
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                storeConfig.value.themeMode = savedTheme;
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            }
+            
+            // Nota: O tema é gerido no onMounted após fetch da config
         };
 
         const showToast = (message, type = 'success') => {
@@ -112,7 +112,12 @@ const AdminApp = {
         const previewColors = computed(() => {
             const skinId = previewDesign.value;
             
-            // Se for custom, usa as cores da config
+            // SE FOR DEFAULT, FORÇA SEMPRE TEAL (Ignora Customizações)
+            if (skinId === 'default') {
+                return { bg: '#00a896', text: '#ffffff' };
+            }
+
+            // SE FOR CUSTOM, USA A CONFIGURAÇÃO DA BD
             if (skinId === 'custom') {
                 return { 
                     bg: storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : (storeConfig.value.primary_color || '#00a896'), 
@@ -128,11 +133,9 @@ const AdminApp = {
                      return { bg: bg, text: '#ffffff' };
                 }
             }
-            // Fallback para Default (agora isolado)
             if (skinId === 'black') return { bg: '#1a1a1a', text: '#ffd166' };
             if (skinId === 'gold') return { bg: 'linear-gradient(45deg, #FFD700, #FDB931)', text: '#000000' };
             
-            // DEFAULT PURO
             return { bg: '#00a896', text: '#ffffff' };
         });
 
@@ -161,11 +164,17 @@ const AdminApp = {
         const getPreviewStyle = (skin) => {
             if (!skin) return {};
             if (skin.image) return { backgroundImage: `url(${skin.image})`, backgroundSize: 'cover', backgroundPosition: 'center' };
-            // FIX: Default agora é sempre estático
-            if(skin.id === 'default') return { background: '#00a896', color: '#fff' };
             
+            // Default Fixo
+            if(skin.id === 'default') return { background: '#00a896', color: '#fff' };
             if(skin.id === 'black') return { background: '#1a1a1a', borderBottom: '3px solid #ffd166', color: '#fff' };
-            if(skin.id === 'custom') return { backgroundColor: storeConfig.value.primary_color || '#00a896', color: '#fff' };
+            
+            // Custom Fixo (Lê do storeConfig)
+            if(skin.id === 'custom') {
+                const bg = storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : (storeConfig.value.primary_color || '#00a896');
+                return { background: bg, backgroundSize: 'cover', backgroundPosition: 'center', color: storeConfig.value.text_color || '#fff' };
+            }
+            
             if(skin.style) return { background: skin.style.replace('background:', '').replace(';', ''), color: '#fff' };
             return { background: '#ccc' };
         };
@@ -178,6 +187,7 @@ const AdminApp = {
 
         const selectIcon = (icon) => { storeConfig.value.stamp_icon = icon; showIconPicker.value = false; };
 
+        // Save Settings (Geral)
         const saveSettings = async () => { 
             if (activeSkin.value !== 'custom') { await updateGlobalSkin('custom'); }
             await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); 
@@ -191,7 +201,7 @@ const AdminApp = {
 
         // --- CUSTOM DESIGNER LOGIC ---
         const openCustomDesigner = () => {
-            // Inicializar com os valores atuais do storeConfig
+            // Preencher form com valores da storeConfig
             designForm.value = {
                 background: storeConfig.value.primary_color || '#00a896',
                 textColor: storeConfig.value.text_color || '#ffffff', 
@@ -210,12 +220,20 @@ const AdminApp = {
             reader.readAsDataURL(file);
         };
 
+        const removeBgImage = () => {
+            designForm.value.image = null;
+            // Opcional: Resetar o zoom quando se remove a imagem
+            designForm.value.zoom = 100;
+        };
+
         const saveCustomDesign = async () => {
-            // 1. Atualizar o config local com TODAS as propriedades
+            // 1. Atualizar o objeto storeConfig com os dados do formulário
+            // IMPORTANTE: Mapear para os nomes que a BD espera
             storeConfig.value.primary_color = designForm.value.background;
             storeConfig.value.text_color = designForm.value.textColor;
             storeConfig.value.border_color = designForm.value.borderColor;
-            if(designForm.value.image) {
+            
+            if (designForm.value.image) {
                 storeConfig.value.card_image_url = designForm.value.image;
             }
 
@@ -267,7 +285,6 @@ const AdminApp = {
                 storeConfig.value = { ...storeConfig.value, ...d }; 
                 activeSkin.value = d.card_skin || 'default';
                 
-                // 2. Lógica de prioridade:
                 const localTheme = localStorage.getItem('theme');
                 if (localTheme) {
                     setTheme(localTheme);
@@ -289,7 +306,9 @@ const AdminApp = {
             updateGlobalSkin, openPreview, showPreview, previewColors, availableSkins, getPreviewStyle,
             toasts, showToast, lang, toggleLang, t,
             // Exports do Designer
-            showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, saveCustomDesign
+            showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, saveCustomDesign,removeBgImage,
+            // Export do Theme (CORREÇÃO VUE WARN)
+            theme
         };
     }
 };

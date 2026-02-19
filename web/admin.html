@@ -150,7 +150,7 @@
         .toast-error { background: var(--danger); }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* --- DESIGNER MODAL STYLES (LIMPO) --- */
+        /* --- DESIGNER MODAL STYLES --- */
         .designer-modal { width: 850px; max-width: 90vw; padding: 0; display: flex; overflow: hidden; height: 500px; }
         .designer-left { width: 350px; padding: 30px; border-right: 1px solid var(--border-color); background: var(--bg-side); overflow-y: auto; }
         .designer-right { flex: 1; background: var(--bg-main); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; position: relative; }
@@ -169,7 +169,6 @@
 
         /* Color Block (Sem Texto) */
         .color-block-wrapper { margin-bottom: 20px; }
-        /* Style para remover o visual default feio do input color */
         input[type="color"].color-block { 
             -webkit-appearance: none; border: none; padding: 0; 
             width: 100%; height: 40px; border-radius: 8px; cursor: pointer; 
@@ -411,11 +410,16 @@
                     <h2 style="margin-top:0; color:var(--text-main);">Theme Designer</h2>
                     
                     <span class="design-label">BACKGROUND</span>
-                    <label class="upload-clean">
-                        <img v-if="designForm.image" :src="designForm.image">
-                        <span class="upload-text">{{ designForm.image ? 'CHANGE IMAGE' : 'UPLOAD IMAGE' }}</span>
-                        <input type="file" hidden @change="handleBgUpload" accept="image/*">
-                    </label>
+<div style="display: flex; gap: 10px; align-items: center;">
+    <label class="upload-clean" style="flex: 1;">
+        <img v-if="designForm.image" :src="designForm.image" style="width: 30px; height: 30px; border-radius: 4px; object-fit: cover;">
+        <span class="upload-text" style="font-weight: 700; font-size: 0.75rem; color: var(--text-main);">{{ designForm.image ? 'CHANGE IMAGE' : 'UPLOAD IMAGE' }}</span>
+        <input type="file" hidden @change="handleBgUpload" accept="image/*">
+    </label>
+    <button v-if="designForm.image" class="btn-action btn-edit" style="width: 50px; height: 50px; font-size: 1.2rem; padding: 0; display: flex; align-items: center; justify-content: center;" @click="removeBgImage" title="Remove Image">
+        ✕
+    </button>
+</div>
 
                     <div style="margin-top:20px;">
                         <span class="design-label">BACKGROUND COLOR (SOLID)</span>
@@ -442,10 +446,16 @@
                 <div class="designer-right">
                     <div class="preview-card-shell" 
                          :style="{
-                             background: designForm.image ? `url(${designForm.image}) center/cover` : designForm.background,
+                             /* Lógica de Background */
+                             backgroundImage: designForm.image ? `url(${designForm.image})` : 'none',
+                             backgroundColor: designForm.image ? 'transparent' : designForm.background,
+                             backgroundSize: designForm.image ? `${designForm.zoom}%` : 'cover',
+                             backgroundPosition: 'center center',
+                             backgroundRepeat: 'no-repeat',
+                             
                              color: designForm.textColor,
                              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-                             transform: `scale(${designForm.zoom / 100})`
+                             /* AQUI ESTAVA O PROBLEMA DO ZOOM - REMOVIDO */
                          }">
                         
                         <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
@@ -468,9 +478,9 @@
                         </div>
                     </div>
 
-                    <div class="zoom-control">
-                        <span style="font-size:0.8rem; font-weight:bold;">ZOOM</span>
-                        <input type="range" min="80" max="130" v-model="designForm.zoom" class="zoom-slider">
+                    <div class="zoom-control" v-if="designForm.image">
+                        <span style="font-size:0.8rem; font-weight:bold;">ZOOM:</span>
+                        <input type="range" min="100" max="250" v-model="designForm.zoom" class="zoom-slider">
                     </div>
 
                     <button class="btn-save-modal" style="margin-top: 30px; width: 200px;" @click="saveCustomDesign">SAVE THEME</button>

@@ -14,9 +14,14 @@ CREATE TABLE stores (
     account_activated BOOLEAN DEFAULT FALSE,
     logo_url TEXT,
     stamp_icon VARCHAR(50) DEFAULT '🍳',
+    
+    -- Design & Personalização do Cartão
     card_skin VARCHAR(50) DEFAULT 'default', 
     theme_mode VARCHAR(20) DEFAULT 'dark',
     primary_color VARCHAR(20) DEFAULT '#00a896',
+    text_color VARCHAR(20) DEFAULT '#ffffff',     -- NOVA COLUNA
+    border_color VARCHAR(20) DEFAULT '#ffffff',   -- NOVA COLUNA
+    card_image_url TEXT,                          -- NOVA COLUNA
     
     -- SaaS & MONETIZAÇÃO
     tier VARCHAR(20) DEFAULT 'free_trial',
