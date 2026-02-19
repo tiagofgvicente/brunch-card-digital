@@ -122,11 +122,10 @@
         .skin-body { padding: 20px; border-top: 1px solid var(--border-color); }
         .skin-body h3 { margin: 0; font-size: 1rem; margin-bottom: 5px; color: var(--text-main); }
         
-        /* CORREÇÃO DO CSS DOS BOTÕES DE SKINS */
         .skin-actions { display: flex; gap: 10px; margin-top: 15px; }
         .btn-skin-preview, .btn-skin-act, .btn-skin-edit { 
             flex: 1; 
-            height: 38px; /* Força todos os botões a terem a mesma altura */
+            height: 38px; 
             padding: 0; 
             border-radius: 8px; 
             border: none; 
@@ -136,7 +135,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            white-space: nowrap; /* Impede o texto de saltar de linha */
+            white-space: nowrap; 
             box-sizing: border-box;
             transition: 0.2s;
         }
@@ -144,7 +143,6 @@
         .btn-skin-preview:hover { border-color: var(--primary); color: var(--primary); }
         .btn-skin-act { background: var(--primary); color: white; }
         .btn-skin-act:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-2px); }
-        /* Quando está ativado, fica desvanecido e transparente */
         .btn-skin-act:disabled { background: transparent; color: var(--text-sub); border: 1px solid var(--border-color); cursor: not-allowed; opacity: 0.5; transform: none; }
         .btn-skin-edit { background: var(--bg-btn); color: var(--text-main); border: 1px solid var(--border-color); width: 38px; flex: none; font-size: 1rem; }
         .btn-skin-edit:hover { border-color: var(--gold); color: var(--gold); }
@@ -188,7 +186,7 @@
         .upload-clean img { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; }
         .upload-text { font-weight: 700; font-size: 0.75rem; color: var(--text-main); }
 
-        /* Color Block (Sem Texto) */
+        /* Color Block */
         .color-block-wrapper { margin-bottom: 20px; }
         input[type="color"].color-block { 
             -webkit-appearance: none; border: none; padding: 0; 
@@ -292,7 +290,6 @@
                 <div class="form-grid">
                     <div class="form-row"><label>{{ t('lbl_fname') }} *</label><input v-model="newMember.first_name" class="custom-input" placeholder="e.g. John"></div>
                     <div class="form-row"><label>{{ t('lbl_lname') }} *</label><input v-model="newMember.last_name" class="custom-input" placeholder="e.g. Doe"></div>
-                    
                     <div class="form-row">
                         <label>{{ t('lbl_email') }}</label>
                         <input v-model="newMember.email" class="custom-input" placeholder="john@example.com">
@@ -300,7 +297,6 @@
                             <span style="font-size: 1rem;">⚠️</span> {{ t('msg_no_email') }}
                         </div>
                     </div>
-                    
                     <div class="form-row"><label>{{ t('lbl_phone') }}</label><input v-model="newMember.phone" class="custom-input" placeholder="+351 912 345 678"></div>
                 </div>
 
@@ -337,7 +333,6 @@
                 <div class="skins-grid">
                     <div v-for="skin in availableSkins" :key="skin.id" class="skin-card" :class="{'is-active': activeSkin === skin.id}">
                         <div class="active-badge" v-if="activeSkin === skin.id">{{ t('active_badge') }}</div>
-                        
                         <div class="skin-preview" :style="getPreviewStyle(skin)">
                             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
                                 <div v-for="n in 10" :key="n" 
@@ -351,7 +346,6 @@
                             <div class="skin-actions">
                                 <button class="btn-skin-preview" @click="openPreview(skin.id)">{{ t('btn_preview') }}</button>
                                 <button v-if="skin.id === 'custom'" class="btn-skin-edit" @click="openCustomDesigner" title="Design Brand">✏️</button>
-                                
                                 <button class="btn-skin-act" :disabled="activeSkin === skin.id" @click="updateGlobalSkin(skin.id)">
                                     {{ activeSkin === skin.id ? 'ACTIVATED' : t('btn_activate') }}
                                 </button>
@@ -368,21 +362,21 @@
                         <h3 class="section-label">{{ t('sec_brand') }}</h3>
                         <div class="setting-row">
                             <div class="setting-info"><label>{{ t('lbl_store_name') }}</label></div>
-                            <div class="setting-control"><input type="text" v-model="storeConfig.name" class="custom-input"></div>
+                            <div class="setting-control"><input type="text" v-model="settingsForm.name" class="custom-input"></div>
                         </div>
                         
                         <div class="setting-row">
                             <div class="setting-info"><label>{{ t('lbl_icon') }}</label></div>
                             <div class="setting-control" style="display:flex; align-items:center; gap:15px;">
-                                <div style="font-size: 2rem; background: var(--bg-main); width: 60px; height: 60px; display:flex; align-items:center; justify-content:center; border-radius:12px; border:1px solid var(--border-color);">{{ storeConfig.stamp_icon }}</div>
+                                <div style="font-size: 2rem; background: var(--bg-main); width: 60px; height: 60px; display:flex; align-items:center; justify-content:center; border-radius:12px; border:1px solid var(--border-color);">{{ settingsForm.stamp_icon }}</div>
                                 <button class="btn-action btn-edit" style="width:auto; padding: 10px 20px;" @click="showIconPicker = true">Change Icon</button>
                             </div>
                         </div>
                         <div class="setting-row">
                             <div class="setting-info"><label>{{ t('lbl_logo') }}</label></div>
                             <div class="setting-control">
-                                <div v-if="storeConfig.logo_url" style="position:relative; width:80px; height:80px; background:white; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; justify-content:center;">
-                                    <img :src="storeConfig.logo_url" style="max-width:100%; max-height:100%;">
+                                <div v-if="settingsForm.logo_url" style="position:relative; width:80px; height:80px; background:white; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; justify-content:center;">
+                                    <img :src="settingsForm.logo_url" style="max-width:100%; max-height:100%;">
                                     <button style="position:absolute; top:-8px; right:-8px; background:red; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer;" @click="removeLogo">✕</button>
                                 </div>
                                 <label style="cursor:pointer; background:var(--bg-main); padding:10px 20px; border-radius:8px; border:1px solid var(--border-color); display:inline-block; font-weight:bold; font-size:0.8rem;">
@@ -395,16 +389,19 @@
                     <div class="settings-section">
                         <h3 class="section-label">{{ t('sec_tiers') }}</h3>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--bronze); margin-bottom:5px;">BRONZE</label><input type="number" v-model.number="storeConfig.bronzeThreshold" class="custom-input"></div>
-                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--silver); margin-bottom:5px;">SILVER</label><input type="number" v-model.number="storeConfig.silverThreshold" class="custom-input"></div>
-                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--gold); margin-bottom:5px;">GOLD</label><input type="number" v-model.number="storeConfig.goldThreshold" class="custom-input"></div>
+                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--bronze); margin-bottom:5px;">BRONZE</label><input type="number" v-model.number="settingsForm.bronzeThreshold" class="custom-input"></div>
+                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--silver); margin-bottom:5px;">SILVER</label><input type="number" v-model.number="settingsForm.silverThreshold" class="custom-input"></div>
+                            <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--gold); margin-bottom:5px;">GOLD</label><input type="number" v-model.number="settingsForm.goldThreshold" class="custom-input"></div>
                         </div>
                     </div>
                     <div class="divider"></div>
                     <div class="settings-section">
                         <h3 class="section-label">{{ t('sec_security') }}</h3>
                         <div class="setting-row">
-                            <div class="setting-info"><label>{{ t('lbl_pass_key') }}</label></div>
+                            <div class="setting-info">
+                                <label>{{ t('lbl_pass_key') }}</label>
+                                <span>{{ t('sub_pass_key') }}</span>
+                            </div>
                             <div class="setting-control">
                                 <input type="password" id="pass-old" placeholder="Current Password" class="custom-input" style="margin-bottom:10px;">
                                 <input type="password" id="pass-new" placeholder="New Password" class="custom-input">

@@ -18,6 +18,7 @@ const AdminApp = {
         const showIconPicker = ref(false);
         const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'];
 
+        // STATE DA CONFIGURAÇÃO (Coincide com a Base de Dados)
         const storeConfig = ref({ 
             name: 'Store', logo_url: '', themeMode: 'dark', 
             primary_color: '#00a896', 
@@ -25,11 +26,14 @@ const AdminApp = {
             border_color: '#ffffff',    
             card_image_url: '',
             card_image_zoom: 100,
-            card_image_pos_x: 0, // NOVO
-            card_image_pos_y: 0, // NOVO
+            card_image_pos_x: 0,
+            card_image_pos_y: 0,
             stamp_icon: '🍳',
             bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 
         });
+
+        // --- RASCUNHO PARA O MENU SETTINGS ---
+        const settingsForm = ref({});
         
         const newMember = ref({ first_name: '', last_name: '', email: '', phone: '', rgpd: false, marketing: false });
         const editingCard = ref(null);
@@ -48,8 +52,8 @@ const AdminApp = {
             borderColor: '#ffffff',
             image: null,
             zoom: 100,
-            posX: 0, // NOVO
-            posY: 0  // NOVO
+            posX: 0,
+            posY: 0
         });
 
         // --- DRAG LOGIC ---
@@ -66,14 +70,38 @@ const AdminApp = {
             designForm.value.posY = e.clientY - dragStart.value.y;
         };
 
-        const stopDrag = () => {
-            isDragging.value = false;
-        };
+        const stopDrag = () => { isDragging.value = false; };
 
-        // --- TRADUÇÕES (Mantidas) ---
+        // --- TRADUÇÕES ---
         const translations = {
-            en: { nav_customers: "Customers", nav_register: "New Member", nav_scanner: "Scan Station", nav_skins: "Card Skins", nav_settings: "Settings", nav_logout: "Logout", title_customers: "Customer Management", title_register: "Register New Member", title_scanner: "Ready to Scan", title_skins: "Card Skins", title_settings: "System Settings", sub_skins: "Choose the visual style for your customers' digital cards.", sub_settings: "Manage your store identity and dashboard appearance.", sub_scanner: "Use the QR Reader. The stamp will be applied automatically.", th_name: "Name & Contact", th_status: "Status", th_consent: "Consent", th_avail: "Available", th_redeem: "Redeemed", th_actions: "Actions", sec_brand: "Branding & Identity", lbl_store_name: "Store Name", lbl_color: "Primary Brand Color", lbl_icon: "Stamp Icon", lbl_logo: "Store Logo", btn_upload: "UPLOAD NEW IMAGE", sec_tiers: "Loyalty Tiers", sec_security: "Security", lbl_pass_key: "Staff Access Key", btn_save_config: "SAVE CONFIGURATION", btn_change_pass: "Update Password", lbl_fname: "First Name", lbl_lname: "Last Name", lbl_email: "Email", lbl_phone: "Phone", lbl_rgpd: "Client accepts Privacy Policy", lbl_mkt: "Receive offers via email", btn_create: "CREATE CARD", search_placeholder: "Search customer...", active_badge: "ACTIVE", btn_preview: "Preview", btn_activate: "ACTIVATE", msg_no_email: "Without email, the customer won't receive the digital card or rewards. They will only be registered in the system." },
-            pt: { nav_customers: "Clientes", nav_register: "Novo Membro", nav_scanner: "Scanner", nav_skins: "Estilo Cartão", nav_settings: "Definições", nav_logout: "Sair", title_customers: "Gestão de Clientes", title_register: "Registar Novo Membro", title_scanner: "Pronto a Ler", title_skins: "Estilo do Cartão", title_settings: "Definições de Sistema", sub_skins: "Escolha o visual do cartão digital dos seus clientes.", sub_settings: "Gerira a identidade e aparência da loja.", sub_scanner: "Use o leitor QR. O selo será aplicado automaticamente.", th_name: "Nome & Contacto", th_status: "Estado", th_consent: "Privacidade", th_avail: "Disponível", th_redeem: "Usados", th_actions: "Ações", sec_brand: "Marca & Identidade", lbl_store_name: "Nome da Loja", lbl_color: "Cor Principal", lbl_icon: "Ícone Selo", lbl_logo: "Logótipo", btn_upload: "CARREGAR IMAGEM", sec_tiers: "Níveis de Fidelidade", sec_security: "Segurança", lbl_pass_key: "Password de Acesso", btn_save_config: "GUARDAR CONFIGURAÇÃO", btn_change_pass: "Atualizar Password", lbl_fname: "Primeiro Nome", lbl_lname: "Último Nome", lbl_email: "Email", lbl_phone: "Telemóvel", lbl_rgpd: "Cliente aceita Política de Privacidade", lbl_mkt: "Receber ofertas por email", btn_create: "CRIAR CARTÃO", search_placeholder: "Procurar cliente...", active_badge: "ATIVO", btn_preview: "Ver", btn_activate: "ATIVAR", msg_no_email: "Sem email, o cliente não recebe o cartão digital nem prémios. Apenas fica registado no sistema." }
+            en: { 
+                nav_customers: "Customers", nav_register: "New Member", nav_scanner: "Scan Station", nav_skins: "Card Skins", nav_settings: "Settings", nav_logout: "Logout", 
+                title_customers: "Customer Management", title_register: "Register New Member", title_scanner: "Ready to Scan", title_skins: "Card Skins", title_settings: "System Settings", 
+                sub_skins: "Choose the visual style for your customers' digital cards.", sub_settings: "Manage your store identity and dashboard appearance.", sub_scanner: "Use the QR Reader. The stamp will be applied automatically.", 
+                th_name: "Name & Contact", th_status: "Status", th_consent: "Consent", th_avail: "Available", th_redeem: "Redeemed", th_actions: "Actions", 
+                sec_brand: "Branding & Identity", lbl_store_name: "Store Name", lbl_color: "Primary Brand Color", lbl_icon: "Stamp Icon", lbl_logo: "Store Logo", btn_upload: "UPLOAD NEW IMAGE", 
+                sec_tiers: "Loyalty Tiers", sec_security: "Security", 
+                lbl_pass_key: "Dashboard Login Password", 
+                sub_pass_key: "The password you use to log into this management platform.",
+                btn_save_config: "SAVE CONFIGURATION", btn_change_pass: "Update Password", 
+                lbl_fname: "First Name", lbl_lname: "Last Name", lbl_email: "Email", lbl_phone: "Phone", lbl_rgpd: "Client accepts Privacy Policy", lbl_mkt: "Receive offers via email", btn_create: "CREATE CARD", 
+                search_placeholder: "Search customer...", active_badge: "ACTIVE", btn_preview: "Preview", btn_activate: "ACTIVATE", 
+                msg_no_email: "Without email, the customer won't receive the digital card or rewards. They will only be registered in the system." 
+            },
+            pt: { 
+                nav_customers: "Clientes", nav_register: "Novo Membro", nav_scanner: "Scanner", nav_skins: "Estilo Cartão", nav_settings: "Definições", nav_logout: "Sair", 
+                title_customers: "Gestão de Clientes", title_register: "Registar Novo Membro", title_scanner: "Pronto a Ler", title_skins: "Estilo do Cartão", title_settings: "Definições de Sistema", 
+                sub_skins: "Escolha o visual do cartão digital dos seus clientes.", sub_settings: "Gerira a identidade e aparência da loja.", sub_scanner: "Use o leitor QR. O selo será aplicado automaticamente.", 
+                th_name: "Nome & Contacto", th_status: "Estado", th_consent: "Privacidade", th_avail: "Disponível", th_redeem: "Usados", th_actions: "Ações", 
+                sec_brand: "Marca & Identidade", lbl_store_name: "Nome da Loja", lbl_color: "Cor Principal", lbl_icon: "Ícone Selo", lbl_logo: "Logótipo", btn_upload: "CARREGAR IMAGEM", 
+                sec_tiers: "Níveis de Fidelidade", sec_security: "Segurança", 
+                lbl_pass_key: "Password de Acesso (Login)", 
+                sub_pass_key: "A password que utiliza para entrar nesta plataforma de gestão.",
+                btn_save_config: "GUARDAR CONFIGURAÇÃO", btn_change_pass: "Atualizar Password", 
+                lbl_fname: "Primeiro Nome", lbl_lname: "Último Nome", lbl_email: "Email", lbl_phone: "Telemóvel", lbl_rgpd: "Cliente aceita Política de Privacidade", lbl_mkt: "Receber ofertas por email", btn_create: "CRIAR CARTÃO", 
+                search_placeholder: "Procurar cliente...", active_badge: "ATIVO", btn_preview: "Ver", btn_activate: "ATIVAR", 
+                msg_no_email: "Sem email, o cliente não recebe o cartão digital nem prémios. Apenas fica registado no sistema." 
+            }
         };
         const t = (key) => translations[lang.value][key] || key;
 
@@ -127,25 +155,27 @@ const AdminApp = {
             return { background: '#ccc', '--stamp-border': 'rgba(0,0,0,0.2)' };
         };
 
-        const changePage = (page) => { currentPage.value = page; if (page === 'scanner') nextTick(() => focusScanner()); if (page !== 'settings' && page !== 'skins') fetchCards(); };
-        const selectIcon = (icon) => { storeConfig.value.stamp_icon = icon; showIconPicker.value = false; };
-        const saveSettings = async () => { 
-            // REMOVIDA: A linha que forçava updateGlobalSkin('custom')
-            
-            await fetch(api('/api/v1/admin/settings'), { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(storeConfig.value) 
-            }); 
-            
-            showToast("Configuration Saved!", "success"); 
-            
-            fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
-                storeConfig.value = { ...storeConfig.value, ...d }; 
-                fetchAvailableSkins();
-                document.title = `Volto Store Admin | ${d.name}`;
-            });
+        const changePage = (page) => { 
+            currentPage.value = page; 
+            if (page === 'settings') { settingsForm.value = { ...storeConfig.value }; }
+            if (page === 'scanner') nextTick(() => focusScanner()); 
+            if (page !== 'settings' && page !== 'skins') fetchCards(); 
         };
+
+        const selectIcon = (icon) => { settingsForm.value.stamp_icon = icon; showIconPicker.value = false; };
+        const handleLogoUpload = (e) => { const r=new FileReader(); r.onload=(ev)=>{ settingsForm.value.logo_url=ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
+        const removeLogo = () => { settingsForm.value.logo_url=''; };
+
+        const saveSettings = async () => { 
+            await fetch(api('/api/v1/admin/settings'), { 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(settingsForm.value) 
+            }); 
+            showToast("Configuration Saved!", "success"); 
+            storeConfig.value = { ...storeConfig.value, ...settingsForm.value };
+            document.title = `Volto Store Admin | ${storeConfig.value.name}`;
+        };
+
         const openCustomDesigner = () => {
             designForm.value = {
                 background: storeConfig.value.primary_color || '#00a896',
@@ -159,8 +189,25 @@ const AdminApp = {
             showCustomDesigner.value = true;
         };
 
-        const handleBgUpload = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { designForm.value.image = ev.target.result; designForm.value.posX = 0; designForm.value.posY = 0; designForm.value.zoom = 100; }; reader.readAsDataURL(file); };
-        const removeBgImage = () => { designForm.value.image = null; designForm.value.zoom = 100; designForm.value.posX = 0; designForm.value.posY = 0; };
+        const handleBgUpload = (e) => { 
+            const file = e.target.files[0]; 
+            if (!file) return; 
+            const reader = new FileReader(); 
+            reader.onload = (ev) => { 
+                designForm.value.image = ev.target.result; 
+                designForm.value.posX = 0; 
+                designForm.value.posY = 0; 
+                designForm.value.zoom = 100; 
+            }; 
+            reader.readAsDataURL(file); 
+        };
+
+        const removeBgImage = () => { 
+            designForm.value.image = null; 
+            designForm.value.zoom = 100; 
+            designForm.value.posX = 0; 
+            designForm.value.posY = 0; 
+        };
 
         const saveCustomDesign = async () => {
             const newConfig = {
@@ -181,8 +228,6 @@ const AdminApp = {
             fetchAvailableSkins();
         };
 
-        const handleLogoUpload = (e) => { const r=new FileReader(); r.onload=(ev)=>{ storeConfig.value.logo_url=ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
-        const removeLogo = () => { storeConfig.value.logo_url=''; };
         const updatePassword = async () => { const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value; const res = await fetch(api('/api/v1/admin/update-password'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n})}); if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error"); };
         const updateGlobalSkin = async (s) => { await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); activeSkin.value = s; showToast("Skin Activated!", "success"); };
         const openPreview = (d) => { previewDesign.value = d; showPreview.value = true; };
@@ -204,6 +249,8 @@ const AdminApp = {
             fetchCards(); 
             fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
                 storeConfig.value = { ...storeConfig.value, ...d }; 
+                settingsForm.value = { ...storeConfig.value }; 
+
                 activeSkin.value = d.card_skin || 'default';
                 const localTheme = localStorage.getItem('theme');
                 if (localTheme) { setTheme(localTheme); } else { setTheme(d.themeMode || 'dark'); }
@@ -213,7 +260,7 @@ const AdminApp = {
         });
 
         return { 
-            cards, currentPage, searchQuery, filteredCards, storeConfig, 
+            cards, currentPage, searchQuery, filteredCards, storeConfig, settingsForm,
             newMember, editingCard, lastScanStatus, scannerInput, activeSkin,
             showIconPicker, icons, selectIcon, saveSettings, handleLogoUpload, removeLogo,
             changePage, logout, registerMember, focusScanner, handleScan, openEditModal, saveEdit, toggleConsent,
@@ -221,9 +268,7 @@ const AdminApp = {
             updateGlobalSkin, openPreview, showPreview, previewColors, availableSkins, getPreviewStyle,
             toasts, showToast, lang, toggleLang, t,
             showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, removeBgImage, saveCustomDesign,
-            theme,
-            // EXPORTA AS FUNÇÕES DO DRAG PARA O HTML
-            isDragging, startDrag, onDrag, stopDrag
+            theme, isDragging, startDrag, onDrag, stopDrag
         };
     }
 };
