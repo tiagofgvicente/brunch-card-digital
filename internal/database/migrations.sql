@@ -22,6 +22,9 @@ CREATE TABLE stores (
     text_color VARCHAR(20) DEFAULT '#ffffff',     -- NOVA COLUNA
     border_color VARCHAR(20) DEFAULT '#ffffff',   -- NOVA COLUNA
     card_image_url TEXT,                          -- NOVA COLUNA
+    card_image_zoom INTEGER DEFAULT 100,
+    card_image_pos_x INTEGER DEFAULT 0,
+    card_image_pos_y INTEGER DEFAULT 0,
     
     -- SaaS & MONETIZAÇÃO
     tier VARCHAR(20) DEFAULT 'free_trial',
@@ -99,9 +102,9 @@ VALUES (
     'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 
     'Sushi Zen', 
     'sushi', 
-    'sushi_admin', 
     'manager@sushizen.com', 
-    '$2a$10$C82H9C1f1F5J3Z9oR7u2m.I8R8v2p4z6H7x9N9v1w2L7q3t0r1s2e', 
+    'manager@sushizen.com', 
+    '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 
     'free_trial', 
     CURRENT_TIMESTAMP + INTERVAL '3 days', -- Expira daqui a 3 dias
     'monthly', 
@@ -118,9 +121,9 @@ VALUES (
     'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 
     'Burger Kingz', 
     'burger', 
-    'burger_admin', 
     'boss@burgerkingz.com', 
-    '$2a$10$C82H9C1f1F5J3Z9oR7u2m.I8R8v2p4z6H7x9N9v1w2L7q3t0r1s2e', 
+    'boss@burgerkingz.com', 
+    '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 
     'basic', 
     CURRENT_TIMESTAMP + INTERVAL '25 days', -- Expira daqui a 25 dias (Seguro)
     'monthly', 
@@ -137,9 +140,9 @@ VALUES (
     'd3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 
     'Coffee Lovers', 
     'coffee', 
-    'coffee_admin', 
     'hello@coffeelovers.pt', 
-    '$2a$10$C82H9C1f1F5J3Z9oR7u2m.I8R8v2p4z6H7x9N9v1w2L7q3t0r1s2e', 
+    'hello@coffeelovers.pt', 
+    '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 
     'lite', 
     CURRENT_TIMESTAMP - INTERVAL '1 day', -- Expirou ontem
     'biannual', 
@@ -154,9 +157,9 @@ VALUES (
     'e4eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', 
     'Pastelaria Antiga', 
     'antiga', 
-    'antiga_admin', 
     'gerencia@antiga.pt', 
-    '$2a$10$C82H9C1f1F5J3Z9oR7u2m.I8R8v2p4z6H7x9N9v1w2L7q3t0r1s2e', 
+    'gerencia@antiga.pt', 
+    '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 
     'free_trial', 
     CURRENT_TIMESTAMP - INTERVAL '2 days', -- Expirou há 2 dias atrás
     'monthly', 

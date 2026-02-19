@@ -256,6 +256,9 @@ func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *databas
 	store.TextColor = input.TextColor
 	store.BorderColor = input.BorderColor
 	store.CardImageUrl = input.CardImageUrl
+	store.CardImageZoom = input.CardImageZoom
+	store.CardImagePosX = input.CardImagePosX
+    store.CardImagePosY = input.CardImagePosY
 
 	// Chamar o repositório para gravar na BD
 	if err := repo.UpdateSettings(*store); err != nil {

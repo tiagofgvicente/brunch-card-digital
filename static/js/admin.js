@@ -2,7 +2,6 @@ const AdminApp = {
     setup() {
         const { ref, onMounted, nextTick, watch, computed } = Vue;
 
-        // --- STATE ---
         const urlParams = new URLSearchParams(window.location.search);
         const currentStore = urlParams.get('store');
         const api = (url) => currentStore ? `${url}${url.includes('?') ? '&' : '?'}store=${currentStore}` : url;
@@ -19,13 +18,15 @@ const AdminApp = {
         const showIconPicker = ref(false);
         const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢'];
 
-        // STATE DA CONFIGURAÇÃO (Coincide com a Base de Dados)
         const storeConfig = ref({ 
             name: 'Store', logo_url: '', themeMode: 'dark', 
             primary_color: '#00a896', 
-            text_color: '#ffffff',      // BD: text_color
-            border_color: '#ffffff',    // BD: border_color
-            card_image_url: '',         // BD: card_image_url
+            text_color: '#ffffff',      
+            border_color: '#ffffff',    
+            card_image_url: '',
+            card_image_zoom: 100,
+            card_image_pos_x: 0, // NOVO
+            card_image_pos_y: 0, // NOVO
             stamp_icon: '🍳',
             bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 
         });
@@ -36,214 +37,130 @@ const AdminApp = {
         const scannerInput = ref(null);
         const availableSkins = ref([]);
 
-        // --- CUSTOM DESIGNER STATE (Formulário Temporário) ---
+        // --- DRAG & DROP STATE ---
+        const isDragging = ref(false);
+        const dragStart = ref({ x: 0, y: 0 });
+
         const showCustomDesigner = ref(false);
         const designForm = ref({
             background: '#00a896',
             textColor: '#ffffff',
             borderColor: '#ffffff',
             image: null,
-            zoom: 100
+            zoom: 100,
+            posX: 0, // NOVO
+            posY: 0  // NOVO
         });
 
-        // --- TRADUÇÕES ---
-        const translations = {
-            en: {
-                nav_customers: "Customers", nav_register: "New Member", nav_scanner: "Scan Station", nav_skins: "Card Skins", nav_settings: "Settings", nav_logout: "Logout",
-                title_customers: "Customer Management", title_register: "Register New Member", title_scanner: "Ready to Scan", title_skins: "Card Skins", title_settings: "System Settings",
-                sub_skins: "Choose the visual style for your customers' digital cards.", sub_settings: "Manage your store identity and dashboard appearance.", sub_scanner: "Use the QR Reader. The stamp will be applied automatically.",
-                th_name: "Name & Contact", th_status: "Status", th_consent: "Consent", th_avail: "Available", th_redeem: "Redeemed", th_actions: "Actions",
-                sec_brand: "Branding & Identity", lbl_store_name: "Store Name", lbl_color: "Primary Brand Color", lbl_icon: "Stamp Icon", lbl_logo: "Store Logo", btn_upload: "UPLOAD NEW IMAGE",
-                sec_tiers: "Loyalty Tiers", sec_security: "Security", lbl_pass_key: "Staff Access Key", btn_save_config: "SAVE CONFIGURATION", btn_change_pass: "Update Password",
-                lbl_fname: "First Name", lbl_lname: "Last Name", lbl_email: "Email", lbl_phone: "Phone", lbl_rgpd: "Client accepts Privacy Policy", lbl_mkt: "Receive offers via email", btn_create: "CREATE CARD",
-                search_placeholder: "Search customer...", active_badge: "ACTIVE", btn_preview: "Preview", btn_activate: "ACTIVATE",
-                msg_no_email: "Without email, the customer won't receive the digital card or rewards. They will only be registered in the system."
-            },
-            pt: {
-                nav_customers: "Clientes", nav_register: "Novo Membro", nav_scanner: "Scanner", nav_skins: "Estilo Cartão", nav_settings: "Definições", nav_logout: "Sair",
-                title_customers: "Gestão de Clientes", title_register: "Registar Novo Membro", title_scanner: "Pronto a Ler", title_skins: "Estilo do Cartão", title_settings: "Definições de Sistema",
-                sub_skins: "Escolha o visual do cartão digital dos seus clientes.", sub_settings: "Gerira a identidade e aparência da loja.", sub_scanner: "Use o leitor QR. O selo será aplicado automaticamente.",
-                th_name: "Nome & Contacto", th_status: "Estado", th_consent: "Privacidade", th_avail: "Disponível", th_redeem: "Usados", th_actions: "Ações",
-                sec_brand: "Marca & Identidade", lbl_store_name: "Nome da Loja", lbl_color: "Cor Principal", lbl_icon: "Ícone Selo", lbl_logo: "Logótipo", btn_upload: "CARREGAR IMAGEM",
-                sec_tiers: "Níveis de Fidelidade", sec_security: "Segurança", lbl_pass_key: "Password de Acesso", btn_save_config: "GUARDAR CONFIGURAÇÃO", btn_change_pass: "Atualizar Password",
-                lbl_fname: "Primeiro Nome", lbl_lname: "Último Nome", lbl_email: "Email", lbl_phone: "Telemóvel", lbl_rgpd: "Cliente aceita Política de Privacidade", lbl_mkt: "Receber ofertas por email", btn_create: "CRIAR CARTÃO",
-                search_placeholder: "Procurar cliente...", active_badge: "ATIVO", btn_preview: "Ver", btn_activate: "ATIVAR",
-                msg_no_email: "Sem email, o cliente não recebe o cartão digital nem prémios. Apenas fica registado no sistema."
-            }
+        // --- DRAG LOGIC ---
+        const startDrag = (e) => {
+            if (!designForm.value.image) return;
+            isDragging.value = true;
+            dragStart.value.x = e.clientX - designForm.value.posX;
+            dragStart.value.y = e.clientY - designForm.value.posY;
         };
 
+        const onDrag = (e) => {
+            if (!isDragging.value) return;
+            designForm.value.posX = e.clientX - dragStart.value.x;
+            designForm.value.posY = e.clientY - dragStart.value.y;
+        };
+
+        const stopDrag = () => {
+            isDragging.value = false;
+        };
+
+        // --- TRADUÇÕES (Mantidas) ---
+        const translations = {
+            en: { nav_customers: "Customers", nav_register: "New Member", nav_scanner: "Scan Station", nav_skins: "Card Skins", nav_settings: "Settings", nav_logout: "Logout", title_customers: "Customer Management", title_register: "Register New Member", title_scanner: "Ready to Scan", title_skins: "Card Skins", title_settings: "System Settings", sub_skins: "Choose the visual style for your customers' digital cards.", sub_settings: "Manage your store identity and dashboard appearance.", sub_scanner: "Use the QR Reader. The stamp will be applied automatically.", th_name: "Name & Contact", th_status: "Status", th_consent: "Consent", th_avail: "Available", th_redeem: "Redeemed", th_actions: "Actions", sec_brand: "Branding & Identity", lbl_store_name: "Store Name", lbl_color: "Primary Brand Color", lbl_icon: "Stamp Icon", lbl_logo: "Store Logo", btn_upload: "UPLOAD NEW IMAGE", sec_tiers: "Loyalty Tiers", sec_security: "Security", lbl_pass_key: "Staff Access Key", btn_save_config: "SAVE CONFIGURATION", btn_change_pass: "Update Password", lbl_fname: "First Name", lbl_lname: "Last Name", lbl_email: "Email", lbl_phone: "Phone", lbl_rgpd: "Client accepts Privacy Policy", lbl_mkt: "Receive offers via email", btn_create: "CREATE CARD", search_placeholder: "Search customer...", active_badge: "ACTIVE", btn_preview: "Preview", btn_activate: "ACTIVATE", msg_no_email: "Without email, the customer won't receive the digital card or rewards. They will only be registered in the system." },
+            pt: { nav_customers: "Clientes", nav_register: "Novo Membro", nav_scanner: "Scanner", nav_skins: "Estilo Cartão", nav_settings: "Definições", nav_logout: "Sair", title_customers: "Gestão de Clientes", title_register: "Registar Novo Membro", title_scanner: "Pronto a Ler", title_skins: "Estilo do Cartão", title_settings: "Definições de Sistema", sub_skins: "Escolha o visual do cartão digital dos seus clientes.", sub_settings: "Gerira a identidade e aparência da loja.", sub_scanner: "Use o leitor QR. O selo será aplicado automaticamente.", th_name: "Nome & Contacto", th_status: "Estado", th_consent: "Privacidade", th_avail: "Disponível", th_redeem: "Usados", th_actions: "Ações", sec_brand: "Marca & Identidade", lbl_store_name: "Nome da Loja", lbl_color: "Cor Principal", lbl_icon: "Ícone Selo", lbl_logo: "Logótipo", btn_upload: "CARREGAR IMAGEM", sec_tiers: "Níveis de Fidelidade", sec_security: "Segurança", lbl_pass_key: "Password de Acesso", btn_save_config: "GUARDAR CONFIGURAÇÃO", btn_change_pass: "Atualizar Password", lbl_fname: "Primeiro Nome", lbl_lname: "Último Nome", lbl_email: "Email", lbl_phone: "Telemóvel", lbl_rgpd: "Cliente aceita Política de Privacidade", lbl_mkt: "Receber ofertas por email", btn_create: "CRIAR CARTÃO", search_placeholder: "Procurar cliente...", active_badge: "ATIVO", btn_preview: "Ver", btn_activate: "ATIVAR", msg_no_email: "Sem email, o cliente não recebe o cartão digital nem prémios. Apenas fica registado no sistema." }
+        };
         const t = (key) => translations[lang.value][key] || key;
 
-        // --- ACTIONS ---
-        
-        // COMPUTED PROPERTY "THEME" (CORREÇÃO DO ERRO VUE WARN)
         const theme = computed(() => storeConfig.value.themeMode);
+        const setTheme = (m) => { storeConfig.value.themeMode = m; document.documentElement.setAttribute('data-theme', m); };
+        const toggleTheme = () => { const newTheme = storeConfig.value.themeMode === 'dark' ? 'light' : 'dark'; setTheme(newTheme); localStorage.setItem('theme', newTheme); };
+        const toggleLang = () => { lang.value = lang.value === 'pt' ? 'en' : 'pt'; localStorage.setItem('lang', lang.value); };
+        const initSettings = () => { const savedLang = localStorage.getItem('lang'); if (savedLang) lang.value = savedLang; };
+        const showToast = (message, type = 'success') => { const id = Date.now(); toasts.value.push({ id, message, type }); setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000); };
 
-        const setTheme = (m) => { 
-            storeConfig.value.themeMode = m; 
-            document.documentElement.setAttribute('data-theme', m);
-        };
-
-        const toggleTheme = () => {
-            const newTheme = storeConfig.value.themeMode === 'dark' ? 'light' : 'dark';
-            setTheme(newTheme);
-            localStorage.setItem('theme', newTheme);
-        };
-
-        const toggleLang = () => {
-            lang.value = lang.value === 'pt' ? 'en' : 'pt';
-            localStorage.setItem('lang', lang.value);
-        };
-
-        const initSettings = () => {
-            const savedLang = localStorage.getItem('lang');
-            if (savedLang) lang.value = savedLang;
-            
-            // Nota: O tema é gerido no onMounted após fetch da config
-        };
-
-        const showToast = (message, type = 'success') => {
-            const id = Date.now();
-            toasts.value.push({ id, message, type });
-            setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000);
-        };
-
-        // --- COMPUTED PREVIEW ---
         const previewColors = computed(() => {
             const skinId = previewDesign.value;
-            
-            // SE FOR DEFAULT, FORÇA SEMPRE TEAL (Ignora Customizações)
-            if (skinId === 'default') {
-                return { bg: '#00a896', text: '#ffffff' };
-            }
+            if (skinId === 'default') return { bg: '#00a896', text: '#ffffff', border: 'gold', bgSize: 'cover', bgPos: 'center' };
 
-            // SE FOR CUSTOM, USA A CONFIGURAÇÃO DA BD
             if (skinId === 'custom') {
                 return { 
                     bg: storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : (storeConfig.value.primary_color || '#00a896'), 
-                    text: storeConfig.value.text_color || '#ffffff' 
+                    bgSize: storeConfig.value.card_image_url ? `${storeConfig.value.card_image_zoom || 100}%` : 'cover',
+                    bgPos: storeConfig.value.card_image_url ? `calc(50% + ${storeConfig.value.card_image_pos_x || 0}px) calc(50% + ${storeConfig.value.card_image_pos_y || 0}px)` : 'center',
+                    text: storeConfig.value.text_color || '#ffffff',
+                    border: storeConfig.value.border_color || '#ffffff'
                 };
             }
             
             const skin = availableSkins.value.find(s => s.id === skinId);
             if (skin) {
-                if (skin.image) return { bg: `url(${skin.image})`, text: '#ffffff' };
-                if (skin.style) {
-                     const bg = skin.style.includes('background:') ? skin.style.split('background:')[1].split(';')[0] : '#333';
-                     return { bg: bg, text: '#ffffff' };
-                }
+                if (skin.image) return { bg: `url(${skin.image})`, text: '#ffffff', border: 'gold', bgSize: 'cover', bgPos: 'center' };
+                if (skin.style) return { bg: skin.style.includes('background:') ? skin.style.split('background:')[1].split(';')[0] : '#333', text: '#ffffff', border: 'gold', bgSize: 'cover', bgPos: 'center' };
             }
-            if (skinId === 'black') return { bg: '#1a1a1a', text: '#ffd166' };
-            if (skinId === 'gold') return { bg: 'linear-gradient(45deg, #FFD700, #FDB931)', text: '#000000' };
-            
-            return { bg: '#00a896', text: '#ffffff' };
+            if (skinId === 'black') return { bg: '#1a1a1a', text: '#ffd166', border: '#ffd166', bgSize: 'cover', bgPos: 'center' };
+            if (skinId === 'gold') return { bg: 'linear-gradient(45deg, #FFD700, #FDB931)', text: '#000000', border: 'rgba(0,0,0,0.5)', bgSize: 'cover', bgPos: 'center' };
+            return { bg: '#00a896', text: '#ffffff', border: 'gold', bgSize: 'cover', bgPos: 'center' };
         });
 
-        const filteredCards = computed(() => {
-            if (!searchQuery.value) return cards.value;
-            const q = searchQuery.value.toLowerCase();
-            return cards.value.filter(c => c.customer_id.toLowerCase().includes(q) || c.last_name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q)));
-        });
-
-        // --- API CALLS ---
-        const fetchCards = async () => { 
-            try { const res = await fetch(api('/api/v1/admin/cards')); if (res.ok) cards.value = await res.json(); } catch(e) { console.error(e); }
-        };
-        
-        const fetchAvailableSkins = async () => {
-            try {
-                const res = await fetch(api('/api/v1/system/skins'));
-                if(res.ok) {
-                    const globals = await res.json();
-                    const customSkin = { id: 'custom', name: 'Custom Brand', type: 'standard', style: `background: ${storeConfig.value.primary_color || '#00a896'}` };
-                    availableSkins.value = [customSkin, ...globals];
-                }
-            } catch(e) { console.error(e); }
-        };
+        const filteredCards = computed(() => { if (!searchQuery.value) return cards.value; const q = searchQuery.value.toLowerCase(); return cards.value.filter(c => c.customer_id.toLowerCase().includes(q) || c.last_name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q))); });
+        const fetchCards = async () => { try { const res = await fetch(api('/api/v1/admin/cards')); if (res.ok) cards.value = await res.json(); } catch(e) { console.error(e); } };
+        const fetchAvailableSkins = async () => { try { const res = await fetch(api('/api/v1/system/skins')); if(res.ok) { const globals = await res.json(); const customSkin = { id: 'custom', name: 'Custom Brand', type: 'standard', style: `background: ${storeConfig.value.primary_color || '#00a896'}` }; availableSkins.value = [customSkin, ...globals]; } } catch(e) { console.error(e); } };
 
         const getPreviewStyle = (skin) => {
             if (!skin) return {};
-            if (skin.image) return { backgroundImage: `url(${skin.image})`, backgroundSize: 'cover', backgroundPosition: 'center' };
-            
-            // Default Fixo
-            if(skin.id === 'default') return { background: '#00a896', color: '#fff' };
-            if(skin.id === 'black') return { background: '#1a1a1a', borderBottom: '3px solid #ffd166', color: '#fff' };
-            
-            // Custom Fixo (Lê do storeConfig)
+            if(skin.id === 'default') return { background: '#00a896', color: '#fff', '--stamp-border': 'gold' };
+            if(skin.id === 'black') return { background: '#1a1a1a', borderBottom: '3px solid #ffd166', color: '#fff', '--stamp-border': '#ffd166' };
             if(skin.id === 'custom') {
                 const bg = storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : (storeConfig.value.primary_color || '#00a896');
-                return { background: bg, backgroundSize: 'cover', backgroundPosition: 'center', color: storeConfig.value.text_color || '#fff' };
+                const bgSize = storeConfig.value.card_image_url ? `${storeConfig.value.card_image_zoom || 100}%` : 'cover';
+                const bgPos = storeConfig.value.card_image_url ? `calc(50% + ${storeConfig.value.card_image_pos_x || 0}px) calc(50% + ${storeConfig.value.card_image_pos_y || 0}px)` : 'center';
+                return { background: bg, backgroundSize: bgSize, backgroundPosition: bgPos, backgroundRepeat: 'no-repeat', color: storeConfig.value.text_color || '#fff', '--stamp-border': storeConfig.value.border_color || '#ffffff' };
             }
-            
-            if(skin.style) return { background: skin.style.replace('background:', '').replace(';', ''), color: '#fff' };
-            return { background: '#ccc' };
+            if(skin.image) return { backgroundImage: `url(${skin.image})`, backgroundSize: 'cover', backgroundPosition: 'center', '--stamp-border': 'rgba(255,255,255,0.5)' };
+            if(skin.style) return { background: skin.style.replace('background:', '').replace(';', ''), color: '#fff', '--stamp-border': 'rgba(255,255,255,0.5)' };
+            return { background: '#ccc', '--stamp-border': 'rgba(0,0,0,0.2)' };
         };
 
-        const changePage = (page) => {
-            currentPage.value = page;
-            if (page === 'scanner') nextTick(() => focusScanner());
-            if (page !== 'settings' && page !== 'skins') fetchCards();
-        };
-
+        const changePage = (page) => { currentPage.value = page; if (page === 'scanner') nextTick(() => focusScanner()); if (page !== 'settings' && page !== 'skins') fetchCards(); };
         const selectIcon = (icon) => { storeConfig.value.stamp_icon = icon; showIconPicker.value = false; };
+        const saveSettings = async () => { if (activeSkin.value !== 'custom') { await updateGlobalSkin('custom'); } await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); showToast("Configuration Saved!", "success"); fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { storeConfig.value = { ...storeConfig.value, ...d }; fetchAvailableSkins(); document.title = `Volto Store Admin | ${d.name}`; }); };
 
-        // Save Settings (Geral)
-        const saveSettings = async () => { 
-            if (activeSkin.value !== 'custom') { await updateGlobalSkin('custom'); }
-            await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); 
-            showToast("Configuration Saved!", "success"); 
-            fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
-                storeConfig.value = { ...storeConfig.value, ...d }; 
-                fetchAvailableSkins();
-                document.title = `Volto Store Admin | ${d.name}`;
-            });
-        };
-
-        // --- CUSTOM DESIGNER LOGIC ---
         const openCustomDesigner = () => {
-            // Preencher form com valores da storeConfig
             designForm.value = {
                 background: storeConfig.value.primary_color || '#00a896',
                 textColor: storeConfig.value.text_color || '#ffffff', 
                 borderColor: storeConfig.value.border_color || '#ffffff',
                 image: storeConfig.value.card_image_url || null,
-                zoom: 100
+                zoom: storeConfig.value.card_image_zoom || 100,
+                posX: storeConfig.value.card_image_pos_x || 0,
+                posY: storeConfig.value.card_image_pos_y || 0
             };
             showCustomDesigner.value = true;
         };
 
-        const handleBgUpload = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => { designForm.value.image = ev.target.result; };
-            reader.readAsDataURL(file);
-        };
-
-        const removeBgImage = () => {
-            designForm.value.image = null;
-            // Opcional: Resetar o zoom quando se remove a imagem
-            designForm.value.zoom = 100;
-        };
+        const handleBgUpload = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { designForm.value.image = ev.target.result; designForm.value.posX = 0; designForm.value.posY = 0; designForm.value.zoom = 100; }; reader.readAsDataURL(file); };
+        const removeBgImage = () => { designForm.value.image = null; designForm.value.zoom = 100; designForm.value.posX = 0; designForm.value.posY = 0; };
 
         const saveCustomDesign = async () => {
-            // 1. Atualizar o objeto storeConfig com os dados do formulário
-            // IMPORTANTE: Mapear para os nomes que a BD espera
-            storeConfig.value.primary_color = designForm.value.background;
-            storeConfig.value.text_color = designForm.value.textColor;
-            storeConfig.value.border_color = designForm.value.borderColor;
-            
-            if (designForm.value.image) {
-                storeConfig.value.card_image_url = designForm.value.image;
-            }
+            const newConfig = {
+                primary_color: designForm.value.background,
+                text_color: designForm.value.textColor,
+                border_color: designForm.value.borderColor,
+                card_image_url: designForm.value.image || '',
+                card_image_zoom: parseInt(designForm.value.zoom) || 100,
+                card_image_pos_x: parseInt(designForm.value.posX) || 0,
+                card_image_pos_y: parseInt(designForm.value.posY) || 0
+            };
 
-            // 2. Enviar para a API
-            await fetch(api('/api/v1/admin/settings'), { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(storeConfig.value) 
-            });
-            
+            storeConfig.value = { ...storeConfig.value, ...newConfig };
+
+            await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) });
             showToast("Custom Brand Updated!", "success");
             showCustomDesigner.value = false;
             fetchAvailableSkins();
@@ -251,17 +168,8 @@ const AdminApp = {
 
         const handleLogoUpload = (e) => { const r=new FileReader(); r.onload=(ev)=>{ storeConfig.value.logo_url=ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
         const removeLogo = () => { storeConfig.value.logo_url=''; };
-
-        const updatePassword = async () => { 
-            const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value; 
-            const res = await fetch(api('/api/v1/admin/update-password'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n})}); 
-            if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error");
-        };
-
-        const updateGlobalSkin = async (s) => { 
-            await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); 
-            activeSkin.value = s; showToast("Skin Activated!", "success");
-        };
+        const updatePassword = async () => { const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value; const res = await fetch(api('/api/v1/admin/update-password'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n})}); if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error"); };
+        const updateGlobalSkin = async (s) => { await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); activeSkin.value = s; showToast("Skin Activated!", "success"); };
         const openPreview = (d) => { previewDesign.value = d; showPreview.value = true; };
         const openEditModal = (c) => editingCard.value = { ...c };
         const saveEdit = async () => { await fetch(api('/api/v1/admin/update'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) }); showToast("Customer Updated!", "success"); editingCard.value = null; fetchCards(); };
@@ -276,22 +184,14 @@ const AdminApp = {
         const resetCard = async (id) => { if(confirm("Reset?")) { await fetch(api(`/api/v1/admin/reset?id=${id}`), {method:'POST'}); fetchCards(); showToast("Card Reset", "warning"); } };
         const viewCard = (id) => window.open(`/card?store=${currentStore}&id=${id}`, '_blank');
         
-        // --- INIT ---
         onMounted(() => { 
-            initSettings(); // 1. Carrega as preferências do browser
+            initSettings(); 
             fetchCards(); 
-            
             fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
                 storeConfig.value = { ...storeConfig.value, ...d }; 
                 activeSkin.value = d.card_skin || 'default';
-                
                 const localTheme = localStorage.getItem('theme');
-                if (localTheme) {
-                    setTheme(localTheme);
-                } else {
-                    setTheme(d.themeMode || 'dark');
-                }
-                
+                if (localTheme) { setTheme(localTheme); } else { setTheme(d.themeMode || 'dark'); }
                 fetchAvailableSkins();
                 document.title = `Volto Store Admin | ${d.name}`;
             }); 
@@ -305,10 +205,10 @@ const AdminApp = {
             calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, resetCard, updatePassword, setTheme, toggleTheme,
             updateGlobalSkin, openPreview, showPreview, previewColors, availableSkins, getPreviewStyle,
             toasts, showToast, lang, toggleLang, t,
-            // Exports do Designer
-            showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, saveCustomDesign,removeBgImage,
-            // Export do Theme (CORREÇÃO VUE WARN)
-            theme
+            showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, removeBgImage, saveCustomDesign,
+            theme,
+            // EXPORTA AS FUNÇÕES DO DRAG PARA O HTML
+            isDragging, startDrag, onDrag, stopDrag
         };
     }
 };

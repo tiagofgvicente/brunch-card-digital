@@ -546,16 +546,15 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
             gold_threshold = $6,
             logo_url = $7,
             theme_mode = $8,
-            
-            -- NOVOS CAMPOS
             text_color = $9,
             border_color = $10,
-            card_image_url = $11
-            
-        WHERE id = $12
+            card_image_url = $11,
+            card_image_zoom = $12,
+			card_image_pos_x = $13, 
+			card_image_pos_y = $14
+        WHERE id = $15
     `
 
-	// Atenção: r.db (minúsculo) é a conexão à base de dados dentro do repositório
 	_, err := r.db.Exec(query,
 		s.Name,
 		s.PrimaryColor,
@@ -565,13 +564,13 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
 		s.Gold,
 		s.LogoURL,
 		s.ThemeMode,
-
-		// Novos argumentos
 		s.TextColor,
 		s.BorderColor,
 		s.CardImageUrl,
-
-		s.ID, // O ID da loja para o WHERE
+		s.CardImageZoom,
+		s.CardImagePosX, 
+        s.CardImagePosY, 
+		s.ID,           
 	)
 
 	return err

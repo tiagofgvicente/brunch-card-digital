@@ -69,9 +69,12 @@ type Store struct {
 	ThemeMode    string `json:"theme_mode"`
 
 	// --- NOVOS CAMPOS DE DESIGN ---
-	TextColor    string `json:"text_color"`
-	BorderColor  string `json:"border_color"`
-	CardImageUrl string `json:"card_image_url"`
+	TextColor     string `json:"text_color"`
+	BorderColor   string `json:"border_color"`
+	CardImageUrl  string `json:"card_image_url"`
+	CardImageZoom int    `json:"card_image_zoom"`
+	CardImagePosX int    `json:"card_image_pos_x"`
+    CardImagePosY int    `json:"card_image_pos_y"`
 
 	// THRESHOLDS
 	Bronze int `json:"bronze_threshold"`

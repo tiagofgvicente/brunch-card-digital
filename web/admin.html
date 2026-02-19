@@ -121,11 +121,32 @@
         .skin-preview { height: 160px; display: flex; align-items: center; justify-content: center; background-color: #f1f5f9; position: relative; background-size: cover; background-position: center; }
         .skin-body { padding: 20px; border-top: 1px solid var(--border-color); }
         .skin-body h3 { margin: 0; font-size: 1rem; margin-bottom: 5px; color: var(--text-main); }
+        
+        /* CORREÇÃO DO CSS DOS BOTÕES DE SKINS */
         .skin-actions { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-skin-preview, .btn-skin-act, .btn-skin-edit { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 0.8rem; }
+        .btn-skin-preview, .btn-skin-act, .btn-skin-edit { 
+            flex: 1; 
+            height: 38px; /* Força todos os botões a terem a mesma altura */
+            padding: 0; 
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 0.8rem; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap; /* Impede o texto de saltar de linha */
+            box-sizing: border-box;
+            transition: 0.2s;
+        }
         .btn-skin-preview { background: var(--bg-btn); color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn-skin-preview:hover { border-color: var(--primary); color: var(--primary); }
         .btn-skin-act { background: var(--primary); color: white; }
-        .btn-skin-edit { background: var(--bg-btn); color: var(--text-main); border: 1px solid var(--border-color); width: 40px; flex: none; font-size: 1rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-skin-act:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-2px); }
+        /* Quando está ativado, fica desvanecido e transparente */
+        .btn-skin-act:disabled { background: transparent; color: var(--text-sub); border: 1px solid var(--border-color); cursor: not-allowed; opacity: 0.5; transform: none; }
+        .btn-skin-edit { background: var(--bg-btn); color: var(--text-main); border: 1px solid var(--border-color); width: 38px; flex: none; font-size: 1rem; }
         .btn-skin-edit:hover { border-color: var(--gold); color: var(--gold); }
 
         .settings-container { background: var(--bg-side); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; max-width: 800px; }
@@ -315,16 +336,25 @@
                 <div class="page-header"><h1>{{ t('title_skins') }}</h1><p style="color:var(--text-sub);">{{ t('sub_skins') }}</p></div>
                 <div class="skins-grid">
                     <div v-for="skin in availableSkins" :key="skin.id" class="skin-card" :class="{'is-active': activeSkin === skin.id}">
-                        <div class="active-badge">{{ t('active_badge') }}</div>
+                        <div class="active-badge" v-if="activeSkin === skin.id">{{ t('active_badge') }}</div>
+                        
                         <div class="skin-preview" :style="getPreviewStyle(skin)">
-                            <div v-if="!skin.image" style="width:50px; height:30px; border:1px solid rgba(255,255,255,0.3); border-radius:4px;"></div>
+                            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
+                                <div v-for="n in 10" :key="n" 
+                                     style="width: 20px; height: 20px; border-radius: 50%;"
+                                     :style="{ border: '1.5px dashed var(--stamp-border, rgba(255,255,255,0.5))' }">
+                                </div>
+                            </div>
                         </div>
                         <div class="skin-body">
                             <h3>{{ skin.name }}</h3>
                             <div class="skin-actions">
                                 <button class="btn-skin-preview" @click="openPreview(skin.id)">{{ t('btn_preview') }}</button>
                                 <button v-if="skin.id === 'custom'" class="btn-skin-edit" @click="openCustomDesigner" title="Design Brand">✏️</button>
-                                <button class="btn-skin-act" :disabled="activeSkin === skin.id" @click="updateGlobalSkin(skin.id)">{{ t('btn_activate') }}</button>
+                                
+                                <button class="btn-skin-act" :disabled="activeSkin === skin.id" @click="updateGlobalSkin(skin.id)">
+                                    {{ activeSkin === skin.id ? 'ACTIVATED' : t('btn_activate') }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -410,16 +440,16 @@
                     <h2 style="margin-top:0; color:var(--text-main);">Theme Designer</h2>
                     
                     <span class="design-label">BACKGROUND</span>
-<div style="display: flex; gap: 10px; align-items: center;">
-    <label class="upload-clean" style="flex: 1;">
-        <img v-if="designForm.image" :src="designForm.image" style="width: 30px; height: 30px; border-radius: 4px; object-fit: cover;">
-        <span class="upload-text" style="font-weight: 700; font-size: 0.75rem; color: var(--text-main);">{{ designForm.image ? 'CHANGE IMAGE' : 'UPLOAD IMAGE' }}</span>
-        <input type="file" hidden @change="handleBgUpload" accept="image/*">
-    </label>
-    <button v-if="designForm.image" class="btn-action btn-edit" style="width: 50px; height: 50px; font-size: 1.2rem; padding: 0; display: flex; align-items: center; justify-content: center;" @click="removeBgImage" title="Remove Image">
-        ✕
-    </button>
-</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label class="upload-clean" style="flex: 1;">
+                            <img v-if="designForm.image" :src="designForm.image" style="width: 30px; height: 30px; border-radius: 4px; object-fit: cover;">
+                            <span class="upload-text" style="font-weight: 700; font-size: 0.75rem; color: var(--text-main);">{{ designForm.image ? 'CHANGE IMAGE' : 'UPLOAD IMAGE' }}</span>
+                            <input type="file" hidden @change="handleBgUpload" accept="image/*">
+                        </label>
+                        <button v-if="designForm.image" class="btn-action btn-edit" style="width: 50px; height: 50px; font-size: 1.2rem; padding: 0; display: flex; align-items: center; justify-content: center;" @click="removeBgImage" title="Remove Image">
+                            ✕
+                        </button>
+                    </div>
 
                     <div style="margin-top:20px;">
                         <span class="design-label">BACKGROUND COLOR (SOLID)</span>
@@ -445,25 +475,28 @@
 
                 <div class="designer-right">
                     <div class="preview-card-shell" 
+                         @mousedown.prevent="startDrag"
+                         @mousemove.prevent="onDrag"
+                         @mouseup="stopDrag"
+                         @mouseleave="stopDrag"
                          :style="{
-                             /* Lógica de Background */
                              backgroundImage: designForm.image ? `url(${designForm.image})` : 'none',
                              backgroundColor: designForm.image ? 'transparent' : designForm.background,
-                             backgroundSize: designForm.image ? `${designForm.zoom}%` : 'cover',
-                             backgroundPosition: 'center center',
+                             backgroundSize: designForm.image ? (designForm.zoom + '%') : 'cover',
+                             backgroundPosition: designForm.image ? ('calc(50% + ' + designForm.posX + 'px) calc(50% + ' + designForm.posY + 'px)') : 'center center',
                              backgroundRepeat: 'no-repeat',
-                             
                              color: designForm.textColor,
                              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-                             /* AQUI ESTAVA O PROBLEMA DO ZOOM - REMOVIDO */
+                             cursor: designForm.image ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                             userSelect: 'none'
                          }">
                         
-                        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
-                            <span>BRAND VIP</span>
-                            <span style="color: var(--gold)">2 🎁</span>
+                        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; pointer-events: none;">
+                            <span>{{ storeConfig.name }} VIP</span>
+                            <span>2 🎁</span>
                         </div>
                         
-                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0;">
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; pointer-events: none;">
                             <div v-for="n in 10" :key="n" 
                                  style="width: 35px; height: 35px; border-radius: 50%;" 
                                  :style="{ 
@@ -473,7 +506,7 @@
                             </div>
                         </div>
                         
-                        <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">
+                        <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase; pointer-events: none;">
                             JOHN DOE <br><span style="opacity:0.7; font-size: 0.6rem;">MEMBER Nº 0000</span>
                         </div>
                     </div>
@@ -483,7 +516,10 @@
                         <input type="range" min="100" max="250" v-model="designForm.zoom" class="zoom-slider">
                     </div>
 
-                    <button class="btn-save-modal" style="margin-top: 30px; width: 200px;" @click="saveCustomDesign">SAVE THEME</button>
+                    <div style="display: flex; gap: 15px; margin-top: 30px; width: 100%; justify-content: center;">
+                        <button class="btn-save-modal" style="margin-top: 0; width: 150px; background: transparent; color: var(--text-main); border: 1px solid var(--border-color);" @click="showCustomDesigner = false">CANCEL</button>
+                        <button class="btn-save-modal" style="margin-top: 0; width: 150px;" @click="saveCustomDesign">SAVE THEME</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -502,17 +538,37 @@
             <div class="modal-content">
                 <span class="close-modal" @click="showPreview = false">✕</span>
                 <h2 style="text-align:center; color:var(--primary); margin-top:0;">Skin Preview</h2>
-                <div class="preview-card-shell" :style="{ background: previewColors.bg, color: previewColors.text }">
+                
+                <div class="preview-card-shell" 
+                     :style="{ 
+                         backgroundImage: previewColors.bg.includes('url') ? previewColors.bg : 'none',
+                         backgroundColor: previewColors.bg.includes('url') ? 'transparent' : previewColors.bg,
+                         backgroundSize: previewColors.bgSize || 'cover', 
+                         backgroundPosition: previewColors.bgPos || 'center',
+                         backgroundRepeat: 'no-repeat',
+                         color: previewColors.text 
+                     }">
+                    
                     <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
                         <span>{{ storeConfig.name }} VIP</span>
-                        <span style="color: var(--gold)">2 🎁</span>
+                        <span>2 🎁</span>
                     </div>
+                    
                     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0;">
-                        <div v-for="n in 10" :key="n" style="width: 35px; height: 35px; border-radius: 50%;" :style="{ background: n <= 6 ? 'white' : 'rgba(255,255,255,0.2)', border: n <= 6 ? '1px solid gold' : '1px dashed rgba(255,255,255,0.4)' }"></div>
+                        <div v-for="n in 10" :key="n" 
+                             style="width: 35px; height: 35px; border-radius: 50%;" 
+                             :style="{ 
+                                 background: n <= 6 ? 'white' : 'transparent', 
+                                 border: n <= 6 ? ('1px solid ' + (previewColors.border || 'gold')) : ('1px dashed ' + (previewColors.border || 'gold')) 
+                             }">
+                        </div>
                     </div>
-                    <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">JOHN DOE <br><span style="color: var(--gold); font-size: 0.6rem;">MEMBER Nº 0000</span></div>
+                    
+                    <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">
+                        JOHN DOE <br><span style="opacity: 0.7; font-size: 0.6rem;">MEMBER Nº 0000</span>
+                    </div>
                 </div>
-                <button class="save-btn" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color);" @click="showPreview = false">CLOSE</button>
+                <button class="btn-save-modal" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); margin-top:20px;" @click="showPreview = false">CLOSE</button>
             </div>
         </div>
     </div>
