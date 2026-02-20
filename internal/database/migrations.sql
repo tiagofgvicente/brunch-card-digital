@@ -19,12 +19,22 @@ CREATE TABLE stores (
     card_skin VARCHAR(50) DEFAULT 'default', 
     theme_mode VARCHAR(20) DEFAULT 'dark',
     primary_color VARCHAR(20) DEFAULT '#00a896',
-    text_color VARCHAR(20) DEFAULT '#ffffff',     -- NOVA COLUNA
-    border_color VARCHAR(20) DEFAULT '#ffffff',   -- NOVA COLUNA
-    card_image_url TEXT,                          -- NOVA COLUNA
+    text_color VARCHAR(20) DEFAULT '#ffffff',     
+    border_color VARCHAR(20) DEFAULT '#ffffff',  
+    card_image_url TEXT,                        
     card_image_zoom INTEGER DEFAULT 100,
     card_image_pos_x INTEGER DEFAULT 0,
     card_image_pos_y INTEGER DEFAULT 0,
+    card_scope VARCHAR(25) DEFAULT 'Geral',
+    social_instagram VARCHAR(255) DEFAULT '',
+    social_facebook VARCHAR(255) DEFAULT '',
+    social_twitter VARCHAR(255) DEFAULT '',
+    social_whatsapp VARCHAR(255) DEFAULT '',
+    social_tiktok VARCHAR(255) DEFAULT '',
+    social_youtube VARCHAR(255) DEFAULT '',
+    social_website VARCHAR(255) DEFAULT '',
+    menu_url TEXT DEFAULT '',
+    location_url TEXT DEFAULT '',
     
     -- SaaS & MONETIZAÇÃO
     tier VARCHAR(20) DEFAULT 'free_trial',

@@ -21,7 +21,9 @@ const AdminApp = {
         const storeConfig = ref({ 
             name: 'Store', logo_url: '', themeMode: 'dark', 
             primary_color: '#00a896', text_color: '#ffffff', border_color: '#ffffff',    
-            card_image_url: '', card_image_zoom: 100, card_image_pos_x: 0, card_image_pos_y: 0,
+            card_image_url: '', card_image_zoom: 100, card_image_pos_x: 0, card_image_pos_y: 0, card_scope: 'Geral',
+            social_instagram: '', social_facebook: '', social_twitter: '', social_whatsapp: '', social_tiktok: '', social_youtube: '', social_website: '',
+            menu_url: '', location_url: '', // MENU E MAPS
             stamp_icon: '🍳', bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100 
         });
 
@@ -30,38 +32,23 @@ const AdminApp = {
         const editingCard = ref(null);
         const availableSkins = ref([]); 
 
-        // --- NOVA LÓGICA DE SCANNER INVISÍVEL (Html5Qrcode CORE) ---
         const lastScanStatus = ref('');
         let html5Qrcode = null;
         let isScanning = false;
 
         const startScanner = () => {
             nextTick(() => {
-                if (!html5Qrcode) {
-                    html5Qrcode = new Html5Qrcode("reader");
-                }
-                
+                if (!html5Qrcode) html5Qrcode = new Html5Qrcode("reader");
                 if (!html5Qrcode.isScanning) {
-                    // Liga diretamente a câmara traseira ("environment")
-                    html5Qrcode.start(
-                        { facingMode: "environment" }, 
-                        { fps: 10, qrbox: { width: 250, height: 250 } },
-                        onScanSuccess,
-                        (errorMessage) => { /* Ignorar erros de não encontrar QR momentaneamente */ }
-                    ).catch(err => {
-                        lastScanStatus.value = "⚠️ Por favor, permita o acesso à câmara do seu dispositivo.";
-                        console.error("Camera start error", err);
+                    html5Qrcode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {}).catch(err => {
+                        lastScanStatus.value = "⚠️ Permita o acesso à câmara do seu dispositivo.";
                     });
                 }
             });
         };
 
         const stopScanner = () => {
-            if (html5Qrcode && html5Qrcode.isScanning) {
-                html5Qrcode.stop().then(() => {
-                    html5Qrcode.clear();
-                }).catch(err => console.error("Failed to stop scanner", err));
-            }
+            if (html5Qrcode && html5Qrcode.isScanning) html5Qrcode.stop().then(() => html5Qrcode.clear()).catch(e => console.error(e));
         };
 
         const onScanSuccess = async (decodedText) => {
@@ -78,23 +65,12 @@ const AdminApp = {
                         const d = await res.json();
                         lastScanStatus.value = `✅ Selo adicionado a ${d.customer_id}!`;
                         showToast(`Selo adicionado a ${d.customer_id}`, "success");
-                    } else {
-                        lastScanStatus.value = "❌ Erro ao adicionar selo.";
-                    }
-                } catch(e) {
-                    lastScanStatus.value = "❌ Erro de ligação.";
-                }
-            } else {
-                lastScanStatus.value = "❌ QR Code Inválido.";
-            }
+                    } else lastScanStatus.value = "❌ Erro ao adicionar selo.";
+                } catch(e) { lastScanStatus.value = "❌ Erro de ligação."; }
+            } else lastScanStatus.value = "❌ QR Code Inválido.";
 
-            // Aguarda 3 segundos antes de permitir novo scan para evitar scans duplos acidentais
-            setTimeout(() => {
-                lastScanStatus.value = '';
-                isScanning = false;
-            }, 3000);
+            setTimeout(() => { lastScanStatus.value = ''; isScanning = false; }, 3000);
         };
-        // ------------------------------------
 
         const isDragging = ref(false);
         const dragStart = ref({ x: 0, y: 0 });
@@ -104,6 +80,28 @@ const AdminApp = {
         const startDrag = (e) => { if (!designForm.value.image) return; isDragging.value = true; dragStart.value.x = e.clientX - designForm.value.posX; dragStart.value.y = e.clientY - designForm.value.posY; };
         const onDrag = (e) => { if (!isDragging.value) return; designForm.value.posX = e.clientX - dragStart.value.x; designForm.value.posY = e.clientY - dragStart.value.y; };
         const stopDrag = () => { isDragging.value = false; };
+
+        // UPLOAD DO PDF DO MENU
+        const handleMenuUpload = (e) => { 
+            const file = e.target.files[0]; 
+            if (!file) return; 
+            
+            if (file.type !== 'application/pdf') {
+                showToast("Apenas ficheiros PDF são permitidos para o menu.", "error");
+                return;
+            }
+            
+            // Limitador de tamanho (ex: 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("O PDF é demasiado grande. Máximo 5MB.", "error");
+                return;
+            }
+
+            const reader = new FileReader(); 
+            reader.onload = (ev) => { settingsForm.value.menu_url = ev.target.result; }; 
+            reader.readAsDataURL(file); 
+        };
+        const removeMenu = () => { settingsForm.value.menu_url = ''; };
 
         const translations = {
             en: { 
@@ -141,17 +139,14 @@ const AdminApp = {
         const previewColors = computed(() => {
             const skinId = previewDesign.value;
             if (skinId === 'default') return { bg: '#00a896', text: '#ffffff', border: 'gold', bgSize: 'cover', bgPos: 'center' };
-
             if (skinId === 'custom') {
                 return { 
                     bg: storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : (storeConfig.value.primary_color || '#00a896'), 
                     bgSize: storeConfig.value.card_image_url ? `${storeConfig.value.card_image_zoom || 100}%` : 'cover',
                     bgPos: storeConfig.value.card_image_url ? `calc(50% + ${storeConfig.value.card_image_pos_x || 0}px) calc(50% + ${storeConfig.value.card_image_pos_y || 0}px)` : 'center',
-                    text: storeConfig.value.text_color || '#ffffff',
-                    border: storeConfig.value.border_color || '#ffffff'
+                    text: storeConfig.value.text_color || '#ffffff', border: storeConfig.value.border_color || '#ffffff'
                 };
             }
-            
             const skin = availableSkins.value.find(s => s.id === skinId);
             if (skin) {
                 if (skin.image) return { bg: `url(${skin.image})`, text: '#ffffff', border: 'gold', bgSize: 'cover', bgPos: 'center' };
@@ -182,17 +177,10 @@ const AdminApp = {
         };
 
         const changePage = (page) => { 
-            if (currentPage.value === 'scanner' && page !== 'scanner') {
-                stopScanner();
-            }
-
+            if (currentPage.value === 'scanner' && page !== 'scanner') stopScanner();
             currentPage.value = page; 
-            if (page === 'settings') { settingsForm.value = { ...storeConfig.value }; }
-            
-            if (page === 'scanner') {
-                startScanner();
-            }
-
+            if (page === 'settings') settingsForm.value = { ...storeConfig.value };
+            if (page === 'scanner') startScanner();
             if (page !== 'settings' && page !== 'skins' && page !== 'scanner') fetchCards(); 
         };
 
@@ -201,20 +189,14 @@ const AdminApp = {
         const removeLogo = () => { settingsForm.value.logo_url=''; };
 
         const saveSettings = async () => { 
-            await fetch(api('/api/v1/admin/settings'), { 
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(settingsForm.value) 
-            }); 
+            await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsForm.value) }); 
             showToast("Configuration Saved!", "success"); 
             storeConfig.value = { ...storeConfig.value, ...settingsForm.value };
             document.title = `Volto Store Admin | ${storeConfig.value.name}`;
         };
 
         const openCustomDesigner = () => {
-            designForm.value = {
-                background: storeConfig.value.primary_color || '#00a896', textColor: storeConfig.value.text_color || '#ffffff', borderColor: storeConfig.value.border_color || '#ffffff',
-                image: storeConfig.value.card_image_url || null, zoom: storeConfig.value.card_image_zoom || 100, posX: storeConfig.value.card_image_pos_x || 0, posY: storeConfig.value.card_image_pos_y || 0
-            };
+            designForm.value = { background: storeConfig.value.primary_color || '#00a896', textColor: storeConfig.value.text_color || '#ffffff', borderColor: storeConfig.value.border_color || '#ffffff', image: storeConfig.value.card_image_url || null, zoom: storeConfig.value.card_image_zoom || 100, posX: storeConfig.value.card_image_pos_x || 0, posY: storeConfig.value.card_image_pos_y || 0 };
             showCustomDesigner.value = true;
         };
 
@@ -222,10 +204,7 @@ const AdminApp = {
         const removeBgImage = () => { designForm.value.image = null; designForm.value.zoom = 100; designForm.value.posX = 0; designForm.value.posY = 0; };
 
         const saveCustomDesign = async () => {
-            const newConfig = {
-                primary_color: designForm.value.background, text_color: designForm.value.textColor, border_color: designForm.value.borderColor,
-                card_image_url: designForm.value.image || '', card_image_zoom: parseInt(designForm.value.zoom) || 100, card_image_pos_x: parseInt(designForm.value.posX) || 0, card_image_pos_y: parseInt(designForm.value.posY) || 0
-            };
+            const newConfig = { primary_color: designForm.value.background, text_color: designForm.value.textColor, border_color: designForm.value.borderColor, card_image_url: designForm.value.image || '', card_image_zoom: parseInt(designForm.value.zoom) || 100, card_image_pos_x: parseInt(designForm.value.posX) || 0, card_image_pos_y: parseInt(designForm.value.posY) || 0 };
             storeConfig.value = { ...storeConfig.value, ...newConfig };
             await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) });
             showToast("Custom Brand Updated!", "success");
@@ -270,7 +249,7 @@ const AdminApp = {
             updateGlobalSkin, openPreview, showPreview, previewColors, getPreviewStyle,
             toasts, showToast, lang, toggleLang, t,
             showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, removeBgImage, saveCustomDesign,
-            theme, isDragging, startDrag, onDrag, stopDrag
+            theme, isDragging, startDrag, onDrag, stopDrag, handleMenuUpload, removeMenu // EXPORTADO AQUI!
         };
     }
 };

@@ -67,6 +67,7 @@ type Store struct {
 	StampIcon    string `json:"stamp_icon"`
 	CardSkin     string `json:"card_skin"`
 	ThemeMode    string `json:"theme_mode"`
+	CardScope    string `json:"card_scope"`
 
 	// --- NOVOS CAMPOS DE DESIGN ---
 	TextColor     string `json:"text_color"`
@@ -74,7 +75,18 @@ type Store struct {
 	CardImageUrl  string `json:"card_image_url"`
 	CardImageZoom int    `json:"card_image_zoom"`
 	CardImagePosX int    `json:"card_image_pos_x"`
-    CardImagePosY int    `json:"card_image_pos_y"`
+	CardImagePosY int    `json:"card_image_pos_y"`
+
+	// SOCIAL MEDIA
+	SocialInstagram string `json:"social_instagram"`
+	SocialFacebook  string `json:"social_facebook"`
+	SocialTwitter   string `json:"social_twitter"`
+	SocialWhatsapp  string `json:"social_whatsapp"`
+	SocialTiktok    string `json:"social_tiktok"`
+	SocialYoutube   string `json:"social_youtube"`
+	SocialWebsite   string `json:"social_website"`
+	MenuUrl         string `json:"menu_url"`
+	LocationUrl     string `json:"location_url"`
 
 	// THRESHOLDS
 	Bronze int `json:"bronze_threshold"`

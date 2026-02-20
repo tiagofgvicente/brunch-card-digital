@@ -10,7 +10,6 @@ createApp({
         const isFlipped = ref(false);
         const cardId = urlParams.get('id');
         
-        // Todas as novas variáveis de design incluídas
         const storeConfig = ref({ 
             name: 'Store', 
             logo_url: '', 
@@ -22,6 +21,9 @@ createApp({
             card_image_zoom: 100,
             card_image_pos_x: 0,
             card_image_pos_y: 0,
+            card_scope: 'Geral', 
+            social_instagram: '', social_facebook: '', social_twitter: '', social_whatsapp: '', social_tiktok: '', social_youtube: '', social_website: '',
+            menu_url: '', location_url: '',
             card_skin: 'default',
             bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100, 
             stamp_icon: '🍳' 
@@ -35,12 +37,24 @@ createApp({
             if (total >= g) return { name: 'Gold', color: '#ffd166', glow: 'rgba(255, 209, 102, 0.6)' };
             if (total >= s) return { name: 'Silver', color: '#bdc3c7', glow: 'rgba(189, 195, 199, 0.6)' };
             if (total >= b) return { name: 'Bronze', color: '#cd7f32', glow: 'rgba(205, 127, 50, 0.6)' };
-            return { name: '', color: '', glow: 'transparent' };
+            return { name: 'New Member', color: 'inherit', glow: 'transparent' };
         });
 
         const tierGlowStyle = computed(() => ({ '--tier-glow': customerTier.value.glow }));
         
-        const applyTheme = () => { document.documentElement.style.setProperty('--page-bg', storeConfig.value.themeMode === 'light' ? '#f0f2f5' : '#1a1a1a'); };
+        // A FORMA CORRETA: Injeta a cor de fundo dinamicamente nas variáveis globais CSS da página!
+        const applyTheme = () => { 
+            const isDark = storeConfig.value.themeMode !== 'light';
+            const baseBg = isDark ? '#1a1a1a' : '#f0f2f5';
+            const textColor = isDark ? '#ffffff' : '#1a1a1a';
+            const pColor = storeConfig.value.primary_color || '#00a896';
+            
+            // Define no documento inteiro
+            document.documentElement.style.setProperty('--page-bg', baseBg);
+            document.documentElement.style.setProperty('--text-main', textColor);
+            // Cria um gradiente radial muito suave no topo
+            document.documentElement.style.setProperty('--page-grad', `radial-gradient(circle at 50% 10%, ${pColor}33 0%, transparent 70%)`);
+        };
         
         const fetchSettings = async () => {
             const res = await fetch(api('/api/v1/system/config'));
@@ -60,17 +74,10 @@ createApp({
             } catch(e) { console.error("Error fetching skins", e); }
         };
 
-        // LÓGICA DE CORES & IMAGEM (Idêntica ao Theme Designer do Admin)
         const themeStyles = computed(() => {
             const skinId = storeConfig.value.card_skin || 'default';
-            
-            // Variáveis por defeito
-            let styles = { 
-                bg: '#00a896', bgImage: 'none', bgSize: 'cover', bgPos: 'center', 
-                color: '#ffffff', stampBorder: 'gold' 
-            };
+            let styles = { bg: '#00a896', bgImage: 'none', bgSize: 'cover', bgPos: 'center', color: '#ffffff', stampBorder: 'gold' };
 
-            // 1. Custom Brand (Aplica tudo o que configuraste no designer)
             if (skinId === 'custom') {
                 styles.bg = storeConfig.value.card_image_url ? 'transparent' : (storeConfig.value.primary_color || '#00a896');
                 styles.bgImage = storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : 'none';
@@ -81,25 +88,13 @@ createApp({
                 return styles;
             } 
             
-            // 2. Skins Globais da BD
             if (activeSkinData.value) {
-                if(activeSkinData.value.image) {
-                    styles.bgImage = `url(${activeSkinData.value.image})`;
-                    return styles;
-                }
-                if(activeSkinData.value.style) {
-                    styles.bg = activeSkinData.value.style.replace('background:', '').replace(';', '').trim();
-                    return styles;
-                }
+                if(activeSkinData.value.image) { styles.bgImage = `url(${activeSkinData.value.image})`; return styles; }
+                if(activeSkinData.value.style) { styles.bg = activeSkinData.value.style.replace('background:', '').replace(';', '').trim(); return styles; }
             }
 
-            // 3. Fallbacks Hardcoded (Segurança)
-            if (skinId === 'black') {
-                styles.bg = '#1a1a1a'; styles.color = '#ffd166'; styles.stampBorder = '#ffd166';
-            }
-            if (skinId === 'gold') {
-                styles.bg = 'linear-gradient(45deg, #FFD700, #FDB931)'; styles.color = '#000000'; styles.stampBorder = 'rgba(0,0,0,0.5)';
-            }
+            if (skinId === 'black') { styles.bg = '#1a1a1a'; styles.color = '#ffd166'; styles.stampBorder = '#ffd166'; }
+            if (skinId === 'gold') { styles.bg = 'linear-gradient(45deg, #FFD700, #FDB931)'; styles.color = '#000000'; styles.stampBorder = 'rgba(0,0,0,0.5)'; }
             
             return styles;
         });

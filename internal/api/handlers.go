@@ -258,7 +258,19 @@ func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *databas
 	store.CardImageUrl = input.CardImageUrl
 	store.CardImageZoom = input.CardImageZoom
 	store.CardImagePosX = input.CardImagePosX
-    store.CardImagePosY = input.CardImagePosY
+	store.CardImagePosY = input.CardImagePosY
+	store.CardScope = input.CardScope
+
+	// SOCIAL MEDIA
+	store.SocialInstagram = input.SocialInstagram
+	store.SocialFacebook = input.SocialFacebook
+	store.SocialTwitter = input.SocialTwitter
+	store.SocialWhatsapp = input.SocialWhatsapp
+	store.SocialTiktok = input.SocialTiktok
+	store.SocialYoutube = input.SocialYoutube
+	store.SocialWebsite = input.SocialWebsite
+	store.MenuUrl = input.MenuUrl
+	store.LocationUrl = input.LocationUrl
 
 	// Chamar o repositório para gravar na BD
 	if err := repo.UpdateSettings(*store); err != nil {

@@ -61,46 +61,41 @@ func (r *CardRepository) GetStoreSlugByCustomerEmail(identifier string) (string,
 
 func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
 	var s models.Store
-	var logoURL, textCol, borderCol, cardImgUrl sql.NullString
-	var imgZoom, imgPosX, imgPosY sql.NullInt32 // NullInt32 porque são inteiros
+	var logoURL, textCol, borderCol, cardImgUrl, cardScope sql.NullString
+	var socInsta, socFb, socTwit, socWhats, socTik, socYt, socWeb sql.NullString
+	var menuUrl, locUrl sql.NullString // NOVAS VARIÁVEIS MENU E LOCALIZAÇÃO
+	var imgZoom, imgPosX, imgPosY sql.NullInt32
 
-	// MUDANÇA: Adicionados todos os campos novos de design à query SELECT
 	query := `
         SELECT 
             id, name, slug, admin_username, admin_email, admin_password,
-            logo_url, primary_color, stamp_icon, 
-            card_skin, theme_mode, 
+            logo_url, primary_color, stamp_icon, card_skin, theme_mode, 
             bronze_threshold, silver_threshold, gold_threshold,
             tier, tier_expiration, billing_cycle, max_users, account_activated, status, is_active,
-            
-            -- NOVOS CAMPOS AQUI:
-            text_color, border_color, card_image_url, 
-            card_image_zoom, card_image_pos_x, card_image_pos_y
+            text_color, border_color, card_image_url, card_image_zoom, card_image_pos_x, card_image_pos_y,
+            card_scope, social_instagram, social_facebook, social_twitter, social_whatsapp, social_tiktok, social_youtube, social_website,
+            menu_url, location_url -- ADICIONADO AQUI
         FROM stores 
         WHERE slug = $1
     `
 
-	// MUDANÇA: Adicionados os ponteiros para receber os novos campos no Scan
 	err := r.db.QueryRow(query, slug).Scan(
 		&s.ID, &s.Name, &s.Slug, &s.AdminUsername, &s.AdminEmail, &s.AdminPassword,
-		&logoURL, &s.PrimaryColor, &s.StampIcon,
-		&s.CardSkin, &s.ThemeMode, &s.Bronze, &s.Silver, &s.Gold,
+		&logoURL, &s.PrimaryColor, &s.StampIcon, &s.CardSkin, &s.ThemeMode, &s.Bronze, &s.Silver, &s.Gold,
 		&s.Tier, &s.TierExpiration, &s.BillingCycle, &s.MaxUsers, &s.AccountActivated, &s.Status, &s.IsActive,
-
-		// SCAN DOS NOVOS CAMPOS:
-		&textCol, &borderCol, &cardImgUrl,
-		&imgZoom, &imgPosX, &imgPosY,
+		&textCol, &borderCol, &cardImgUrl, &imgZoom, &imgPosX, &imgPosY,
+		&cardScope, &socInsta, &socFb, &socTwit, &socWhats, &socTik, &socYt, &socWeb,
+		&menuUrl, &locUrl, // SCAN AQUI
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// Limpeza/Tratamento de dados nulos (se vierem vazios da BD)
 	s.LogoURL = logoURL.String
 	if textCol.Valid && textCol.String != "" {
 		s.TextColor = textCol.String
 	} else {
-		s.TextColor = "#ffffff" // Fallback seguro
+		s.TextColor = "#ffffff"
 	}
 	if borderCol.Valid && borderCol.String != "" {
 		s.BorderColor = borderCol.String
@@ -119,6 +114,22 @@ func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
 	if imgPosY.Valid {
 		s.CardImagePosY = int(imgPosY.Int32)
 	}
+	if cardScope.Valid && cardScope.String != "" {
+		s.CardScope = cardScope.String
+	} else {
+		s.CardScope = "Geral"
+	}
+
+	s.SocialInstagram = socInsta.String
+	s.SocialFacebook = socFb.String
+	s.SocialTwitter = socTwit.String
+	s.SocialWhatsapp = socWhats.String
+	s.SocialTiktok = socTik.String
+	s.SocialYoutube = socYt.String
+	s.SocialWebsite = socWeb.String
+
+	s.MenuUrl = menuUrl.String
+	s.LocationUrl = locUrl.String
 
 	return &s, nil
 }
@@ -562,40 +573,23 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
 	query := `
         UPDATE stores 
         SET 
-            name = $1, 
-            primary_color = $2, 
-            stamp_icon = $3,
-            bronze_threshold = $4,
-            silver_threshold = $5,
-            gold_threshold = $6,
-            logo_url = $7,
-            theme_mode = $8,
-            text_color = $9,
-            border_color = $10,
-            card_image_url = $11,
-            card_image_zoom = $12,
-            card_image_pos_x = $13, 
-            card_image_pos_y = $14
-        WHERE id = $15
+            name = $1, primary_color = $2, stamp_icon = $3,
+            bronze_threshold = $4, silver_threshold = $5, gold_threshold = $6,
+            logo_url = $7, theme_mode = $8, text_color = $9, border_color = $10,
+            card_image_url = $11, card_image_zoom = $12,
+            card_image_pos_x = $13, card_image_pos_y = $14, card_scope = $15,
+            social_instagram = $16, social_facebook = $17, social_twitter = $18, 
+            social_whatsapp = $19, social_tiktok = $20, social_youtube = $21, social_website = $22,
+            menu_url = $23, location_url = $24 -- ADICIONADO AQUI
+        WHERE id = $25
     `
-
 	_, err := r.db.Exec(query,
-		s.Name,
-		s.PrimaryColor,
-		s.StampIcon,
-		s.Bronze,
-		s.Silver,
-		s.Gold,
-		s.LogoURL,
-		s.ThemeMode,
-		s.TextColor,
-		s.BorderColor,
-		s.CardImageUrl,
-		s.CardImageZoom,
-		s.CardImagePosX,
-		s.CardImagePosY,
-		s.ID,
+		s.Name, s.PrimaryColor, s.StampIcon, s.Bronze, s.Silver, s.Gold,
+		s.LogoURL, s.ThemeMode, s.TextColor, s.BorderColor, s.CardImageUrl,
+		s.CardImageZoom, s.CardImagePosX, s.CardImagePosY, s.CardScope,
+		s.SocialInstagram, s.SocialFacebook, s.SocialTwitter, s.SocialWhatsapp, s.SocialTiktok, s.SocialYoutube, s.SocialWebsite,
+		s.MenuUrl, s.LocationUrl, // $23 e $24
+		s.ID, // $25
 	)
-
 	return err
 }
