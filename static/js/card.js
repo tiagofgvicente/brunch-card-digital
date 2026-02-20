@@ -1,32 +1,70 @@
-const { createApp, ref, computed, onMounted } = Vue;
+const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
 createApp({
     setup() {
         const urlParams = new URLSearchParams(window.location.search);
         const currentStore = urlParams.get('store');
-        const api = (url) => currentStore ? `${url}${url.includes('?') ? '&' : '?'}store=${currentStore}` : url;
+        
+        const hasStore = ref(!!currentStore && currentStore !== 'null');
+        const api = (url) => hasStore.value ? `${url}${url.includes('?') ? '&' : '?'}store=${currentStore}` : url;
 
-        const card = ref({ id: null, total_stamps: 0, stamps_count: 0 });
+        const card = ref({ id: null, customer_id: '', last_name: '', email: '', phone: '', total_stamps: 0, stamps_count: 0 });
+        const myWalletCards = ref([]); 
+        
         const isFlipped = ref(false);
         const cardId = urlParams.get('id');
         
+        const toasts = ref([]);
+        const showToast = (message, type = 'success') => { 
+            const id = Date.now(); toasts.value.push({ id, message, type }); 
+            setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000); 
+        };
+
+        const isMenuOpen = ref(false);
+        const showRedeemModal = ref(false);
+        const currentView = ref(hasStore.value ? 'card' : 'my_cards'); 
+        
+        // NOVO: Evita solavancos ao trocar de cartão
+        const isChangingCard = ref(false);
+
+        const toggleMenu = () => { isMenuOpen.value = !isMenuOpen.value; };
+        const changeView = (view) => { 
+            currentView.value = view; isMenuOpen.value = false; isEditingProfile.value = false; 
+            if (view === 'my_cards' && card.value.email) fetchWalletCards(card.value.email);
+        };
+        const logout = () => { window.location.href = "/"; };
+
+        const isEditingProfile = ref(false);
+        const profileForm = ref({});
+
+        const startEditProfile = () => { profileForm.value = { ...card.value }; isEditingProfile.value = true; };
+
+        const saveProfile = async () => {
+            try {
+                const res = await fetch(hasStore.value ? api('/api/v1/admin/update') : '/api/v1/public/wallet-update', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profileForm.value)
+                });
+                if (res.ok) {
+                    card.value = { ...card.value, ...profileForm.value };
+                    isEditingProfile.value = false; showToast("Perfil atualizado com sucesso!");
+                } else showToast("Erro ao atualizar o perfil.", "error");
+            } catch (e) { showToast("Erro de ligação.", "error"); }
+        };
+
+        const globalQrUrl = computed(() => {
+            const data = JSON.stringify({ action: 'global_register', email: card.value.email, first: card.value.customer_id, last: card.value.last_name, phone: card.value.phone });
+            return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`;
+        });
+
+        const defaultAppColor = hasStore.value ? '#00a896' : '#2563eb';
+
         const storeConfig = ref({ 
-            name: 'Store', 
-            logo_url: '', 
-            themeMode: 'dark', 
-            primary_color: '#00a896',
-            text_color: '#ffffff',
-            border_color: '#ffffff',
-            card_image_url: '',
-            card_image_zoom: 100,
-            card_image_pos_x: 0,
-            card_image_pos_y: 0,
-            card_scope: 'Geral', 
-            social_instagram: '', social_facebook: '', social_twitter: '', social_whatsapp: '', social_tiktok: '', social_youtube: '', social_website: '',
-            menu_url: '', location_url: '',
-            card_skin: 'default',
-            bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100, 
-            stamp_icon: '🍳' 
+            name: hasStore.value ? 'Store' : 'Volto Wallet', logo_url: '', themeMode: 'dark', 
+            primary_color: defaultAppColor, text_color: '#ffffff', border_color: '#ffffff', 
+            card_image_url: '', card_image_zoom: 100, card_image_pos_x: 0, card_image_pos_y: 0, card_scope: 'Geral', 
+            social_instagram: '', social_facebook: '', social_twitter: '', social_whatsapp: '', social_tiktok: '', social_youtube: '', social_website: '', 
+            menu_url: '', location_url: '', card_skin: 'default', 
+            bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100, stamp_icon: hasStore.value ? '🍳' : '💳' 
         });
 
         const activeSkinData = ref(null);
@@ -42,23 +80,22 @@ createApp({
 
         const tierGlowStyle = computed(() => ({ '--tier-glow': customerTier.value.glow }));
         
-        // A FORMA CORRETA: Injeta a cor de fundo dinamicamente nas variáveis globais CSS da página!
-        const applyTheme = () => { 
+        const applyTheme = (overrideColor) => { 
             const isDark = storeConfig.value.themeMode !== 'light';
             const baseBg = isDark ? '#1a1a1a' : '#f0f2f5';
             const textColor = isDark ? '#ffffff' : '#1a1a1a';
-            const pColor = storeConfig.value.primary_color || '#00a896';
+            const pColor = overrideColor || storeConfig.value.primary_color || defaultAppColor;
             
-            // Define no documento inteiro
             document.documentElement.style.setProperty('--page-bg', baseBg);
             document.documentElement.style.setProperty('--text-main', textColor);
-            // Cria um gradiente radial muito suave no topo
-            document.documentElement.style.setProperty('--page-grad', `radial-gradient(circle at 50% 10%, ${pColor}33 0%, transparent 70%)`);
+            document.documentElement.style.setProperty('--page-grad', `radial-gradient(circle at 50% -10%, ${pColor}40 0%, transparent 80%)`);
+            document.documentElement.style.setProperty('--primary', pColor);
         };
         
-        const fetchSettings = async () => {
-            const res = await fetch(api('/api/v1/system/config'));
-            if (res.ok) { 
+        const fetchSettings = async (specificStore = null) => {
+            const endpoint = specificStore ? `/api/v1/system/config?store=${specificStore}` : api('/api/v1/system/config');
+            const res = await fetch(endpoint);
+            if (res.ok) {
                 storeConfig.value = { ...storeConfig.value, ...(await res.json()) }; 
                 applyTheme(); 
             }
@@ -71,15 +108,126 @@ createApp({
                     const skins = await res.json();
                     activeSkinData.value = skins.find(s => s.id === storeConfig.value.card_skin);
                 }
-            } catch(e) { console.error("Error fetching skins", e); }
+            } catch(e) {}
+        };
+
+        const fetchWalletCards = async (email) => {
+            if(!email) return;
+            try {
+                const res = await fetch(`/api/v1/public/wallet-mycards?email=${encodeURIComponent(email)}`);
+                if(res.ok) myWalletCards.value = await res.json();
+            } catch(e) {}
+        };
+
+        const fetchCard = async () => { 
+            const endpoint = hasStore.value ? `/api/v1/cards/status?id=${cardId}&store=${currentStore}` : `/api/v1/public/wallet-profile?id=${cardId}`;
+            const res = await fetch(endpoint); 
+            if (res.ok) {
+                card.value = await res.json(); 
+                if(!hasStore.value && card.value.email) fetchWalletCards(card.value.email);
+            }
+        };
+
+        const calcRewards = (stamps, redeemed) => Math.max(0, Math.floor(stamps / 10) - (redeemed || 0));
+        const availableRewards = computed(() => calcRewards(card.value.total_stamps, card.value.total_redeemed_bonuses));
+
+        const activeWalletStoreSlug = ref(null);
+        const activeWalletCardId = ref(null);
+        
+        // --- NAVEGAÇÃO ENTRE CARTÕES ---
+        const currentIndex = computed(() => {
+            if (!activeWalletCardId.value || myWalletCards.value.length === 0) return -1;
+            return myWalletCards.value.findIndex(c => c.id === activeWalletCardId.value);
+        });
+
+        const nextWalletCard = () => {
+            if (myWalletCards.value.length <= 1 || isChangingCard.value) return;
+            let nextIdx = currentIndex.value + 1;
+            if (nextIdx >= myWalletCards.value.length) nextIdx = 0; 
+            const nextCard = myWalletCards.value[nextIdx];
+            openWalletCard(nextCard.store_slug, nextCard.id);
+        };
+
+        const prevWalletCard = () => {
+            if (myWalletCards.value.length <= 1 || isChangingCard.value) return;
+            let prevIdx = currentIndex.value - 1;
+            if (prevIdx < 0) prevIdx = myWalletCards.value.length - 1; 
+            const prevCard = myWalletCards.value[prevIdx];
+            openWalletCard(prevCard.store_slug, prevCard.id);
+        };
+
+        // LÓGICA DE ABERTURA SUAVE
+        const openWalletCard = async (storeSlug, cId) => { 
+            if (isChangingCard.value) return; // Bloqueia spam de cliques
+            
+            const isFromList = currentView.value === 'my_cards';
+            
+            // Se já estamos num cartão, dispara a animação de esconder
+            if (!isFromList) isChangingCard.value = true;
+            
+            // Pede os dados em background
+            const [configRes, cardRes] = await Promise.all([
+                fetch(`/api/v1/system/config?store=${storeSlug}`),
+                fetch(`/api/v1/cards/status?id=${cId}&store=${storeSlug}`)
+            ]);
+
+            const newConfig = configRes.ok ? await configRes.json() : null;
+            const newCard = cardRes.ok ? await cardRes.json() : null;
+
+            // Função que finaliza e mostra o cartão novo
+            const finalizeSwap = () => {
+                isFlipped.value = false; 
+                activeWalletCardId.value = cId;
+                activeWalletStoreSlug.value = storeSlug;
+                
+                if (newConfig) {
+                    storeConfig.value = { ...storeConfig.value, ...newConfig };
+                    applyTheme(); 
+                }
+                if (newCard) {
+                    card.value = newCard;
+                    currentView.value = 'wallet_active_card';
+                }
+                isChangingCard.value = false; // Traz o cartão novo para a frente!
+            };
+
+            // Se vier da lista, mostra logo. Se vier de outro cartão, aguarda o Fade Out (250ms)
+            if (isFromList) finalizeSwap();
+            else setTimeout(finalizeSwap, 250);
+        };
+
+        const backToWallet = async () => {
+            if (isChangingCard.value) return;
+            isChangingCard.value = true;
+            
+            activeWalletCardId.value = null;
+            activeWalletStoreSlug.value = null;
+            await fetchCard();
+            
+            setTimeout(() => {
+                storeConfig.value.name = 'Volto Wallet';
+                storeConfig.value.logo_url = '';
+                applyTheme('#2563eb'); 
+                currentView.value = 'my_cards';
+                isChangingCard.value = false;
+            }, 250);
+        };
+
+        // --- GESTÃO DO TECLADO (Keydown Listener) ---
+        const handleKeydown = (e) => {
+            if (currentView.value === 'wallet_active_card' && myWalletCards.value.length > 1 && !isMenuOpen.value && !showRedeemModal.value && !isChangingCard.value) {
+                if (e.key === 'ArrowRight') nextWalletCard();
+                if (e.key === 'ArrowLeft') prevWalletCard();
+                if (e.key === 'Escape') backToWallet();
+            }
         };
 
         const themeStyles = computed(() => {
             const skinId = storeConfig.value.card_skin || 'default';
-            let styles = { bg: '#00a896', bgImage: 'none', bgSize: 'cover', bgPos: 'center', color: '#ffffff', stampBorder: 'gold' };
-
+            const mainColor = storeConfig.value.primary_color || defaultAppColor;
+            let styles = { bg: mainColor, bgImage: 'none', bgSize: 'cover', bgPos: 'center', color: '#ffffff', stampBorder: 'gold' };
             if (skinId === 'custom') {
-                styles.bg = storeConfig.value.card_image_url ? 'transparent' : (storeConfig.value.primary_color || '#00a896');
+                styles.bg = storeConfig.value.card_image_url ? 'transparent' : mainColor;
                 styles.bgImage = storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : 'none';
                 styles.bgSize = storeConfig.value.card_image_url ? `${storeConfig.value.card_image_zoom || 100}%` : 'cover';
                 styles.bgPos = storeConfig.value.card_image_url ? `calc(50% + ${storeConfig.value.card_image_pos_x || 0}px) calc(50% + ${storeConfig.value.card_image_pos_y || 0}px)` : 'center';
@@ -87,28 +235,51 @@ createApp({
                 styles.stampBorder = storeConfig.value.border_color || '#ffffff';
                 return styles;
             } 
-            
             if (activeSkinData.value) {
                 if(activeSkinData.value.image) { styles.bgImage = `url(${activeSkinData.value.image})`; return styles; }
                 if(activeSkinData.value.style) { styles.bg = activeSkinData.value.style.replace('background:', '').replace(';', '').trim(); return styles; }
             }
-
-            if (skinId === 'black') { styles.bg = '#1a1a1a'; styles.color = '#ffd166'; styles.stampBorder = '#ffd166'; }
-            if (skinId === 'gold') { styles.bg = 'linear-gradient(45deg, #FFD700, #FDB931)'; styles.color = '#000000'; styles.stampBorder = 'rgba(0,0,0,0.5)'; }
-            
             return styles;
         });
 
-        const availableRewards = computed(() => Math.max(0, Math.floor(card.value.total_stamps / 10) - (card.value.total_redeemed_bonuses || 0)));
-        const fetchCard = async () => { const res = await fetch(api(`/api/v1/cards/status?id=${cardId}`)); if (res.ok) card.value = await res.json(); };
-        const qrCodeUrl = computed(() => api('/api/v1/qrcode?id=' + card.value.id));
+        const qrCodeUrl = computed(() => {
+            const targetId = hasStore.value ? card.value.id : (activeWalletCardId.value || card.value.id);
+            const targetStore = hasStore.value ? currentStore : activeWalletStoreSlug.value;
+            const url = `${window.location.origin}/card?store=${targetStore}&id=${targetId}`;
+            return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
+        });
+
+        const redeemQrUrl = computed(() => {
+            const targetId = hasStore.value ? card.value.id : activeWalletCardId.value;
+            const targetStore = hasStore.value ? currentStore : activeWalletStoreSlug.value;
+            const data = JSON.stringify({ action: 'redeem', id: targetId, store: targetStore });
+            return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`;
+        });
 
         onMounted(async () => { 
-            fetchCard(); 
-            await fetchSettings();
-            fetchSkinDetails(); 
+            window.addEventListener('keydown', handleKeydown); // Ativa o teclado
+
+            if (window.location.hash === '#global_qr') currentView.value = 'global_qr';
+
+            await fetchCard(); 
+            
+            if (hasStore.value) {
+                await fetchSettings();
+                fetchSkinDetails(); 
+            } else {
+                applyTheme('#2563eb'); 
+            }
+        });
+
+        onUnmounted(() => {
+            window.removeEventListener('keydown', handleKeydown);
         });
         
-        return { card, isFlipped, availableRewards, themeStyles, storeConfig, customerTier, tierGlowStyle, qrCodeUrl };
+        return { 
+            card, isFlipped, calcRewards, availableRewards, themeStyles, storeConfig, customerTier, tierGlowStyle, qrCodeUrl, redeemQrUrl,
+            isMenuOpen, currentView, toggleMenu, changeView, logout, globalQrUrl,
+            isEditingProfile, profileForm, startEditProfile, saveProfile, toasts, hasStore, myWalletCards, openWalletCard, backToWallet,
+            showRedeemModal, nextWalletCard, prevWalletCard, isChangingCard // isChangingCard agora exportado!
+        };
     }
 }).mount('#app');

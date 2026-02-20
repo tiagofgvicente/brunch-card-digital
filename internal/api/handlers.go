@@ -186,13 +186,32 @@ func SearchHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRe
 }
 
 func GetStatusHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	cardID := r.URL.Query().Get("id")
-	card, err := repo.GetCardByID(cardID)
-	if err != nil {
-		http.Error(w, "Not found", 404)
+	id := r.URL.Query().Get("id")
+
+	// 1. Tenta procurar um cartão de loja normal
+	card, err := repo.GetCardByID(id)
+	if err == nil {
+		json.NewEncoder(w).Encode(card)
 		return
 	}
-	json.NewEncoder(w).Encode(card)
+
+	// 2. Se falhar, procura na base de dados Global (Wallet)
+	gu, err := repo.GetGlobalUserByID(id)
+	if err == nil {
+		// Devolve os dados formatados como se fossem um "Cartão" sem selos
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"id":           gu.ID,
+			"customer_id":  gu.FirstName,
+			"last_name":    gu.LastName,
+			"email":        gu.Email,
+			"phone":        gu.Phone,
+			"total_stamps": 0,
+			"stamps_count": 0,
+		})
+		return
+	}
+
+	http.Error(w, "Not found", 404)
 }
 
 func StampHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
@@ -503,4 +522,92 @@ func generateSlug(name string) string {
 	}
 
 	return slug
+}
+
+// Registar um Utilizador Global
+func WalletRegisterHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req models.RegisterGlobalUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Formato inválido", 400)
+		return
+	}
+
+	newUser := models.GlobalUser{
+		ID:           uuid.New().String(),
+		FirstName:    req.FirstName,
+		LastName:     req.LastName,
+		Email:        req.Email,
+		Phone:        req.Phone,
+		Password:     req.Password,
+		RgpdAccepted: req.Rgpd,
+	}
+
+	if err := repo.CreateGlobalUser(newUser); err != nil {
+		http.Error(w, "Email já existe", 409)
+		return
+	}
+
+	// Cria a sessão de login
+	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: newUser.ID, Path: "/", HttpOnly: true, Expires: time.Now().Add(24 * time.Hour)})
+
+	// Redireciona e força a tab do "Código QR" (usando a hash #global_qr no link)
+	json.NewEncoder(w).Encode(map[string]string{
+		"redirect": "/card?id=" + newUser.ID + "#global_qr",
+	})
+}
+
+// Entrar num Utilizador Global
+func WalletLoginHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct{ Email, Password string }
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Formato inválido", 400)
+		return
+	}
+
+	user, err := repo.AuthenticateGlobalUser(req.Email, req.Password)
+	if err != nil {
+		http.Error(w, "Credenciais inválidas", 401)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: user.ID, Path: "/", HttpOnly: true, Expires: time.Now().Add(24 * time.Hour)})
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"redirect": "/card?id=" + user.ID, // Redireciona para o cartão
+	})
+}
+
+// Devolve os dados do Perfil Global do Utilizador (bypassa o middleware da loja)
+func WalletProfileHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	id := r.URL.Query().Get("id")
+	gu, err := repo.GetGlobalUserByID(id)
+	if err != nil {
+		http.Error(w, "User not found", 404)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id":           gu.ID,
+		"customer_id":  gu.FirstName,
+		"last_name":    gu.LastName,
+		"email":        gu.Email,
+		"phone":        gu.Phone,
+		"total_stamps": 0,
+		"stamps_count": 0,
+	})
+}
+
+// Devolve a lista de cartões associados ao email do utilizador
+func WalletMyCardsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	email := r.URL.Query().Get("email")
+	cards, err := repo.GetMyWalletCards(email)
+	if err != nil {
+		// Agora o terminal do Go vai gritar o erro exato do SQL!
+		fmt.Println("❌ ERRO SQL GetMyWalletCards:", err)
+		http.Error(w, "Erro BD: "+err.Error(), 500)
+		return
+	}
+	if cards == nil {
+		cards = []map[string]interface{}{}
+	}
+	json.NewEncoder(w).Encode(cards)
 }

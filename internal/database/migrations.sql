@@ -2,6 +2,7 @@
 DROP TABLE IF EXISTS loyalty_cards CASCADE;
 DROP TABLE IF EXISTS stores CASCADE;
 DROP TABLE IF EXISTS skins CASCADE;
+DROP TABLE IF EXISTS global_users CASCADE;
 
 -- 2. Tabela de LOJAS
 CREATE TABLE stores (
@@ -95,6 +96,17 @@ CREATE TABLE skins (
 -- 5. Índices
 CREATE INDEX idx_store_slug ON stores(slug);
 CREATE INDEX idx_store_status ON stores(status);
+
+CREATE TABLE global_users (
+    id VARCHAR(36) PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(50),
+    password VARCHAR(255) NOT NULL,
+    rgpd_accepted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- ==========================================
 -- 6. SEED DATA (DADOS DE TESTE)

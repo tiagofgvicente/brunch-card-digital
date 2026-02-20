@@ -101,39 +101,39 @@ func main() {
 	}
 
 	storeAuth := func(next http.HandlerFunc) http.HandlerFunc {
-        return func(w http.ResponseWriter, r *http.Request) {
-            // 1. Ler o cookie de sessão
-            cookie, err := r.Cookie("session_token")
-            if err != nil {
-                // Se não tem cookie, manda para login
-                http.Redirect(w, r, "/?error=login_required", http.StatusSeeOther)
-                return
-            }
+		return func(w http.ResponseWriter, r *http.Request) {
+			// 1. Ler o cookie de sessão
+			cookie, err := r.Cookie("session_token")
+			if err != nil {
+				// Se não tem cookie, manda para login
+				http.Redirect(w, r, "/?error=login_required", http.StatusSeeOther)
+				return
+			}
 
-            // 2. Ir buscar a loja do Contexto (que o tenantMiddleware lá pôs)
-            storeCtx := r.Context().Value("current_store")
-            if storeCtx == nil {
-                http.Error(w, "Store context missing", http.StatusInternalServerError)
-                return
-            }
-            
-            // CORREÇÃO AQUI: Usamos models.Store em vez de database.Store
-            currentStore := storeCtx.(*models.Store)
+			// 2. Ir buscar a loja do Contexto (que o tenantMiddleware lá pôs)
+			storeCtx := r.Context().Value("current_store")
+			if storeCtx == nil {
+				http.Error(w, "Store context missing", http.StatusInternalServerError)
+				return
+			}
 
-            // 3. SEGURANÇA MÁXIMA (IDOR PROTECTION)
-            // Comparamos o ID guardado no Cookie (Login) com o ID da Loja atual (URL)
-            if cookie.Value != currentStore.ID {
-                log.Printf("⛔ SEGURANÇA: Tentativa de acesso cruzado. User: %s -> Loja: %s", cookie.Value, currentStore.Slug)
-                
-                // Redireciona para o login se tentar aceder à loja errada
-                http.Redirect(w, r, "/?error=access_denied", http.StatusSeeOther)
-                return
-            }
+			// CORREÇÃO AQUI: Usamos models.Store em vez de database.Store
+			currentStore := storeCtx.(*models.Store)
 
-            // 4. Tudo bate certo, pode passar
-            next.ServeHTTP(w, r)
-        }
-    }
+			// 3. SEGURANÇA MÁXIMA (IDOR PROTECTION)
+			// Comparamos o ID guardado no Cookie (Login) com o ID da Loja atual (URL)
+			if cookie.Value != currentStore.ID {
+				log.Printf("⛔ SEGURANÇA: Tentativa de acesso cruzado. User: %s -> Loja: %s", cookie.Value, currentStore.Slug)
+
+				// Redireciona para o login se tentar aceder à loja errada
+				http.Redirect(w, r, "/?error=access_denied", http.StatusSeeOther)
+				return
+			}
+
+			// 4. Tudo bate certo, pode passar
+			next.ServeHTTP(w, r)
+		}
+	}
 
 	// --- CONFIGURAÇÃO INTELIGENTE DE FICHEIROS ESTÁTICOS ---
 	// Verifica se a pasta "static" está na diretoria atual (raiz) ou acima (cmd/server)
@@ -228,6 +228,31 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+	mux.HandleFunc("/api/v1/public/wallet-register", func(w http.ResponseWriter, r *http.Request) {
+		// Acesso público (sem middleware) para registar o cliente Global
+		if r.Method == http.MethodPost {
+			api.WalletRegisterHandler(w, r, repo)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/v1/public/wallet-login", func(w http.ResponseWriter, r *http.Request) {
+		// Acesso público (sem middleware) para login do cliente Global
+		if r.Method == http.MethodPost {
+			api.WalletLoginHandler(w, r, repo)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/api/v1/public/wallet-profile", func(w http.ResponseWriter, r *http.Request) {
+		api.WalletProfileHandler(w, r, repo)
+	})
+	mux.HandleFunc("/api/v1/public/wallet-mycards", func(w http.ResponseWriter, r *http.Request) {
+		api.WalletMyCardsHandler(w, r, repo)
+	})
+
 	// Card Operations
 	mux.HandleFunc("/api/v1/cards", tenantMiddleware(makeHandler(api.CreateCardHandler, repo)))
 	mux.HandleFunc("/api/v1/cards/status", tenantMiddleware(makeHandler(api.GetStatusHandler, repo)))

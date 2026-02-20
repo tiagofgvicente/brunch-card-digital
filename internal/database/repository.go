@@ -593,3 +593,71 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
 	)
 	return err
 }
+
+// --- GESTÃO DE UTILIZADORES GLOBAIS (VOLTO WALLET) ---
+
+func (r *CardRepository) CreateGlobalUser(u models.GlobalUser) error {
+	query := `INSERT INTO global_users (id, first_name, last_name, email, phone, password, rgpd_accepted) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := r.db.Exec(query, u.ID, u.FirstName, u.LastName, u.Email, u.Phone, u.Password, u.RgpdAccepted)
+	return err
+}
+
+func (r *CardRepository) AuthenticateGlobalUser(email, password string) (*models.GlobalUser, error) {
+	var u models.GlobalUser
+	query := `SELECT id, first_name, last_name, email, phone, password FROM global_users WHERE email = $1`
+
+	// NOTA: Para produção futura deves usar bcrypt, por agora mantemos plain-text para seguir a estrutura atual
+	var dbPassword string
+	err := r.db.QueryRow(query, email).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone, &dbPassword)
+	if err != nil {
+		return nil, err
+	}
+	if dbPassword != password {
+		return nil, fmt.Errorf("password inválida")
+	}
+	return &u, nil
+}
+
+func (r *CardRepository) GetGlobalUserByID(id string) (*models.GlobalUser, error) {
+	var u models.GlobalUser
+	query := `SELECT id, first_name, last_name, email, phone FROM global_users WHERE id = $1`
+	err := r.db.QueryRow(query, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone)
+	return &u, err
+}
+
+func (r *CardRepository) GetMyWalletCards(email string) ([]map[string]interface{}, error) {
+	query := `
+        SELECT c.id, c.total_stamps, c.total_redeemed_bonuses, s.name, s.slug, s.logo_url, s.primary_color 
+        FROM loyalty_cards c
+        JOIN stores s ON c.store_id = s.id
+        WHERE c.email = $1
+    `
+	rows, err := r.db.Query(query, email)
+	if err != nil {
+		fmt.Println("❌ ERRO SQL GetMyWalletCards:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var myCards []map[string]interface{}
+	for rows.Next() {
+		var id, storeName, storeSlug string
+		var totalStamps, totalRedeemed int
+		var logoUrl, primaryColor sql.NullString
+
+		if err := rows.Scan(&id, &totalStamps, &totalRedeemed, &storeName, &storeSlug, &logoUrl, &primaryColor); err != nil {
+			continue
+		}
+
+		myCards = append(myCards, map[string]interface{}{
+			"id":                     id,
+			"total_stamps":           totalStamps,
+			"total_redeemed_bonuses": totalRedeemed,
+			"store_name":             storeName,
+			"store_slug":             storeSlug,
+			"logo_url":               logoUrl.String,
+			"primary_color":          primaryColor.String,
+		})
+	}
+	return myCards, nil
+}

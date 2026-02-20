@@ -55,19 +55,61 @@ const AdminApp = {
             if (isScanning) return; 
             isScanning = true;
 
-            let id = decodedText;
-            if(id.includes('id=')) id = id.split('id=')[1].split('&')[0];
-            
-            if(id.length > 5) {
-                try {
-                    const res = await fetch(api(`/api/v1/cards/stamp?id=${id}`), { method: 'POST' });
+            try {
+                // 1. TENTA LER COMO JSON (Registo Global ou Botão de Prémio)
+                const data = JSON.parse(decodedText);
+                
+                if (data && data.action === 'global_register') {
+                    const res = await fetch(api('/api/v1/cards'), { 
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ customer_id: data.first || 'Novo', last_name: data.last || 'Cliente', email: data.email || '', phone: data.phone || '', rgpd_accepted: true, marketing_accepted: false }) 
+                    });
                     if(res.ok) {
-                        const d = await res.json();
-                        lastScanStatus.value = `✅ Selo adicionado a ${d.customer_id}!`;
-                        showToast(`Selo adicionado a ${d.customer_id}`, "success");
-                    } else lastScanStatus.value = "❌ Erro ao adicionar selo.";
-                } catch(e) { lastScanStatus.value = "❌ Erro de ligação."; }
-            } else lastScanStatus.value = "❌ QR Code Inválido.";
+                        lastScanStatus.value = `✅ Novo cliente registado: ${data.first}!`;
+                        showToast(`Cliente registado com sucesso`, "success");
+                        await fetchCards();
+                    } else lastScanStatus.value = "❌ O cliente já poderá estar registado nesta loja.";
+                } 
+                else if (data && data.action === 'redeem') {
+                    // VERIFICA SE O PRÉMIO É DESTA LOJA!
+                    if (data.store !== currentStore) {
+                        lastScanStatus.value = "❌ Erro: Este prémio pertence a outra loja!";
+                        showToast("Prémio inválido para esta loja.", "error");
+                    } else {
+                        // FAZ O REDEEM DIRETO NO BACKEND
+                        const res = await fetch(api(`/api/v1/cards/use-reward?id=${data.id}`), { method: 'POST' });
+                        if(res.ok) {
+                            lastScanStatus.value = `🎁 Prémio descontado com sucesso!`;
+                            showToast("Prémio validado!", "success");
+                            await fetchCards();
+                        } else lastScanStatus.value = "❌ Erro ao validar prémio.";
+                    }
+                }
+            } catch (error) {
+                // 2. SE NÃO FOR JSON, É O QR CODE NORMAL DO VERSO DO CARTÃO (DAR SELO)
+                let id = decodedText;
+                let storeInQr = '';
+
+                if (id.includes('store=')) storeInQr = id.split('store=')[1].split('&')[0];
+                if (id.includes('id=')) id = id.split('id=')[1].split('&')[0];
+
+                // PROTEÇÃO ANTI-FRAUDE: Bloqueia selos de outras lojas
+                if (storeInQr && storeInQr !== currentStore) {
+                    lastScanStatus.value = "❌ Erro: Cartão pertence a outra loja!";
+                    showToast("Não pode dar selos num cartão de outra loja.", "error");
+                } 
+                else if(id.length > 5 && !id.includes('{')) {
+                    try {
+                        const res = await fetch(api(`/api/v1/cards/stamp?id=${id}`), { method: 'POST' });
+                        if(res.ok) {
+                            const d = await res.json();
+                            lastScanStatus.value = `✅ Selo adicionado a ${d.customer_id}!`;
+                            showToast(`Selo adicionado a ${d.customer_id}`, "success");
+                            await fetchCards(); 
+                        } else lastScanStatus.value = "❌ Erro ao adicionar selo.";
+                    } catch(e) { lastScanStatus.value = "❌ Erro de ligação."; }
+                } else lastScanStatus.value = "❌ QR Code Inválido.";
+            }
 
             setTimeout(() => { lastScanStatus.value = ''; isScanning = false; }, 3000);
         };

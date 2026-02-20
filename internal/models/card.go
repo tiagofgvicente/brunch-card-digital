@@ -138,3 +138,22 @@ type LoginResponse struct {
 	Token    string `json:"token"`
 	Redirect string `json:"redirect"`
 }
+
+type GlobalUser struct {
+	ID           string `json:"id"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	Email        string `json:"email"`
+	Phone        string `json:"phone"`
+	Password     string `json:"-"`
+	RgpdAccepted bool   `json:"rgpd_accepted"`
+}
+
+type RegisterGlobalUserRequest struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+	Phone     string `json:"phone"`
+	Password  string `json:"password"`
+	Rgpd      bool   `json:"rgpd"`
+}
