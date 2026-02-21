@@ -149,21 +149,49 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRe
 	w.WriteHeader(http.StatusOK)
 }
 
-// --- RESTO DA API (Sem alterações de lógica, só a compilar com o novo models) ---
+// --- RESTO DA API (Com suporte a Âmbitos) ---
 
 func CreateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	store := getCurrentStore(r)
 	var req models.CreateCardRequest
-	json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", 400)
+		return
+	}
 
-	newCard := models.BrunchCard{
-		ID: uuid.New().String(), StoreID: store.ID, CustomerID: req.CustomerID, LastName: req.LastName, Email: req.Email, Phone: req.Phone, NIF: req.NIF, Design: req.Design, RgpdAccepted: req.RgpdAccepted, MarketingAccepted: req.MarketingAccepted,
+	newCard := models.LoyaltyCard{
+		ID:                uuid.New().String(),
+		StoreID:           store.ID,
+		CustomerID:        req.CustomerID,
+		LastName:          req.LastName,
+		Email:             req.Email,
+		Phone:             req.Phone,
+		NIF:               req.NIF,
+		Design:            req.Design,
+		ScopeID:           req.ScopeID, // Mapeado diretamente do JSON
+		RgpdAccepted:      req.RgpdAccepted,
+		MarketingAccepted: req.MarketingAccepted,
+	}
+
+	// SISTEMA DE SEGURANÇA: Se a interface falhar e não enviar um ScopeID
+	// O backend procura o "Geral/Principal" dessa loja e atribui automaticamente.
+	if newCard.ScopeID == "" {
+		scopes, _ := repo.GetStoreScopes(store.ID)
+		for _, s := range scopes {
+			if s.IsMain {
+				newCard.ScopeID = s.ID
+				break
+			}
+		}
 	}
 
 	if err := repo.SaveCard(newCard); err != nil {
-		http.Error(w, "Error saving", 500)
+		// Este erro vai disparar se o SQL UNIQUE(store_id, scope_id, email) for violado
+		log.Printf("Erro ao gravar cartão: %v", err)
+		http.Error(w, "Cliente já possui este cartão", 400)
 		return
 	}
+
 	savedCard, _ := repo.GetCardByID(newCard.ID)
 	json.NewEncoder(w).Encode(savedCard)
 }
@@ -253,7 +281,7 @@ func GetSettingsHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 }
 
 func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	store := getCurrentStore(r) // Recupera a loja atual (que tem o ID correto)
+	store := getCurrentStore(r)
 
 	var input models.Store
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -261,7 +289,6 @@ func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		return
 	}
 
-	// Atualizar os campos da loja com o que veio do Frontend
 	store.Name = input.Name
 	store.LogoURL = input.LogoURL
 	store.PrimaryColor = input.PrimaryColor
@@ -270,8 +297,6 @@ func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *databas
 	store.Bronze = input.Bronze
 	store.Silver = input.Silver
 	store.Gold = input.Gold
-
-	// --- NOVOS CAMPOS (Correção) ---
 	store.TextColor = input.TextColor
 	store.BorderColor = input.BorderColor
 	store.CardImageUrl = input.CardImageUrl
@@ -280,7 +305,6 @@ func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *databas
 	store.CardImagePosY = input.CardImagePosY
 	store.CardScope = input.CardScope
 
-	// SOCIAL MEDIA
 	store.SocialInstagram = input.SocialInstagram
 	store.SocialFacebook = input.SocialFacebook
 	store.SocialTwitter = input.SocialTwitter
@@ -291,7 +315,6 @@ func UpdateSettingsHandler(w http.ResponseWriter, r *http.Request, repo *databas
 	store.MenuUrl = input.MenuUrl
 	store.LocationUrl = input.LocationUrl
 
-	// Chamar o repositório para gravar na BD
 	if err := repo.UpdateSettings(*store); err != nil {
 		log.Printf("Erro ao atualizar settings: %v", err)
 		http.Error(w, "DB Error", 500)
@@ -341,7 +364,7 @@ func VerifyPasswordHandler(w http.ResponseWriter, r *http.Request, repo *databas
 }
 
 func UpdateCardHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	var req models.BrunchCard
+	var req models.LoyaltyCard
 	json.NewDecoder(r.Body).Decode(&req)
 	repo.UpdateCard(req)
 	w.WriteHeader(http.StatusOK)
@@ -382,7 +405,7 @@ func SaveSkinHandler(w http.ResponseWriter, r *http.Request, repo *database.Card
 	}
 	if s.ID == "" {
 		s.ID = uuid.New().String()
-	} // Gera ID se for novo
+	}
 
 	if err := repo.SaveSkin(s); err != nil {
 		http.Error(w, err.Error(), 500)
@@ -401,7 +424,7 @@ func DeleteSkinHandler(w http.ResponseWriter, r *http.Request, repo *database.Ca
 	w.WriteHeader(http.StatusOK)
 }
 
-// System: Get Available Skins (Para Admin e Stores)
+// System: Get Available Skins
 func GetAvailableSkinsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	skins, err := repo.GetAvailableSkins()
 	if err != nil {
@@ -428,22 +451,17 @@ func MasterToggleStoreHandler(w http.ResponseWriter, r *http.Request, repo *data
 }
 
 func MasterUpdateStoreHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	// MUDANÇA: Em vez de 'database.Store', usamos 'models.Store'
 	var store models.Store
-
-	// Descodificar o JSON
 	if err := json.NewDecoder(r.Body).Decode(&store); err != nil {
 		http.Error(w, "Invalid input format", http.StatusBadRequest)
 		return
 	}
 
-	// Validar ID
 	if store.ID == "" {
 		http.Error(w, "Store ID is required", http.StatusBadRequest)
 		return
 	}
 
-	// Executar update
 	if err := repo.UpdateStore(store); err != nil {
 		log.Printf("Error updating store: %v", err)
 		http.Error(w, "Failed to update store", http.StatusInternalServerError)
@@ -467,14 +485,11 @@ func PublicRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		return
 	}
 
-	// Gerar Slug automático
 	baseSlug := generateSlug(req.Name)
 	req.Slug = baseSlug
 
-	// Tentar criar a loja e obter o ID
 	id, err := repo.RegisterStore(req)
 	if err != nil {
-		// Lógica de retry para slug duplicado
 		req.Slug = fmt.Sprintf("%s-%d", baseSlug, rand.Intn(9999))
 		id, err = repo.RegisterStore(req)
 
@@ -485,46 +500,34 @@ func PublicRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		}
 	}
 
-	// --- SUCESSO! AGORA FAZEMOS AUTO-LOGIN ---
-
-	// 1. Criar o Cookie de Sessão com o ID da nova loja
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
-		Value:    id, // O ID que veio do repository
+		Value:    id,
 		Path:     "/",
 		HttpOnly: true,
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 
-	// 2. Redirecionar DIRETAMENTE para o Painel Admin
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":  "Loja criada! A entrar...",
-		"redirect": "/admin?store=" + req.Slug, // <--- AQUI ESTÁ A MAGIA
+		"redirect": "/admin?store=" + req.Slug,
 	})
 }
 
 func generateSlug(name string) string {
-	// 1. Converter para minúsculas
 	slug := strings.ToLower(name)
-
-	// 2. Substituir tudo o que não for letra ou número por hifen
-	// (Esta regex simples mantém a-z e 0-9, o resto vira -)
 	reg := regexp.MustCompile("[^a-z0-9]+")
 	slug = reg.ReplaceAllString(slug, "-")
-
-	// 3. Remover hífens do início e do fim
 	slug = strings.Trim(slug, "-")
-
-	// 4. Se ficar vazio (ex: nome era "!!!"), gerar algo aleatório
 	if slug == "" {
 		slug = fmt.Sprintf("store-%d", rand.Intn(100000))
 	}
-
 	return slug
 }
 
-// Registar um Utilizador Global
+// --- UTILIZADORES GLOBAIS (VOLTO WALLET) ---
+
 func WalletRegisterHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	var req models.RegisterGlobalUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -547,16 +550,13 @@ func WalletRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		return
 	}
 
-	// Cria a sessão de login
 	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: newUser.ID, Path: "/", HttpOnly: true, Expires: time.Now().Add(24 * time.Hour)})
 
-	// Redireciona e força a tab do "Código QR" (usando a hash #global_qr no link)
 	json.NewEncoder(w).Encode(map[string]string{
 		"redirect": "/card?id=" + newUser.ID + "#global_qr",
 	})
 }
 
-// Entrar num Utilizador Global
 func WalletLoginHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	var req struct{ Email, Password string }
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -573,11 +573,10 @@ func WalletLoginHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: user.ID, Path: "/", HttpOnly: true, Expires: time.Now().Add(24 * time.Hour)})
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"redirect": "/card?id=" + user.ID, // Redireciona para o cartão
+		"redirect": "/card?id=" + user.ID,
 	})
 }
 
-// Devolve os dados do Perfil Global do Utilizador (bypassa o middleware da loja)
 func WalletProfileHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	id := r.URL.Query().Get("id")
 	gu, err := repo.GetGlobalUserByID(id)
@@ -596,12 +595,10 @@ func WalletProfileHandler(w http.ResponseWriter, r *http.Request, repo *database
 	})
 }
 
-// Devolve a lista de cartões associados ao email do utilizador
 func WalletMyCardsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	email := r.URL.Query().Get("email")
 	cards, err := repo.GetMyWalletCards(email)
 	if err != nil {
-		// Agora o terminal do Go vai gritar o erro exato do SQL!
 		fmt.Println("❌ ERRO SQL GetMyWalletCards:", err)
 		http.Error(w, "Erro BD: "+err.Error(), 500)
 		return
@@ -610,4 +607,79 @@ func WalletMyCardsHandler(w http.ResponseWriter, r *http.Request, repo *database
 		cards = []map[string]interface{}{}
 	}
 	json.NewEncoder(w).Encode(cards)
+}
+
+// --- GESTÃO DE ÂMBITOS (ADMIN) ---
+
+func GetScopesHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	storeSlug := r.URL.Query().Get("store")
+	store, err := repo.GetStoreBySlug(storeSlug)
+	if err != nil {
+		http.Error(w, "Store not found", 404)
+		return
+	}
+
+	scopes, err := repo.GetStoreScopes(store.ID)
+	if err != nil {
+		http.Error(w, "Error fetching scopes", 500)
+		return
+	}
+	json.NewEncoder(w).Encode(scopes)
+}
+
+func CreateScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	storeSlug := r.URL.Query().Get("store")
+	store, _ := repo.GetStoreBySlug(storeSlug)
+
+	var req models.StoreScope
+	json.NewDecoder(r.Body).Decode(&req)
+
+	req.ID = uuid.New().String()
+	req.StoreID = store.ID
+	req.IsMain = false
+	req.IsActive = true
+
+	err := repo.CreateStoreScope(req)
+	if err != nil {
+		http.Error(w, "Erro ao criar âmbito (nome duplicado?)", 400)
+		return
+	}
+	json.NewEncoder(w).Encode(req)
+}
+
+func ToggleScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	storeSlug := r.URL.Query().Get("store")
+	store, _ := repo.GetStoreBySlug(storeSlug)
+
+	var req struct {
+		ID       string `json:"id"`
+		IsActive bool   `json:"is_active"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	err := repo.ToggleScopeStatus(req.ID, store.ID, req.IsActive)
+	if err != nil {
+		http.Error(w, "Erro ao atualizar", 500)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func UpdateScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	storeSlug := r.URL.Query().Get("store")
+	store, _ := repo.GetStoreBySlug(storeSlug)
+
+	var req struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		StampIcon string `json:"stamp_icon"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	err := repo.UpdateStoreScope(req.ID, store.ID, req.Name, req.StampIcon)
+	if err != nil {
+		http.Error(w, "Erro ao atualizar âmbito", 500)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }

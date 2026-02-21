@@ -66,7 +66,9 @@
         tr:hover { background: rgba(0,0,0,0.03); }
         tr:last-child td { border-bottom: none; }
 
-        .customer-name { font-weight: 800; font-size: 1rem; margin-bottom: 4px; display: block; color: var(--text-main); }
+        .customer-name { font-weight: 800; font-size: 1rem; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+        .scope-badge { font-size: 0.6rem; background: var(--bg-btn); color: var(--text-sub); padding: 2px 6px; border-radius: 4px; text-transform: uppercase; border: 1px solid var(--border-color); letter-spacing: 0.5px; }
+        
         .contact-details { display: flex; flex-direction: column; gap: 2px; }
         .contact-row { font-size: 0.75rem; color: var(--text-sub); opacity: 0.6; font-weight: 500; display: flex; align-items: center; gap: 6px; }
         .contact-row:hover { opacity: 1; color: var(--primary); }
@@ -144,10 +146,11 @@
         .btn-save-modal { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 0.9rem; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 15px; transition: 0.2s; }
         .btn-save-modal:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .preview-card-shell { width: 350px; height: 215px; border-radius: 18px; margin: 25px auto; display: flex; flex-direction: column; justify-content: space-between; padding: 25px; box-sizing: border-box; text-align: left; border: 2px solid var(--gold); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        
         .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
         .toast { pointer-events: auto; padding: 15px 25px; border-radius: 10px; color: white; font-weight: 600; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 12px; animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); min-width: 280px; }
         .toast-success { background: var(--success); }
-        .toast-error { background: var(--danger); }
+        .toast-error { background: var(--red); }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         .designer-modal { width: 850px; max-width: 90vw; padding: 0; display: flex; overflow: hidden; height: 500px; }
@@ -168,6 +171,8 @@
 
         #reader { border-radius: 12px; overflow: hidden; background: #000; width: 100%; aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center;}
         #reader video { object-fit: cover; width: 100%; height: 100%; }
+
+        .scope-edit-row { display: flex; gap: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 8px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -208,12 +213,37 @@
 
         <main class="main-content">
             <div v-if="currentPage === 'customers'">
-                <div class="header-row">
+                <div class="header-row" style="margin-bottom: 20px;">
                     <div class="page-header"><h1 style="margin:0;">{{ t('title_customers') }}</h1></div>
                     <div class="search-container"><input v-model="searchQuery" class="search-input" :placeholder="t('search_placeholder')"><span class="search-icon">🔍</span></div>
                 </div>
+
+                <div v-if="storeScopes.length > 1" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+                    <button @click="activeTabScope = 'all'" 
+                            style="background: transparent; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; padding: 5px 15px; border-radius: 20px; transition: 0.2s;"
+                            :style="activeTabScope === 'all' ? 'background: var(--primary); color: white;' : 'color: var(--text-sub);'">
+                        Todos
+                    </button>
+                    <button v-for="scope in storeScopes" :key="scope.id"
+                            @click="activeTabScope = scope.id"
+                            style="background: transparent; border: none; font-weight: 800; font-size: 0.85rem; cursor: pointer; padding: 5px 15px; border-radius: 20px; transition: 0.2s; display: flex; align-items: center; gap: 5px;"
+                            :style="activeTabScope === scope.id ? 'background: var(--primary); color: white;' : 'color: var(--text-sub);'">
+                        <span>{{ scope.stamp_icon }}</span> {{ scope.name }}
+                    </button>
+                </div>
                 <table>
-                    <thead><tr><th style="width: 30%;">{{ t('th_name') }}</th><th style="width: 15%;">{{ t('th_status') }}</th><th style="width: 15%;">{{ t('th_consent') }}</th><th>{{ t('th_avail') }}</th><th>{{ t('th_redeem') }}</th><th>Visits</th><th style="width: 140px; text-align: center;">{{ t('th_actions') }}</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">{{ t('th_name') }}</th>
+                            <th style="width: 15%;">Cartão</th>
+                            <th style="width: 10%;">{{ t('th_status') }}</th>
+                            <th style="width: 10%;">{{ t('th_consent') }}</th>
+                            <th>{{ t('th_avail') }}</th>
+                            <th>{{ t('th_redeem') }}</th>
+                            <th>Visits</th>
+                            <th style="width: 140px; text-align: center;">{{ t('th_actions') }}</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         <tr v-for="card in filteredCards" :key="card.id">
                             <td>
@@ -222,6 +252,12 @@
                                     <div class="contact-row" v-if="card.email"><span>✉️</span>{{ card.email }}</div>
                                     <div class="contact-row" v-if="card.phone"><span>📞</span>{{ card.phone }}</div>
                                 </div>
+                            </td>
+                            <td>
+                                <span class="scope-badge" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px;">
+                                    <span style="font-size: 1.1rem;">{{ card.scope_icon || storeConfig.stamp_icon || '🍳' }}</span> 
+                                    {{ card.scope_name || 'Geral' }}
+                                </span>
                             </td>
                             <td>
                                 <span v-if="card.total_stamps >= storeConfig.goldThreshold" class="status-pill pill-gold">Gold</span>
@@ -237,7 +273,7 @@
                             </td>
                             <td style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">{{ calculateAvailable(card) }}<span style="font-size:0.8rem; margin-left:5px;">🎁</span></td>
                             <td style="color: var(--gold); font-weight: 800; font-size: 1.1rem;">{{ card.total_redeemed_bonuses || 0 }}<span style="font-size:0.8rem; margin-left:5px;">🏆</span></td>
-                            <td><strong>{{ card.total_stamps }} <span v-if="!storeConfig.logo_url">{{ storeConfig.stamp_icon }}</span></strong></td>
+                            <td><strong>{{ card.total_stamps }}</strong></td>
                             <td>
                                 <div class="action-grid">
                                     <button class="btn-action btn-edit" @click="openEditModal(card)">Edit</button>
@@ -291,14 +327,27 @@
             </div>
 
             <div v-else-if="currentPage === 'scanner'" class="scanner-box" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                
+                <div v-if="activeScopesList.length > 1" style="background: var(--bg-card); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; text-align: center; width: 100%; max-width: 400px; box-sizing: border-box;">
+                    <p style="font-size: 0.8rem; font-weight: bold; margin-top: 0; color: var(--text-sub);">Selecione o Cartão a atribuir:</p>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button v-for="scope in activeScopesList" :key="scope.id" 
+                                @click="activeScannerScope = scope.id"
+                                style="padding: 10px 15px; border-radius: 8px; font-weight: 800; cursor: pointer; border: 2px solid transparent; transition: 0.2s;"
+                                :style="activeScannerScope === scope.id ? 'background: var(--primary); color: white;' : 'background: var(--bg-main); color: var(--text-main); border-color: var(--border-color);'">
+                            {{ scope.stamp_icon }} {{ scope.name }}
+                        </button>
+                    </div>
+                </div>
+
                 <h1 style="font-weight: 800; margin-top: 0;">{{ t('title_scanner') }}</h1>
                 <p style="color: var(--text-sub); margin-bottom: 30px;">Aponte a câmara para o QRCode do cliente.</p>
                 
-                <div style="width: 100%; max-width: 400px; background: var(--bg-side); border: 2px solid var(--border-color); border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                <div style="width: 100%; max-width: 400px; background: var(--bg-side); border: 2px solid var(--border-color); border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); box-sizing: border-box;">
                     <div id="reader"></div> 
                 </div>
 
-                <div v-if="lastScanStatus" style="margin-top: 20px; padding: 15px; background: rgba(0,168,150,0.1); border: 1px solid var(--primary); border-radius: 8px; color: var(--primary); font-weight: bold; font-size: 1.1rem; width: 100%; max-width: 400px;">
+                <div v-if="lastScanStatus" style="margin-top: 20px; padding: 15px; background: rgba(0,168,150,0.1); border: 1px solid var(--primary); border-radius: 8px; color: var(--primary); font-weight: bold; font-size: 1.1rem; width: 100%; max-width: 400px; box-sizing: border-box;">
                     {{ lastScanStatus }}
                 </div>
             </div>
@@ -333,6 +382,7 @@
             <div v-else-if="currentPage === 'settings'" class="settings-wrapper">
                 <div class="page-header"><h1>{{ t('title_settings') }}</h1><p style="color:var(--text-sub);">{{ t('sub_settings') }}</p></div>
                 <div class="settings-container">
+                    
                     <div class="settings-section">
                         <h3 class="section-label">{{ t('sec_brand') }}</h3>
                         <div class="setting-row">
@@ -340,29 +390,6 @@
                             <div class="setting-control"><input type="text" v-model="settingsForm.name" class="custom-input"></div>
                         </div>
                         
-                        <div class="setting-row">
-                            <div class="setting-info"><label>Card Scope / Âmbito</label></div>
-                            <div class="setting-control">
-                                <select v-model="settingsForm.card_scope" class="custom-input">
-                                    <option value="Geral">Geral</option>
-                                    <option value="Pequeno-Almoço">Pequeno-Almoço</option>
-                                    <option value="Menu de Almoço">Menu de Almoço</option>
-                                    <option value="Sopa">Sopa</option>
-                                    <option value="Lanche">Lanche</option>
-                                    <option value="Jantar">Jantar</option>
-                                    <option value="Cafetaria">Cafetaria</option>
-                                    <option value="Bebidas">Bebidas</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="setting-row">
-                            <div class="setting-info"><label>{{ t('lbl_icon') }}</label></div>
-                            <div class="setting-control" style="display:flex; align-items:center; gap:15px;">
-                                <div style="font-size: 2rem; background: var(--bg-main); width: 60px; height: 60px; display:flex; align-items:center; justify-content:center; border-radius:12px; border:1px solid var(--border-color);">{{ settingsForm.stamp_icon }}</div>
-                                <button class="btn-action btn-edit" style="width:auto; padding: 10px 20px;" @click="showIconPicker = true">Change Icon</button>
-                            </div>
-                        </div>
                         <div class="setting-row">
                             <div class="setting-info"><label>{{ t('lbl_logo') }}</label></div>
                             <div class="setting-control">
@@ -376,8 +403,56 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="divider"></div>
+
+                    <div class="settings-section" v-if="storeConfig.tier === 'pro'">
+                        <h3 class="section-label">Os Meus Cartões (Planos)</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 20px;">
+                            Crie até 3 cartões para diferentes serviços da loja.
+                        </p>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                            <div v-for="scope in storeScopes" :key="scope.id">
+                                
+                                <div v-if="editingScopeId === scope.id" class="scope-edit-row">
+                                    <button class="custom-input" style="width:60px; font-size:1.2rem; padding:5px; cursor:pointer; flex:none; text-align:center;" @click="openIconPicker('edit')">{{ editScopeTempIcon }}</button>
+                                    <select v-model="editScopeTempName" class="custom-input" style="flex:1;">
+                                        <option v-for="opt in predefinedScopeNames" :key="opt" :value="opt">{{ opt }}</option>
+                                    </select>
+                                    <button @click="cancelEditScope" class="btn-action btn-edit" style="width:auto; padding:0 15px;">Cancelar</button>
+                                    <button @click="saveEditScope" class="btn-action btn-stamp" style="width:auto; padding:0 15px;">Guardar</button>
+                                </div>
+
+                                <div v-else style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--bg-main); border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <div style="display: flex; align-items: center; gap: 10px; font-weight: bold;">
+                                        <span style="font-size: 1.5rem;">{{ scope.stamp_icon }}</span>
+                                        <span :style="!scope.is_active ? 'text-decoration: line-through; opacity: 0.5;' : ''">{{ scope.name }}</span>
+                                        <span v-if="scope.is_main" style="font-size: 0.6rem; background: var(--primary); color: white; padding: 3px 6px; border-radius: 4px; text-transform: uppercase;">Principal</span>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button @click="startEditScope(scope)" class="btn-action btn-edit" style="width: auto; padding: 6px 12px; font-size: 0.75rem;">Editar</button>
+                                        <button v-if="!scope.is_main" @click="toggleScope(scope)" class="btn-action" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" :class="scope.is_active ? 'btn-edit' : 'btn-view'">
+                                            {{ scope.is_active ? 'Desativar' : 'Reativar' }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div v-if="storeScopes.length < 3" style="display: flex; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                            <button class="custom-input" style="width:60px; font-size:1.2rem; text-align:center; padding:5px; cursor:pointer;" @click="openIconPicker('new')">{{ newScopeIcon }}</button>
+                            <select v-model="newScopeName" class="custom-input" style="flex:1;">
+                                <option v-for="opt in predefinedScopeNames" :key="opt" :value="opt">{{ opt }}</option>
+                            </select>
+                            <button @click="createScope" class="btn-action btn-stamp" style="width: auto; padding: 10px 20px; border-radius: 8px; font-weight: bold;">Adicionar</button>
+                        </div>
+                        <div v-else style="padding: 10px; border-top: 1px solid var(--border-color); padding-top: 20px; text-align: center; color: var(--text-sub); font-size: 0.8rem; font-weight: bold;">
+                            ✨ Atingiu o limite de 3 cartões simultâneos.
+                        </div>
+                    </div>
+                    <div class="divider" v-if="storeConfig.tier === 'pro'"></div>
                     
                     <div class="settings-section">
                         <h3 class="section-label">Localização & Menu</h3>
@@ -450,6 +525,7 @@
                     </div>
 
                     <div class="divider"></div>
+                    
                     <div class="settings-section">
                         <h3 class="section-label">{{ t('sec_tiers') }}</h3>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
@@ -458,7 +534,9 @@
                             <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--gold); margin-bottom:5px;">GOLD</label><input type="number" v-model.number="settingsForm.goldThreshold" class="custom-input"></div>
                         </div>
                     </div>
+                    
                     <div class="divider"></div>
+                    
                     <div class="settings-section">
                         <h3 class="section-label">{{ t('sec_security') }}</h3>
                         <div class="setting-row">
@@ -488,6 +566,13 @@
                     <label>Last Name</label><input v-model="editingCard.last_name" class="custom-input">
                     <label>Email</label><input v-model="editingCard.email" class="custom-input">
                     <label>Phone</label><input v-model="editingCard.phone" class="custom-input">
+                    
+                    <label style="margin-top: 15px;">Cartão / Âmbito</label>
+                    <select v-model="editingCard.scope_id" class="custom-input" style="color: var(--primary); font-weight: bold;">
+                        <option v-for="scope in storeScopes" :key="scope.id" :value="scope.id">
+                            {{ scope.stamp_icon }} {{ scope.name }}
+                        </option>
+                    </select>
                 </div>
                 <div style="text-align: right;"><button class="btn-save-modal" @click="saveEdit">SAVE CHANGES</button></div>
             </div>
@@ -555,7 +640,7 @@
                         <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; pointer-events: none;">
                             <span>{{ storeConfig.name }} VIP</span>
                             <span style="border: 1px solid currentColor; padding: 2px 8px; border-radius: 12px; font-size: 0.55rem;">
-                                {{ storeConfig.card_scope || 'Geral' }}
+                                Geral
                             </span>
                         </div>
                         
@@ -590,7 +675,7 @@
         <div class="modal-overlay" v-if="showIconPicker">
             <div class="modal-content" style="width: 500px;">
                 <span class="close-modal" @click="showIconPicker = false">✕</span>
-                <h2 style="margin-top:0; color:var(--primary);">Select Stamp Icon</h2>
+                <h2 style="margin-top:0; color:var(--primary);">Selecionar Ícone</h2>
                 <div style="display:grid; grid-template-columns: repeat(6, 1fr); gap:10px; margin-top:20px;">
                     <div v-for="icon in icons" :key="icon" style="font-size:1.5rem; cursor:pointer; padding:10px; text-align:center; border-radius:8px; transition:0.2s;" @click="selectIcon(icon)">{{ icon }}</div>
                 </div>
@@ -615,7 +700,7 @@
                     <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
                         <span>{{ storeConfig.name }} VIP</span>
                         <span style="border: 1px solid currentColor; padding: 2px 8px; border-radius: 12px; font-size: 0.55rem;">
-                                {{ storeConfig.card_scope || 'Geral' }}
+                                Geral
                         </span>
                     </div>
                     

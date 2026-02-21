@@ -283,6 +283,10 @@ func main() {
 	mux.HandleFunc("/api/v1/admin/settings", tenantMiddleware(storeAuth(makeHandler(api.UpdateSettingsHandler, repo))))
 	mux.HandleFunc("/api/v1/admin/update-consent", tenantMiddleware(storeAuth(makeHandler(api.UpdateConsentHandler, repo))))
 	mux.HandleFunc("/api/v1/admin/update-password", tenantMiddleware(storeAuth(makeHandler(api.UpdatePasswordHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/scopes", tenantMiddleware(makeHandler(api.GetScopesHandler, repo)))
+	mux.HandleFunc("/api/v1/admin/scopes/create", tenantMiddleware(makeHandler(api.CreateScopeHandler, repo)))
+	mux.HandleFunc("/api/v1/admin/scopes/toggle", tenantMiddleware(makeHandler(api.ToggleScopeHandler, repo)))
+	mux.HandleFunc("/api/v1/admin/scopes/update", tenantMiddleware(makeHandler(api.UpdateScopeHandler, repo)))
 
 	server := &http.Server{
 		Addr:         ":" + port,

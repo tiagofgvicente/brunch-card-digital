@@ -108,88 +108,56 @@ CREATE TABLE global_users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE store_scopes (
+    id VARCHAR(36) PRIMARY KEY,
+    store_id TEXT REFERENCES stores(id) ON DELETE CASCADE,
+    name VARCHAR(50) NOT NULL,
+    stamp_icon VARCHAR(50) DEFAULT '🍳',
+    is_main BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(store_id, name) -- Garante que a loja não cria dois âmbitos com o mesmo nome
+);
+
+ALTER TABLE loyalty_cards ADD COLUMN scope_id VARCHAR(36) REFERENCES store_scopes(id) ON DELETE CASCADE;
+
+ALTER TABLE loyalty_cards DROP CONSTRAINT IF EXISTS loyalty_cards_store_id_email_key;
+ALTER TABLE loyalty_cards ADD CONSTRAINT loyalty_cards_store_scope_email_key UNIQUE(store_id, scope_id, email);
+
 -- ==========================================
 -- 6. SEED DATA (DADOS DE TESTE)
--- Password para todos: brunch2026vip
 -- ==========================================
 
--- LOJA 1: Brunch VIP (PRO - Pagamento Anual - Saudável)
+-- LOJA 1: Brunch VIP 
 INSERT INTO stores (id, name, slug, admin_username, admin_email, admin_password, tier, tier_expiration, billing_cycle, max_users, is_active, account_activated, stamp_icon)
 VALUES ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Brunch VIP', 'brunch', 'admin@brunch.com', 'admin@brunch.com', '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 'pro', '2030-01-01', 'annual', 10, TRUE, TRUE, '🍳');
 
--- LOJA 2: Sushi Zen (FREE TRIAL - A acabar em 3 dias - Urgente & Não Ativado)
--- Objetivo: Testar barra amarela/vermelha de trial e o badge "Pending Login"
+-- LOJA 2: Sushi Zen 
 INSERT INTO stores (id, name, slug, admin_username, admin_email, admin_password, tier, tier_expiration, billing_cycle, max_users, is_active, account_activated, stamp_icon)
-VALUES (
-    'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 
-    'Sushi Zen', 
-    'sushi', 
-    'manager@sushizen.com', 
-    'manager@sushizen.com', 
-    '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 
-    'free_trial', 
-    CURRENT_TIMESTAMP + INTERVAL '3 days', -- Expira daqui a 3 dias
-    'monthly', 
-    1, 
-    TRUE, 
-    FALSE, -- Ainda não ativou a conta
-    '🍣'
-);
+VALUES ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'Sushi Zen', 'sushi', 'manager@sushizen.com', 'manager@sushizen.com', '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 'free_trial', CURRENT_TIMESTAMP + INTERVAL '3 days', 'monthly', 1, TRUE, FALSE, '🍣');
 
--- LOJA 3: Burger Kingz (BASIC - Saudável - Mensal)
--- Objetivo: Testar barra normal de pagamento e Tier Basic
+-- LOJA 3: Burger Kingz 
 INSERT INTO stores (id, name, slug, admin_username, admin_email, admin_password, tier, tier_expiration, billing_cycle, max_users, is_active, account_activated, stamp_icon)
-VALUES (
-    'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 
-    'Burger Kingz', 
-    'burger', 
-    'boss@burgerkingz.com', 
-    'boss@burgerkingz.com', 
-    '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 
-    'basic', 
-    CURRENT_TIMESTAMP + INTERVAL '25 days', -- Expira daqui a 25 dias (Seguro)
-    'monthly', 
-    2, 
-    TRUE, 
-    TRUE, 
-    '🍔'
-);
+VALUES ('c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'Burger Kingz', 'burger', 'boss@burgerkingz.com', 'boss@burgerkingz.com', '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 'basic', CURRENT_TIMESTAMP + INTERVAL '25 days', 'monthly', 2, TRUE, TRUE, '🍔');
 
--- LOJA 4: Coffee Lovers (LITE - Expirado/Suspenso por falta de pagamento)
--- Objetivo: Testar estado SUSPENDED e Tier Lite
+-- LOJA 4: Coffee Lovers 
 INSERT INTO stores (id, name, slug, admin_username, admin_email, admin_password, tier, tier_expiration, billing_cycle, max_users, is_active, account_activated, stamp_icon)
-VALUES (
-    'd3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 
-    'Coffee Lovers', 
-    'coffee', 
-    'hello@coffeelovers.pt', 
-    'hello@coffeelovers.pt', 
-    '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 
-    'lite', 
-    CURRENT_TIMESTAMP - INTERVAL '1 day', -- Expirou ontem
-    'biannual', 
-    3, 
-    FALSE, -- Suspenso
-    TRUE, 
-    '☕'
-);
+VALUES ('d3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'Coffee Lovers', 'coffee', 'hello@coffeelovers.pt', 'hello@coffeelovers.pt', '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 'lite', CURRENT_TIMESTAMP - INTERVAL '1 day', 'biannual', 3, FALSE, TRUE, '☕');
 
+-- LOJA 5: Pastelaria Antiga
 INSERT INTO stores (id, name, slug, admin_username, admin_email, admin_password, tier, tier_expiration, billing_cycle, max_users, is_active, account_activated, stamp_icon)
-VALUES (
-    'e4eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', 
-    'Pastelaria Antiga', 
-    'antiga', 
-    'gerencia@antiga.pt', 
-    'gerencia@antiga.pt', 
-    '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 
-    'free_trial', 
-    CURRENT_TIMESTAMP - INTERVAL '2 days', -- Expirou há 2 dias atrás
-    'monthly', 
-    1, 
-    TRUE,  -- A loja existe (não foi suspensa manualmente), mas o sistema deve bloquear pelo trial
-    TRUE,  -- Já tinham ativado a conta antes de expirar
-    '🥐'
-);
+VALUES ('e4eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', 'Pastelaria Antiga', 'antiga', 'gerencia@antiga.pt', 'gerencia@antiga.pt', '$2a$10$n4KCN/mYuBvOSluV4LT1iuQ7MwIUSDryOCjw4b/9wBrei0WzYeBye', 'free_trial', CURRENT_TIMESTAMP - INTERVAL '2 days', 'monthly', 1, TRUE, TRUE, '🥐');
+
+-- ==========================================
+-- INSERIR OS ÂMBITOS PRINCIPAIS AUTOMÁTICOS
+-- (Isto é essencial para o Scanner ter um "Cartão" por defeito)
+-- ==========================================
+INSERT INTO store_scopes (id, store_id, name, stamp_icon, is_main, is_active) VALUES 
+('scope-brunch-1', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Geral', '🍳', TRUE, TRUE),
+('scope-sushi-1', 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'Geral', '🍣', TRUE, TRUE),
+('scope-burger-1', 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'Geral', '🍔', TRUE, TRUE),
+('scope-coffee-1', 'd3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'Geral', '☕', TRUE, TRUE),
+('scope-antiga-1', 'e4eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', 'Geral', '🥐', TRUE, TRUE);
 
 -- SKINS INICIAIS
 INSERT INTO skins (id, name, type, color_bg, color_text, color_border, is_global) VALUES 

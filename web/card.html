@@ -43,8 +43,6 @@
         .card-fade-leave-to { opacity: 0; transform: scale(1.05); }
 
         .header-nav-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 350px; margin-bottom: 25px; }
-        .nav-arrow { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-main); font-size: 1.2rem; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; backdrop-filter: blur(5px); }
-        .nav-arrow:hover { background: var(--primary); color: white; border-color: #ffd166; transform: scale(1.1); }
         .nav-spacer { width: 40px; }
 
         .page-header { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -100,7 +98,7 @@
         .wallet-card-item { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: 0.3s; backdrop-filter: blur(10px); text-align: left; position: relative; overflow: hidden; }
         .wallet-card-item:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
         .wallet-card-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: white; padding: 2px; }
-        .reward-badge { position: absolute; top: -5px; right: -25px; background: #ffd166; color: black; font-size: 0.6rem; font-weight: 900; text-transform: uppercase; padding: 15px 25px 5px; transform: rotate(45deg); letter-spacing: 1px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .reward-badge { position: absolute; top: -5px; right: -25px; background: #ffd166; color: black; font-size: 0.6rem; font-weight: 900; text-transform: uppercase; padding: 15px 25px 5px; transform: rotate(45deg); letter-spacing: 1px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5;}
 
         .toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 15px; pointer-events: none; width: 90%; max-width: 350px;}
         .toast { pointer-events: auto; padding: 15px 25px; border-radius: 10px; color: white; font-weight: 600; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; animation: slideUp 0.4s; background: #10b981; }
@@ -151,23 +149,32 @@
             <div v-if="myWalletCards.length === 0" style="text-align: center; opacity: 0.5;">
                 <p>Ainda não tem cartões guardados.</p><p style="font-size: 0.85rem;">Use o seu Código de Registo numa loja aderente!</p>
             </div>
+            
             <div class="wallet-list" v-else>
                 <div v-for="c in myWalletCards" :key="c.id" class="wallet-card-item" :style="{ '--primary': c.primary_color || '#00a896' }" @click="openWalletCard(c.store_slug, c.id)">
+                    
                     <div class="reward-badge" v-if="calcRewards(c.total_stamps, c.total_redeemed_bonuses) > 0">
                         {{ calcRewards(c.total_stamps, c.total_redeemed_bonuses) }} 🎁
                     </div>
+
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <img v-if="c.logo_url && c.logo_url.length > 10" :src="c.logo_url" class="wallet-card-img">
                         <div v-else class="wallet-card-img" style="display:flex; align-items:center; justify-content:center; font-size:1.5rem; background: var(--primary);">🏪</div>
+                        
                         <div>
                             <h3 style="margin: 0; font-size: 1.1rem; color: white;">{{ c.store_name }}</h3>
-                            <span style="font-size: 0.8rem; opacity: 0.8;">{{ c.total_stamps }} Selos Acumulados</span>
+                            
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                                <span style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 12px; letter-spacing: 0.5px; color: var(--text-main);">
+                                    {{ c.scope_icon || '💳' }} {{ c.scope_name || 'Geral' }}
+                                </span>
+                                <span style="font-size: 0.8rem; opacity: 0.8;">{{ c.total_stamps }} Selos</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
 
         <transition name="card-fade">
             <div v-if="(currentView === 'card' || currentView === 'wallet_active_card') && card.id && !isChangingCard" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
@@ -183,6 +190,13 @@
                 </div>
 
                 <div class="card-wrapper" :style="tierGlowStyle">
+                    
+                    <div v-if="hasStore && card.scope_is_active === false" style="position: absolute; top: -15px; left: 0; width: 100%; text-align: center; z-index: 50;">
+                        <span style="background: #ef4444; color: white; padding: 5px 15px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); letter-spacing: 1px;">
+                            ⚠️ Programa Encerrado
+                        </span>
+                    </div>
+
                     <div class="card-inner" :class="{ 'is-flipped': isFlipped }" @click="isFlipped = !isFlipped">
                         <div class="card-face card-front" :style="{ backgroundColor: themeStyles.bg, backgroundImage: themeStyles.bgImage, backgroundSize: themeStyles.bgSize, backgroundPosition: themeStyles.bgPos, backgroundRepeat: 'no-repeat', color: themeStyles.color, borderColor: themeStyles.stampBorder }">
                             <div class="card-top">
@@ -190,8 +204,9 @@
                                     <img v-if="storeConfig.logo_url && storeConfig.logo_url.length > 10" :src="storeConfig.logo_url" class="store-logo-mini">
                                     <span style="font-weight: 800; letter-spacing: 1.5px; font-size: 0.85rem;">{{ storeConfig.name.toUpperCase() }} VIP</span>
                                 </div>
+                                
                                 <div class="scope-badge" :style="{ color: themeStyles.color, borderColor: themeStyles.stampBorder }">
-                                    {{ storeConfig.card_scope || 'Geral' }}
+                                    {{ card.scope_name || 'Geral' }}
                                 </div>
                             </div>
                             
@@ -199,7 +214,7 @@
                                 <div v-for="n in 10" :key="n" class="circle" :class="{ active: n <= card.stamps_count }" :style="{ background: n <= card.stamps_count ? 'white' : 'transparent', border: n <= card.stamps_count ? ('2px solid ' + themeStyles.stampBorder) : ('2px dashed ' + themeStyles.stampBorder) }">
                                     <template v-if="n <= card.stamps_count">
                                         <img v-if="storeConfig.logo_url && storeConfig.logo_url.length > 10" :src="storeConfig.logo_url" class="stamp-img">
-                                        <span v-else style="font-size: 22px; text-shadow: none;">{{ storeConfig.stamp_icon || '🍳' }}</span>
+                                        <span v-else style="font-size: 22px; text-shadow: none;">{{ card.scope_icon || storeConfig.stamp_icon || '🍳' }}</span>
                                     </template>
                                 </div>
                             </div>
@@ -211,7 +226,7 @@
                                     <div class="stat-item">🏆 <span>{{ card.total_redeemed_bonuses || 0 }}</span></div>
                                     <div class="stat-item">
                                         <img v-if="storeConfig.logo_url && storeConfig.logo_url.length > 10" :src="storeConfig.logo_url" class="stat-logo">
-                                        <span v-else style="text-shadow:none;">{{ storeConfig.stamp_icon || '🍳' }}</span>
+                                        <span v-else style="text-shadow:none;">{{ card.scope_icon || storeConfig.stamp_icon || '🍳' }}</span>
                                         <span>{{ card.total_stamps }}</span>
                                     </div>
                                 </div>

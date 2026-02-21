@@ -63,7 +63,7 @@ func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
 	var s models.Store
 	var logoURL, textCol, borderCol, cardImgUrl, cardScope sql.NullString
 	var socInsta, socFb, socTwit, socWhats, socTik, socYt, socWeb sql.NullString
-	var menuUrl, locUrl sql.NullString // NOVAS VARIÁVEIS MENU E LOCALIZAÇÃO
+	var menuUrl, locUrl sql.NullString
 	var imgZoom, imgPosX, imgPosY sql.NullInt32
 
 	query := `
@@ -74,7 +74,7 @@ func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
             tier, tier_expiration, billing_cycle, max_users, account_activated, status, is_active,
             text_color, border_color, card_image_url, card_image_zoom, card_image_pos_x, card_image_pos_y,
             card_scope, social_instagram, social_facebook, social_twitter, social_whatsapp, social_tiktok, social_youtube, social_website,
-            menu_url, location_url -- ADICIONADO AQUI
+            menu_url, location_url
         FROM stores 
         WHERE slug = $1
     `
@@ -85,7 +85,7 @@ func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
 		&s.Tier, &s.TierExpiration, &s.BillingCycle, &s.MaxUsers, &s.AccountActivated, &s.Status, &s.IsActive,
 		&textCol, &borderCol, &cardImgUrl, &imgZoom, &imgPosX, &imgPosY,
 		&cardScope, &socInsta, &socFb, &socTwit, &socWhats, &socTik, &socYt, &socWeb,
-		&menuUrl, &locUrl, // SCAN AQUI
+		&menuUrl, &locUrl,
 	)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,6 @@ func (r *CardRepository) GetStoreBySlug(slug string) (*models.Store, error) {
 	s.SocialTiktok = socTik.String
 	s.SocialYoutube = socYt.String
 	s.SocialWebsite = socWeb.String
-
 	s.MenuUrl = menuUrl.String
 	s.LocationUrl = locUrl.String
 
@@ -324,27 +323,62 @@ func (r *CardRepository) DeleteSkin(id string) error {
 
 // --- CARTÕES (Clientes) ---
 
-func (r *CardRepository) GetCardByID(id string) (*models.BrunchCard, error) {
-	var c models.BrunchCard
+func (r *CardRepository) GetCardByID(id string) (*models.LoyaltyCard, error) {
+	var c models.LoyaltyCard
 	var email, phone, nif, design sql.NullString
-	query := `SELECT id, store_id, member_number, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, design, rgpd_accepted, marketing_accepted FROM loyalty_cards WHERE id = $1`
-	err := r.db.QueryRow(query, id).Scan(&c.ID, &c.StoreID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif, &c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready, &design, &c.RgpdAccepted, &c.MarketingAccepted)
+
+	// NOVAS VARIÁVEIS PARA O ÂMBITO
+	var scopeID, scopeName, scopeIcon sql.NullString
+	var scopeIsActive sql.NullBool
+
+	query := `
+        SELECT c.id, c.store_id, c.member_number, c.customer_id, c.last_name, c.email, c.phone, c.nif, 
+               c.stamps_count, c.total_stamps, c.total_redeemed_bonuses, c.is_reward_ready, c.design, 
+               c.rgpd_accepted, c.marketing_accepted,
+               c.scope_id, sc.name, sc.stamp_icon, sc.is_active
+        FROM loyalty_cards c
+        LEFT JOIN store_scopes sc ON c.scope_id = sc.id
+        WHERE c.id = $1`
+
+	err := r.db.QueryRow(query, id).Scan(
+		&c.ID, &c.StoreID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif,
+		&c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready, &design,
+		&c.RgpdAccepted, &c.MarketingAccepted,
+		&scopeID, &scopeName, &scopeIcon, &scopeIsActive,
+	)
 	if err != nil {
 		return nil, err
 	}
+
 	c.Email, c.Phone, c.NIF, c.Design = email.String, phone.String, nif.String, design.String
+	c.ScopeID, c.ScopeName, c.ScopeIcon = scopeID.String, scopeName.String, scopeIcon.String
+	if scopeIsActive.Valid {
+		c.ScopeIsActive = scopeIsActive.Bool
+	} else {
+		c.ScopeIsActive = true
+	}
+
 	return &c, nil
 }
 
-func (r *CardRepository) GetCardByEmailOrPhone(storeID, identifier string) (*models.BrunchCard, error) {
-	var c models.BrunchCard
-	var email, phone, nif, design sql.NullString
-	query := `SELECT id, store_id, member_number, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, design FROM loyalty_cards WHERE (email = $1 OR phone = $1) AND store_id = $2 LIMIT 1`
-	err := r.db.QueryRow(query, identifier, storeID).Scan(&c.ID, &c.StoreID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif, &c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready, &design)
+func (r *CardRepository) GetCardByEmailOrPhone(storeID, identifier string) (*models.LoyaltyCard, error) {
+	var c models.LoyaltyCard
+	var email, phone, nif, design, scopeID sql.NullString
+
+	query := `
+        SELECT id, store_id, member_number, customer_id, last_name, email, phone, nif, 
+               stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, design, scope_id 
+        FROM loyalty_cards 
+        WHERE (email = $1 OR phone = $1) AND store_id = $2 LIMIT 1`
+
+	err := r.db.QueryRow(query, identifier, storeID).Scan(
+		&c.ID, &c.StoreID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif,
+		&c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready, &design, &scopeID,
+	)
 	if err != nil {
 		return nil, err
 	}
-	c.Email, c.Phone, c.NIF, c.Design = email.String, phone.String, nif.String, design.String
+	c.Email, c.Phone, c.NIF, c.Design, c.ScopeID = email.String, phone.String, nif.String, design.String, scopeID.String
 	return &c, nil
 }
 
@@ -361,7 +395,7 @@ func (r *CardRepository) UseReward(id string) error {
 	return nil
 }
 
-func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
+func (r *CardRepository) AddStamp(id string) (*models.LoyaltyCard, error) {
 	query := `UPDATE loyalty_cards SET total_stamps = total_stamps + 1, stamps_count = CASE WHEN stamps_count >= 10 THEN 1 ELSE stamps_count + 1 END, is_reward_ready = CASE WHEN stamps_count = 9 OR (stamps_count = 10 AND is_reward_ready = true) THEN TRUE ELSE FALSE END, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
 	_, err := r.db.Exec(query, id)
 	if err != nil {
@@ -370,51 +404,78 @@ func (r *CardRepository) AddStamp(id string) (*models.BrunchCard, error) {
 	return r.GetCardByID(id)
 }
 
-func (r *CardRepository) GetAllCards(storeID string) ([]models.BrunchCard, error) {
-	query := `SELECT id, store_id, member_number, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, design, rgpd_accepted, marketing_accepted FROM loyalty_cards WHERE store_id = $1 ORDER BY member_number DESC`
+func (r *CardRepository) GetAllCards(storeID string) ([]models.LoyaltyCard, error) {
+	// ATUALIZADO: Fomos buscar também o sc.stamp_icon
+	query := `
+        SELECT c.id, c.store_id, c.member_number, c.customer_id, c.last_name, c.email, c.phone, c.nif, 
+               c.stamps_count, c.total_stamps, c.total_redeemed_bonuses, c.is_reward_ready, c.design, 
+               c.rgpd_accepted, c.marketing_accepted, c.scope_id, sc.name, sc.stamp_icon
+        FROM loyalty_cards c
+        LEFT JOIN store_scopes sc ON c.scope_id = sc.id
+        WHERE c.store_id = $1 
+        ORDER BY c.member_number DESC`
+
 	rows, err := r.db.Query(query, storeID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var cards []models.BrunchCard
+	var cards []models.LoyaltyCard
 	for rows.Next() {
-		var c models.BrunchCard
-		var email, phone, nif, design sql.NullString
-		err := rows.Scan(&c.ID, &c.StoreID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif, &c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready, &design, &c.RgpdAccepted, &c.MarketingAccepted)
+		var c models.LoyaltyCard
+		var email, phone, nif, design, scopeID, scopeName, scopeIcon sql.NullString
+		err := rows.Scan(
+			&c.ID, &c.StoreID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif,
+			&c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready, &design,
+			&c.RgpdAccepted, &c.MarketingAccepted, &scopeID, &scopeName, &scopeIcon,
+		)
 		if err != nil {
 			continue
 		}
 		c.Email, c.Phone, c.NIF, c.Design = email.String, phone.String, nif.String, design.String
+		c.ScopeID, c.ScopeName, c.ScopeIcon = scopeID.String, scopeName.String, scopeIcon.String
 		cards = append(cards, c)
 	}
 	return cards, nil
 }
 
-func (r *CardRepository) SaveCard(card models.BrunchCard) error {
+func (r *CardRepository) SaveCard(card models.LoyaltyCard) error {
 	if card.Design == "" {
 		card.Design = "default"
 	}
-	query := `INSERT INTO loyalty_cards (id, store_id, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, design, rgpd_accepted, marketing_accepted, consent_date, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+
+	// ATUALIZADO: Inserir scope_id
+	query := `
+	    INSERT INTO loyalty_cards (
+	        id, store_id, customer_id, last_name, email, phone, nif, 
+	        stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, 
+	        design, rgpd_accepted, marketing_accepted, scope_id, consent_date, updated_at
+	    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10, $11, $12, $13, NULLIF($14, ''), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+
 	toNull := func(s string) interface{} {
 		if s == "" {
 			return nil
 		}
 		return s
 	}
-	_, err := r.db.Exec(query, card.ID, card.StoreID, card.CustomerID, card.LastName, toNull(card.Email), toNull(card.Phone), toNull(card.NIF), card.StampsCount, card.TotalStamps, card.Is_reward_ready, card.Design, card.RgpdAccepted, card.MarketingAccepted)
+
+	_, err := r.db.Exec(query,
+		card.ID, card.StoreID, card.CustomerID, card.LastName,
+		toNull(card.Email), toNull(card.Phone), toNull(card.NIF),
+		card.StampsCount, card.TotalStamps, card.Is_reward_ready,
+		card.Design, card.RgpdAccepted, card.MarketingAccepted, card.ScopeID)
 	return err
 }
 
-func (r *CardRepository) UpdateCard(card models.BrunchCard) error {
-	query := `UPDATE loyalty_cards SET customer_id=$1, last_name=$2, email=$3, phone=$4, nif=$5, updated_at=CURRENT_TIMESTAMP WHERE id=$6`
+func (r *CardRepository) UpdateCard(card models.LoyaltyCard) error {
+	query := `UPDATE loyalty_cards SET customer_id=$1, last_name=$2, email=$3, phone=$4, nif=$5, scope_id=NULLIF($6, ''), updated_at=CURRENT_TIMESTAMP WHERE id=$7`
 	toNull := func(s string) interface{} {
 		if s == "" {
 			return nil
 		}
 		return s
 	}
-	_, err := r.db.Exec(query, card.CustomerID, card.LastName, toNull(card.Email), toNull(card.Phone), toNull(card.NIF), card.ID)
+	_, err := r.db.Exec(query, card.CustomerID, card.LastName, toNull(card.Email), toNull(card.Phone), toNull(card.NIF), card.ScopeID, card.ID)
 	return err
 }
 
@@ -424,19 +485,29 @@ func (r *CardRepository) ResetCard(id string) error {
 	return err
 }
 
-func (r *CardRepository) SearchCards(storeID, term string) ([]models.BrunchCard, error) {
-	query := `SELECT id, store_id, member_number, customer_id, last_name, email, phone, nif, stamps_count, total_stamps, total_redeemed_bonuses, is_reward_ready, rgpd_accepted, marketing_accepted FROM loyalty_cards WHERE store_id = $1 AND (customer_id LIKE $2 OR last_name LIKE $2 OR email LIKE $2 OR phone LIKE $2 OR nif LIKE $2) ORDER BY member_number DESC LIMIT 15`
+func (r *CardRepository) SearchCards(storeID, term string) ([]models.LoyaltyCard, error) {
+	query := `
+	    SELECT c.id, c.store_id, c.member_number, c.customer_id, c.last_name, c.email, c.phone, c.nif, 
+	           c.stamps_count, c.total_stamps, c.total_redeemed_bonuses, c.is_reward_ready, 
+               c.rgpd_accepted, c.marketing_accepted, sc.name, sc.stamp_icon
+	    FROM loyalty_cards c
+        LEFT JOIN store_scopes sc ON c.scope_id = sc.id
+	    WHERE c.store_id = $1 AND (c.customer_id LIKE $2 OR c.last_name LIKE $2 OR c.email LIKE $2 OR c.phone LIKE $2 OR c.nif LIKE $2) 
+	    ORDER BY c.member_number DESC LIMIT 15`
+
 	rows, err := r.db.Query(query, storeID, "%"+term+"%")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var cards []models.BrunchCard
+	var cards []models.LoyaltyCard
 	for rows.Next() {
-		var c models.BrunchCard
-		var email, phone, nif sql.NullString
-		rows.Scan(&c.ID, &c.StoreID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif, &c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready, &c.RgpdAccepted, &c.MarketingAccepted)
-		c.Email, c.Phone, c.NIF = email.String, phone.String, nif.String
+		var c models.LoyaltyCard
+		var email, phone, nif, scopeName, scopeIcon sql.NullString
+		rows.Scan(&c.ID, &c.StoreID, &c.MemberNumber, &c.CustomerID, &c.LastName, &email, &phone, &nif,
+			&c.StampsCount, &c.TotalStamps, &c.TotalRedeemedBonuses, &c.Is_reward_ready,
+			&c.RgpdAccepted, &c.MarketingAccepted, &scopeName, &scopeIcon)
+		c.Email, c.Phone, c.NIF, c.ScopeName, c.ScopeIcon = email.String, phone.String, nif.String, scopeName.String, scopeIcon.String
 		cards = append(cards, c)
 	}
 	return cards, nil
@@ -529,6 +600,10 @@ func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (stri
 		return "", err
 	}
 
+	// Auto-cria o âmbito principal para a nova loja
+	scopeQuery := `INSERT INTO store_scopes (id, store_id, name, stamp_icon, is_main, is_active) VALUES ($1, $2, 'Geral', '💳', TRUE, TRUE)`
+	repo.db.Exec(scopeQuery, uuid.New().String(), id)
+
 	return id, nil
 }
 
@@ -580,7 +655,7 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
             card_image_pos_x = $13, card_image_pos_y = $14, card_scope = $15,
             social_instagram = $16, social_facebook = $17, social_twitter = $18, 
             social_whatsapp = $19, social_tiktok = $20, social_youtube = $21, social_website = $22,
-            menu_url = $23, location_url = $24 -- ADICIONADO AQUI
+            menu_url = $23, location_url = $24
         WHERE id = $25
     `
 	_, err := r.db.Exec(query,
@@ -588,8 +663,8 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
 		s.LogoURL, s.ThemeMode, s.TextColor, s.BorderColor, s.CardImageUrl,
 		s.CardImageZoom, s.CardImagePosX, s.CardImagePosY, s.CardScope,
 		s.SocialInstagram, s.SocialFacebook, s.SocialTwitter, s.SocialWhatsapp, s.SocialTiktok, s.SocialYoutube, s.SocialWebsite,
-		s.MenuUrl, s.LocationUrl, // $23 e $24
-		s.ID, // $25
+		s.MenuUrl, s.LocationUrl,
+		s.ID,
 	)
 	return err
 }
@@ -606,7 +681,6 @@ func (r *CardRepository) AuthenticateGlobalUser(email, password string) (*models
 	var u models.GlobalUser
 	query := `SELECT id, first_name, last_name, email, phone, password FROM global_users WHERE email = $1`
 
-	// NOTA: Para produção futura deves usar bcrypt, por agora mantemos plain-text para seguir a estrutura atual
 	var dbPassword string
 	err := r.db.QueryRow(query, email).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone, &dbPassword)
 	if err != nil {
@@ -627,9 +701,11 @@ func (r *CardRepository) GetGlobalUserByID(id string) (*models.GlobalUser, error
 
 func (r *CardRepository) GetMyWalletCards(email string) ([]map[string]interface{}, error) {
 	query := `
-        SELECT c.id, c.total_stamps, c.total_redeemed_bonuses, s.name, s.slug, s.logo_url, s.primary_color 
+        SELECT c.id, c.total_stamps, c.total_redeemed_bonuses, s.name, s.slug, s.logo_url, s.primary_color,
+               sc.name, sc.stamp_icon, sc.is_active
         FROM loyalty_cards c
         JOIN stores s ON c.store_id = s.id
+        LEFT JOIN store_scopes sc ON c.scope_id = sc.id
         WHERE c.email = $1
     `
 	rows, err := r.db.Query(query, email)
@@ -643,9 +719,11 @@ func (r *CardRepository) GetMyWalletCards(email string) ([]map[string]interface{
 	for rows.Next() {
 		var id, storeName, storeSlug string
 		var totalStamps, totalRedeemed int
-		var logoUrl, primaryColor sql.NullString
+		var logoUrl, primaryColor, scopeName, scopeIcon sql.NullString
+		var scopeIsActive sql.NullBool
 
-		if err := rows.Scan(&id, &totalStamps, &totalRedeemed, &storeName, &storeSlug, &logoUrl, &primaryColor); err != nil {
+		if err := rows.Scan(&id, &totalStamps, &totalRedeemed, &storeName, &storeSlug, &logoUrl, &primaryColor, &scopeName, &scopeIcon, &scopeIsActive); err != nil {
+			fmt.Println("⚠️ Erro a ler linha do cartão:", err)
 			continue
 		}
 
@@ -657,7 +735,46 @@ func (r *CardRepository) GetMyWalletCards(email string) ([]map[string]interface{
 			"store_slug":             storeSlug,
 			"logo_url":               logoUrl.String,
 			"primary_color":          primaryColor.String,
+			"scope_name":             scopeName.String,
+			"scope_icon":             scopeIcon.String,
+			"scope_is_active":        scopeIsActive.Bool,
 		})
 	}
 	return myCards, nil
+}
+
+func (r *CardRepository) GetStoreScopes(storeID string) ([]models.StoreScope, error) {
+	query := `SELECT id, store_id, name, stamp_icon, is_main, is_active FROM store_scopes WHERE store_id = $1 ORDER BY is_main DESC, created_at ASC`
+	rows, err := r.db.Query(query, storeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var scopes []models.StoreScope
+	for rows.Next() {
+		var s models.StoreScope
+		if err := rows.Scan(&s.ID, &s.StoreID, &s.Name, &s.StampIcon, &s.IsMain, &s.IsActive); err == nil {
+			scopes = append(scopes, s)
+		}
+	}
+	return scopes, nil
+}
+
+func (r *CardRepository) CreateStoreScope(scope models.StoreScope) error {
+	query := `INSERT INTO store_scopes (id, store_id, name, stamp_icon, is_main, is_active) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := r.db.Exec(query, scope.ID, scope.StoreID, scope.Name, scope.StampIcon, scope.IsMain, scope.IsActive)
+	return err
+}
+
+func (r *CardRepository) ToggleScopeStatus(scopeID string, storeID string, isActive bool) error {
+	query := `UPDATE store_scopes SET is_active = $1 WHERE id = $2 AND store_id = $3 AND is_main = FALSE`
+	_, err := r.db.Exec(query, isActive, scopeID, storeID)
+	return err
+}
+
+func (r *CardRepository) UpdateStoreScope(id, storeID, name, icon string) error {
+	query := `UPDATE store_scopes SET name = $1, stamp_icon = $2 WHERE id = $3 AND store_id = $4`
+	_, err := r.db.Exec(query, name, icon, id, storeID)
+	return err
 }

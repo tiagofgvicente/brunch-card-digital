@@ -16,7 +16,7 @@ const (
 )
 
 // BrunchCard represents the customer's digital loyalty card
-type BrunchCard struct {
+type LoyaltyCard struct {
 	ID                   string    `json:"id"`
 	StoreID              string    `json:"store_id"`
 	MemberNumber         int       `json:"member_number"`
@@ -34,17 +34,24 @@ type BrunchCard struct {
 	MarketingAccepted    bool      `json:"marketing_accepted"`
 	ConsentDate          time.Time `json:"consent_date"`
 	UpdatedAt            time.Time `json:"updated_at"`
+
+	// --- NOVOS CAMPOS DE ÂMBITO (SCOPE) ---
+	ScopeID       string `json:"scope_id"`
+	ScopeName     string `json:"scope_name"`
+	ScopeIcon     string `json:"scope_icon"`
+	ScopeIsActive bool   `json:"scope_is_active"`
 }
 
 type CreateCardRequest struct {
-	CustomerID        string `json:"customer_id"`
-	LastName          string `json:"last_name"`
-	Email             string `json:"email"`
-	Phone             string `json:"phone"`
-	NIF               string `json:"nif"`
-	Design            string `json:"design"`
-	RgpdAccepted      bool   `json:"rgpd_accepted"`
-	MarketingAccepted bool   `json:"marketing_accepted"`
+    CustomerID        string `json:"customer_id"`
+    LastName          string `json:"last_name"`
+    Email             string `json:"email"`
+    Phone             string `json:"phone"`
+    NIF               string `json:"nif"`
+    Design            string `json:"design"`
+    RgpdAccepted      bool   `json:"rgpd_accepted"`
+    MarketingAccepted bool   `json:"marketing_accepted"`
+    ScopeID           string `json:"scope_id"` 
 }
 
 // Store define as configurações da loja
@@ -156,4 +163,13 @@ type RegisterGlobalUserRequest struct {
 	Phone     string `json:"phone"`
 	Password  string `json:"password"`
 	Rgpd      bool   `json:"rgpd"`
+}
+
+type StoreScope struct {
+	ID        string `json:"id"`
+	StoreID   string `json:"store_id"`
+	Name      string `json:"name"`
+	StampIcon string `json:"stamp_icon"`
+	IsMain    bool   `json:"is_main"`
+	IsActive  bool   `json:"is_active"`
 }
