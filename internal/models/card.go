@@ -43,15 +43,15 @@ type LoyaltyCard struct {
 }
 
 type CreateCardRequest struct {
-    CustomerID        string `json:"customer_id"`
-    LastName          string `json:"last_name"`
-    Email             string `json:"email"`
-    Phone             string `json:"phone"`
-    NIF               string `json:"nif"`
-    Design            string `json:"design"`
-    RgpdAccepted      bool   `json:"rgpd_accepted"`
-    MarketingAccepted bool   `json:"marketing_accepted"`
-    ScopeID           string `json:"scope_id"` 
+	CustomerID        string `json:"customer_id"`
+	LastName          string `json:"last_name"`
+	Email             string `json:"email"`
+	Phone             string `json:"phone"`
+	NIF               string `json:"nif"`
+	Design            string `json:"design"`
+	RgpdAccepted      bool   `json:"rgpd_accepted"`
+	MarketingAccepted bool   `json:"marketing_accepted"`
+	ScopeID           string `json:"scope_id"`
 }
 
 // Store define as configurações da loja
@@ -172,4 +172,17 @@ type StoreScope struct {
 	StampIcon string `json:"stamp_icon"`
 	IsMain    bool   `json:"is_main"`
 	IsActive  bool   `json:"is_active"`
+}
+
+type WalletNotification struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	StoreID   string    `json:"store_id"`
+	StoreName string    `json:"store_name"`
+	StoreLogo string    `json:"store_logo"`
+	Title     string    `json:"title"`
+	Message   string    `json:"message"`
+	Type      string    `json:"type"`
+	IsRead    bool      `json:"is_read"`
+	CreatedAt time.Time `json:"created_at"`
 }

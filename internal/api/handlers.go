@@ -684,3 +684,50 @@ func UpdateScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 	}
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
+
+func DeleteScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	store := getCurrentStore(r)
+
+	var req struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid Payload", 400)
+		return
+	}
+
+	err := repo.DeleteStoreScope(req.ID, store.ID)
+	if err != nil {
+		http.Error(w, "Erro ao apagar âmbito", 500)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+// --- NOTIFICAÇÕES (WALLET) ---
+
+func GetNotificationsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		http.Error(w, "Email required", 400)
+		return
+	}
+	notifs, err := repo.GetUserNotifications(email)
+	if err != nil {
+		http.Error(w, "Erro BD", 500)
+		return
+	}
+	if notifs == nil {
+		notifs = []models.WalletNotification{}
+	}
+	json.NewEncoder(w).Encode(notifs)
+}
+
+func MarkNotificationsReadHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	repo.MarkNotificationsAsRead(req.Email)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}

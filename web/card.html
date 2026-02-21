@@ -11,8 +11,10 @@
         body { background-color: var(--page-bg); background-image: var(--page-grad); background-attachment: fixed; color: var(--text-main); font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; transition: background-color 0.5s ease; box-sizing: border-box; overflow-x: hidden; }
         #app { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 400px; position: relative; }
         
+        /* A BOLINHA VERMELHA (NOTIFICAÇÃO) NO BOTÃO MENU */
         .menu-btn { position: fixed; top: 25px; left: 25px; background: rgba(128,128,128,0.2); border: 1px solid rgba(128,128,128,0.3); color: var(--text-main); font-size: 1.5rem; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; backdrop-filter: blur(5px); transition: 0.3s; }
         .menu-btn:hover { background: var(--primary); color: white; border-color: #ffd166; transform: scale(1.05); }
+        .notif-badge-fixed { position: absolute; top: -3px; right: -3px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 900; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid var(--page-bg); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.3);}
 
         .btn-back { position: fixed; top: 25px; left: 25px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; cursor: pointer; z-index: 100; backdrop-filter: blur(5px); transition: 0.3s; display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
         .btn-back:hover { background: var(--primary); transform: translateX(-5px); }
@@ -27,7 +29,6 @@
         .nav-item { padding: 15px 25px; color: rgba(255,255,255,0.7); cursor: pointer; display: flex; align-items: center; gap: 15px; font-weight: 600; transition: 0.2s; font-size: 1rem; }
         .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid var(--primary); }
 
-        /* ZONA DE NAVEGAÇÃO LATERAL INVISÍVEL (ESTILO STORIES) */
         .nav-zone { position: fixed; top: 0; bottom: 0; width: 20vw; max-width: 100px; z-index: 50; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-main); opacity: 0.15; transition: all 0.3s ease; }
         .nav-zone:hover { opacity: 1; background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%); }
         .nav-zone.right:hover { background: linear-gradient(-90deg, rgba(255,255,255,0.05) 0%, transparent 100%); }
@@ -37,7 +38,6 @@
         .nav-zone.left:hover svg { transform: translateX(-5px); }
         .nav-zone.right:hover svg { transform: translateX(5px); }
 
-        /* ANIMAÇÃO SUAVE DE TRANSIÇÃO DO CARTÃO */
         .card-fade-enter-active, .card-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
         .card-fade-enter-from { opacity: 0; transform: scale(0.95); }
         .card-fade-leave-to { opacity: 0; transform: scale(1.05); }
@@ -49,7 +49,6 @@
         .page-header img { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,0.2); box-shadow: 0 10px 20px rgba(0,0,0,0.2); background: white; margin-bottom: 12px; }
         .page-header h1 { margin: 0; font-size: 1.6rem; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
 
-        /* O CARTÃO FÍSICO */
         .card-wrapper { width: 100%; max-width: 350px; height: 215px; perspective: 1000px; filter: drop-shadow(0 0 15px var(--tier-glow)); transition: filter 0.5s ease; z-index: 2; margin: 0 auto; position: relative;}
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer; }
         .card-inner.is-flipped { transform: rotateY(180deg); }
@@ -109,6 +108,17 @@
         .portal-box label { display: block; font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px; text-transform: uppercase; font-weight: bold; text-align: left; }
         .custom-input { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: inherit; font-size: 0.95rem; transition: 0.2s; box-sizing: border-box; margin-bottom: 15px; font-family: 'Segoe UI', sans-serif;}
         .custom-input:focus { border-color: var(--primary); outline: none; background: rgba(0,0,0,0.4); }
+
+        /* --- CSS DAS NOTIFICAÇÕES --- */
+        .notif-list { display: flex; flex-direction: column; gap: 15px; width: 100%; text-align: left;}
+        .notif-card { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px 20px; display: flex; flex-direction: column; gap: 8px; backdrop-filter: blur(10px); position: relative; overflow: hidden;}
+        .notif-card.unread { border-left: 4px solid var(--primary); background: rgba(255,255,255,0.05); }
+        .notif-header { display: flex; justify-content: space-between; align-items: center; }
+        .notif-store { font-size: 0.7rem; color: rgba(255,255,255,0.6); text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 6px;}
+        .notif-store img { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
+        .notif-date { font-size: 0.65rem; opacity: 0.5; }
+        .notif-title { font-size: 1rem; font-weight: 800; margin: 0; color: white; display: flex; align-items: center; gap: 8px;}
+        .notif-body { font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.4; margin: 0; }
     </style>
 </head>
 <body>
@@ -117,7 +127,11 @@
         <div class="toast-container"><div v-for="(t, i) in toasts" :key="i" class="toast">{{ t.message }}</div></div>
 
         <template v-if="!hasStore">
-            <button v-if="currentView !== 'wallet_active_card'" class="menu-btn" @click="toggleMenu" :style="{ '--primary': storeConfig.primary_color }">☰</button>
+            <button v-if="currentView !== 'wallet_active_card'" class="menu-btn" @click="toggleMenu" :style="{ '--primary': storeConfig.primary_color }">
+                ☰
+                <span v-if="unreadCount > 0" class="notif-badge-fixed">{{ unreadCount }}</span>
+            </button>
+
             <button v-if="currentView === 'wallet_active_card'" class="btn-back" @click="backToWallet">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                 Voltar
@@ -128,6 +142,12 @@
                 <div class="sidebar-header"><span style="font-size: 2rem;">💳</span><h2>A Minha Carteira</h2></div>
                 <nav>
                     <div class="nav-item" :class="{ 'active': currentView === 'my_cards' }" @click="changeView('my_cards')">💳 Os Meus Cartões</div>
+                    
+                    <div class="nav-item" :class="{ 'active': currentView === 'notifications' }" @click="changeView('notifications')" style="display: flex; justify-content: space-between;">
+                        <span>🔔 Mensagens</span>
+                        <span v-if="unreadCount > 0" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 900;">{{ unreadCount }}</span>
+                    </div>
+
                     <div class="nav-item" :class="{ 'active': currentView === 'global_qr' }" @click="changeView('global_qr')">📱 Código de Registo</div>
                     <div class="nav-item" :class="{ 'active': currentView === 'profile' }" @click="changeView('profile')">👤 Informações Pessoais</div>
                     <div class="nav-item" @click="logout" style="color: #ff4d6d; margin-top: 20px;">🚪 Sair da Conta</div>
@@ -168,8 +188,8 @@
                             </h3>
                             
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                                <span style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 12px; letter-spacing: 0.5px; color: var(--text-main);">
-                                    {{ c.scope_icon || '💳' }} {{ c.scope_name || 'Geral' }}
+                                <span v-if="c.scope_name && c.scope_name !== 'Geral'" style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 12px; letter-spacing: 0.5px; color: var(--text-main);">
+                                    {{ c.scope_icon || '💳' }} {{ c.scope_name }}
                                 </span>
                                 <span style="font-size: 0.8rem; opacity: 0.8;">{{ c.total_stamps }} Selos</span>
                             </div>
@@ -178,6 +198,32 @@
                 </div>
             </div>
         </div>
+
+        <div v-if="currentView === 'notifications' && !hasStore" style="width: 100%; max-width: 350px;">
+            <h2 style="text-align: center; margin-bottom: 30px;">Mensagens da Loja</h2>
+            <div v-if="notifications.length === 0" style="text-align: center; opacity: 0.5; margin-top: 40px;">
+                <span style="font-size: 3rem;">📭</span>
+                <p>Não tem novas mensagens.</p>
+            </div>
+            
+            <div class="notif-list" v-else>
+                <div v-for="n in notifications" :key="n.id" class="notif-card" :class="{'unread': !n.is_read}">
+                    <div class="notif-header">
+                        <div class="notif-store">
+                            <img v-if="n.store_logo && n.store_logo.length > 10" :src="n.store_logo">
+                            <span v-else style="font-size: 1rem;">🏪</span>
+                            {{ n.store_name }}
+                        </div>
+                        <span class="notif-date">{{ formatDate(n.created_at) }}</span>
+                    </div>
+                    <h4 class="notif-title" :style="{ color: n.type === 'error' ? '#ef4444' : (n.type === 'success' ? '#10b981' : (n.type === 'warning' ? '#f59e0b' : 'white')) }">
+                        {{ n.title }}
+                    </h4>
+                    <p class="notif-body">{{ n.message }}</p>
+                </div>
+            </div>
+        </div>
+
 
         <transition name="card-fade">
             <div v-if="(currentView === 'card' || currentView === 'wallet_active_card') && card.id && !isChangingCard" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
@@ -207,7 +253,6 @@
                                     <img v-if="storeConfig.logo_url && storeConfig.logo_url.length > 10" :src="storeConfig.logo_url" class="store-logo-mini">
                                     <span style="font-weight: 800; letter-spacing: 1.5px; font-size: 0.85rem;">{{ storeConfig.name.toUpperCase() }} VIP</span>
                                 </div>
-                                
                                 <div class="scope-badge" :style="{ color: themeStyles.color, borderColor: themeStyles.stampBorder }">
                                     {{ card.scope_name || 'Geral' }}
                                 </div>

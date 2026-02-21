@@ -253,6 +253,9 @@ func main() {
 		api.WalletMyCardsHandler(w, r, repo)
 	})
 
+	mux.HandleFunc("/api/v1/public/wallet-notifications", makeHandler(api.GetNotificationsHandler, repo))
+	mux.HandleFunc("/api/v1/public/wallet-notifications/read", makeHandler(api.MarkNotificationsReadHandler, repo))
+
 	// Card Operations
 	mux.HandleFunc("/api/v1/cards", tenantMiddleware(makeHandler(api.CreateCardHandler, repo)))
 	mux.HandleFunc("/api/v1/cards/status", tenantMiddleware(makeHandler(api.GetStatusHandler, repo)))
@@ -287,6 +290,7 @@ func main() {
 	mux.HandleFunc("/api/v1/admin/scopes/create", tenantMiddleware(makeHandler(api.CreateScopeHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/scopes/toggle", tenantMiddleware(makeHandler(api.ToggleScopeHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/scopes/update", tenantMiddleware(makeHandler(api.UpdateScopeHandler, repo)))
+	mux.HandleFunc("/api/v1/admin/scopes/delete", tenantMiddleware(makeHandler(api.DeleteScopeHandler, repo)))
 
 	server := &http.Server{
 		Addr:         ":" + port,

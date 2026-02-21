@@ -98,6 +98,26 @@ const AdminApp = {
             if(res.ok) { showToast("Status atualizado!", "success"); fetchScopes(); }
         };
 
+        const deleteScope = async (scope) => {
+            if (scope.is_main) { showToast("Não pode apagar o cartão principal", "error"); return; }
+            
+            // Alerta de segurança
+            if (!confirm(`⚠️ ATENÇÃO!\nTem a certeza que quer APAGAR o cartão "${scope.name}"?\nTodos os clientes que têm este cartão vão perdê-lo permanentemente.`)) return;
+
+            const res = await fetch(api('/api/v1/admin/scopes/delete'), {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: scope.id })
+            });
+            
+            if (res.ok) {
+                showToast("Cartão apagado com sucesso!", "success");
+                fetchScopes(); // Atualiza a lista de âmbitos
+                fetchCards();  // Atualiza a tabela de clientes para remover os cartões apagados
+            } else {
+                showToast("Erro ao apagar cartão.", "error");
+            }
+        };
+
         const openIconPicker = (target) => {
             iconPickerTarget.value = target;
             showIconPicker.value = true;
@@ -418,7 +438,7 @@ const AdminApp = {
             toasts, showToast, lang, toggleLang, t,
             showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, removeBgImage, saveCustomDesign,
             theme, isDragging, startDrag, onDrag, stopDrag, handleMenuUpload, removeMenu,
-            activeTabScope,
+            activeTabScope, deleteScope,
             storeScopes, activeScannerScope, predefinedScopeNames,
             newScopeName, newScopeIcon, createScope, toggleScope, activeScopesList,
             editingScopeId, editScopeTempName, editScopeTempIcon, startEditScope, cancelEditScope, saveEditScope, openIconPicker

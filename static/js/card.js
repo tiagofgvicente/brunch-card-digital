@@ -11,6 +11,10 @@ createApp({
         const card = ref({ id: null, customer_id: '', last_name: '', email: '', phone: '', total_stamps: 0, stamps_count: 0 });
         const myWalletCards = ref([]); 
         
+        // --- NOVO: NOTIFICAÇÕES ---
+        const notifications = ref([]);
+        const unreadCount = computed(() => notifications.value.filter(n => !n.is_read).length);
+
         const isFlipped = ref(false);
         const cardId = urlParams.get('id');
         
@@ -24,14 +28,24 @@ createApp({
         const showRedeemModal = ref(false);
         const currentView = ref(hasStore.value ? 'card' : 'my_cards'); 
         
-        // NOVO: Evita solavancos ao trocar de cartão
         const isChangingCard = ref(false);
 
         const toggleMenu = () => { isMenuOpen.value = !isMenuOpen.value; };
+        
         const changeView = (view) => { 
             currentView.value = view; isMenuOpen.value = false; isEditingProfile.value = false; 
             if (view === 'my_cards' && card.value.email) fetchWalletCards(card.value.email);
+            
+            // NOVO: Se abrir as notificações, marca-as como lidas na Base de Dados
+            if (view === 'notifications' && card.value.email && unreadCount.value > 0) {
+                notifications.value.forEach(n => n.is_read = true); // Atualiza visualmente na hora
+                fetch('/api/v1/public/wallet-notifications/read', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: card.value.email })
+                });
+            }
         };
+        
         const logout = () => { window.location.href = "/"; };
 
         const isEditingProfile = ref(false);
@@ -119,12 +133,24 @@ createApp({
             } catch(e) {}
         };
 
+        // --- NOVO: BUSCAR NOTIFICAÇÕES DA BD ---
+        const fetchNotifications = async (email) => {
+            if(!email) return;
+            try {
+                const res = await fetch(`/api/v1/public/wallet-notifications?email=${encodeURIComponent(email)}`);
+                if(res.ok) notifications.value = await res.json();
+            } catch(e) {}
+        };
+
         const fetchCard = async () => { 
             const endpoint = hasStore.value ? `/api/v1/cards/status?id=${cardId}&store=${currentStore}` : `/api/v1/public/wallet-profile?id=${cardId}`;
             const res = await fetch(endpoint); 
             if (res.ok) {
                 card.value = await res.json(); 
-                if(!hasStore.value && card.value.email) fetchWalletCards(card.value.email);
+                if(!hasStore.value && card.value.email) {
+                    fetchWalletCards(card.value.email);
+                    fetchNotifications(card.value.email); // Despoleta a busca das mensagens
+                }
             }
         };
 
@@ -134,7 +160,6 @@ createApp({
         const activeWalletStoreSlug = ref(null);
         const activeWalletCardId = ref(null);
         
-        // --- NAVEGAÇÃO ENTRE CARTÕES ---
         const currentIndex = computed(() => {
             if (!activeWalletCardId.value || myWalletCards.value.length === 0) return -1;
             return myWalletCards.value.findIndex(c => c.id === activeWalletCardId.value);
@@ -156,16 +181,11 @@ createApp({
             openWalletCard(prevCard.store_slug, prevCard.id);
         };
 
-        // LÓGICA DE ABERTURA SUAVE
         const openWalletCard = async (storeSlug, cId) => { 
-            if (isChangingCard.value) return; // Bloqueia spam de cliques
-            
+            if (isChangingCard.value) return; 
             const isFromList = currentView.value === 'my_cards';
-            
-            // Se já estamos num cartão, dispara a animação de esconder
             if (!isFromList) isChangingCard.value = true;
             
-            // Pede os dados em background
             const [configRes, cardRes] = await Promise.all([
                 fetch(`/api/v1/system/config?store=${storeSlug}`),
                 fetch(`/api/v1/cards/status?id=${cId}&store=${storeSlug}`)
@@ -174,24 +194,16 @@ createApp({
             const newConfig = configRes.ok ? await configRes.json() : null;
             const newCard = cardRes.ok ? await cardRes.json() : null;
 
-            // Função que finaliza e mostra o cartão novo
             const finalizeSwap = () => {
                 isFlipped.value = false; 
                 activeWalletCardId.value = cId;
                 activeWalletStoreSlug.value = storeSlug;
                 
-                if (newConfig) {
-                    storeConfig.value = { ...storeConfig.value, ...newConfig };
-                    applyTheme(); 
-                }
-                if (newCard) {
-                    card.value = newCard;
-                    currentView.value = 'wallet_active_card';
-                }
-                isChangingCard.value = false; // Traz o cartão novo para a frente!
+                if (newConfig) { storeConfig.value = { ...storeConfig.value, ...newConfig }; applyTheme(); }
+                if (newCard) { card.value = newCard; currentView.value = 'wallet_active_card'; }
+                isChangingCard.value = false; 
             };
 
-            // Se vier da lista, mostra logo. Se vier de outro cartão, aguarda o Fade Out (250ms)
             if (isFromList) finalizeSwap();
             else setTimeout(finalizeSwap, 250);
         };
@@ -199,7 +211,6 @@ createApp({
         const backToWallet = async () => {
             if (isChangingCard.value) return;
             isChangingCard.value = true;
-            
             activeWalletCardId.value = null;
             activeWalletStoreSlug.value = null;
             await fetchCard();
@@ -213,7 +224,6 @@ createApp({
             }, 250);
         };
 
-        // --- GESTÃO DO TECLADO (Keydown Listener) ---
         const handleKeydown = (e) => {
             if (currentView.value === 'wallet_active_card' && myWalletCards.value.length > 1 && !isMenuOpen.value && !showRedeemModal.value && !isChangingCard.value) {
                 if (e.key === 'ArrowRight') nextWalletCard();
@@ -223,7 +233,6 @@ createApp({
         };
 
         const themeStyles = computed(() => {
-            // 👇 Tirámos a restrição do hasStore para funcionar na Wallet Global!
             if (card.value.scope_is_active === false) {
                 return { bg: '#333333', bgImage: 'none', bgSize: 'cover', bgPos: 'center', color: 'rgba(255,255,255,0.5)', stampBorder: 'rgba(255,255,255,0.2)' };
             }
@@ -261,30 +270,28 @@ createApp({
             return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`;
         });
 
+        // UTILITÁRIO: Formatar a Data para as Notificações
+        const formatDate = (dateStr) => {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        };
+
         onMounted(async () => { 
-            window.addEventListener('keydown', handleKeydown); // Ativa o teclado
-
+            window.addEventListener('keydown', handleKeydown); 
             if (window.location.hash === '#global_qr') currentView.value = 'global_qr';
-
             await fetchCard(); 
-            
-            if (hasStore.value) {
-                await fetchSettings();
-                fetchSkinDetails(); 
-            } else {
-                applyTheme('#2563eb'); 
-            }
+            if (hasStore.value) { await fetchSettings(); fetchSkinDetails(); } 
+            else { applyTheme('#2563eb'); }
         });
 
-        onUnmounted(() => {
-            window.removeEventListener('keydown', handleKeydown);
-        });
+        onUnmounted(() => { window.removeEventListener('keydown', handleKeydown); });
         
         return { 
             card, isFlipped, calcRewards, availableRewards, themeStyles, storeConfig, customerTier, tierGlowStyle, qrCodeUrl, redeemQrUrl,
             isMenuOpen, currentView, toggleMenu, changeView, logout, globalQrUrl,
             isEditingProfile, profileForm, startEditProfile, saveProfile, toasts, hasStore, myWalletCards, openWalletCard, backToWallet,
-            showRedeemModal, nextWalletCard, prevWalletCard, isChangingCard // isChangingCard agora exportado!
+            showRedeemModal, nextWalletCard, prevWalletCard, isChangingCard,
+            notifications, unreadCount, formatDate // Exportado para o HTML
         };
     }
 }).mount('#app');

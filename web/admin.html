@@ -430,10 +430,16 @@
                                         <span :style="!scope.is_active ? 'text-decoration: line-through; opacity: 0.5;' : ''">{{ scope.name }}</span>
                                         <span v-if="scope.is_main" style="font-size: 0.6rem; background: var(--primary); color: white; padding: 3px 6px; border-radius: 4px; text-transform: uppercase;">Principal</span>
                                     </div>
+                                    
                                     <div style="display: flex; gap: 8px;">
                                         <button @click="startEditScope(scope)" class="btn-action btn-edit" style="width: auto; padding: 6px 12px; font-size: 0.75rem;">Editar</button>
+                                        
                                         <button v-if="!scope.is_main" @click="toggleScope(scope)" class="btn-action" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" :class="scope.is_active ? 'btn-edit' : 'btn-view'">
                                             {{ scope.is_active ? 'Desativar' : 'Reativar' }}
+                                        </button>
+                                        
+                                        <button v-if="!scope.is_main" @click="deleteScope(scope)" class="btn-action" style="width: auto; padding: 6px 12px; font-size: 0.75rem; background: var(--red); border: none;">
+                                            Apagar
                                         </button>
                                     </div>
                                 </div>

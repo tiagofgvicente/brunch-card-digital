@@ -124,6 +124,19 @@ ALTER TABLE loyalty_cards ADD COLUMN scope_id VARCHAR(36) REFERENCES store_scope
 ALTER TABLE loyalty_cards DROP CONSTRAINT IF EXISTS loyalty_cards_store_id_email_key;
 ALTER TABLE loyalty_cards ADD CONSTRAINT loyalty_cards_store_scope_email_key UNIQUE(store_id, scope_id, email);
 
+CREATE TABLE wallet_notifications (
+    id VARCHAR(36) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    store_id VARCHAR(36) REFERENCES stores(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) DEFAULT 'info', -- Pode ser: 'info', 'warning', 'error', 'success'
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
 -- ==========================================
 -- 6. SEED DATA (DADOS DE TESTE)
 -- ==========================================

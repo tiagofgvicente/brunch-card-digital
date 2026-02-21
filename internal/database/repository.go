@@ -769,12 +769,43 @@ func (r *CardRepository) GetStoreScopes(storeID string) ([]models.StoreScope, er
 func (r *CardRepository) CreateStoreScope(scope models.StoreScope) error {
 	query := `INSERT INTO store_scopes (id, store_id, name, stamp_icon, is_main, is_active) VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err := r.db.Exec(query, scope.ID, scope.StoreID, scope.Name, scope.StampIcon, scope.IsMain, scope.IsActive)
+
+	// UPSELL AUTOMÁTICO: Se não for o cartão principal, avisa todos os clientes desta loja!
+	if err == nil && !scope.IsMain {
+		rows, _ := r.db.Query(`SELECT DISTINCT email FROM loyalty_cards WHERE store_id = $1 AND email IS NOT NULL AND email != ''`, scope.StoreID)
+		var emails []string
+		for rows.Next() {
+			var e string
+			rows.Scan(&e)
+			emails = append(emails, e)
+		}
+		rows.Close()
+
+		title := "✨ Novo Cartão Disponível!"
+		msg := fmt.Sprintf("Acabámos de lançar o cartão '%s %s'. Peça para aderir na sua próxima visita e ganhe prémios!", scope.StampIcon, scope.Name)
+		r.SendNotificationToEmails(emails, scope.StoreID, title, msg, "success")
+	}
 	return err
 }
 
 func (r *CardRepository) ToggleScopeStatus(scopeID string, storeID string, isActive bool) error {
-	query := `UPDATE store_scopes SET is_active = $1 WHERE id = $2 AND store_id = $3 AND is_main = FALSE`
-	_, err := r.db.Exec(query, isActive, scopeID, storeID)
+	// Faz o update e devolve o nome do âmbito para usarmos na mensagem
+	query := `UPDATE store_scopes SET is_active = $1 WHERE id = $2 AND store_id = $3 AND is_main = FALSE RETURNING name`
+	var scopeName string
+	err := r.db.QueryRow(query, isActive, scopeID, storeID).Scan(&scopeName)
+	
+	if err == nil {
+		rows, _ := r.db.Query(`SELECT DISTINCT email FROM loyalty_cards WHERE scope_id = $1 AND email IS NOT NULL AND email != ''`, scopeID)
+		var emails []string
+		for rows.Next() { var e string; rows.Scan(&e); emails = append(emails, e) }
+		rows.Close()
+		
+		if !isActive {
+			r.SendNotificationToEmails(emails, storeID, "⏸️ Cartão Pausado", fmt.Sprintf("O programa '%s' foi temporariamente pausado. Os seus selos estão salvaguardados.", scopeName), "warning")
+		} else {
+			r.SendNotificationToEmails(emails, storeID, "▶️ Cartão Reativado", fmt.Sprintf("O programa '%s' voltou a estar ativo. Já pode voltar a ganhar selos!", scopeName), "info")
+		}
+	}
 	return err
 }
 
@@ -782,4 +813,66 @@ func (r *CardRepository) UpdateStoreScope(id, storeID, name, icon string) error 
 	query := `UPDATE store_scopes SET name = $1, stamp_icon = $2 WHERE id = $3 AND store_id = $4`
 	_, err := r.db.Exec(query, name, icon, id, storeID)
 	return err
+}
+
+func (r *CardRepository) DeleteStoreScope(scopeID string, storeID string) error {
+	// COMO VAMOS APAGAR, TEMOS DE IR BUSCAR OS EMAILS *ANTES* DO CASCADE DESTRUIR OS CARTÕES!
+	var scopeName string
+	r.db.QueryRow(`SELECT name FROM store_scopes WHERE id = $1`, scopeID).Scan(&scopeName)
+	
+	rows, _ := r.db.Query(`SELECT DISTINCT email FROM loyalty_cards WHERE scope_id = $1 AND email IS NOT NULL AND email != ''`, scopeID)
+	var emails []string
+	for rows.Next() { var e string; rows.Scan(&e); emails = append(emails, e) }
+	rows.Close()
+
+	query := `DELETE FROM store_scopes WHERE id = $1 AND store_id = $2 AND is_main = FALSE`
+	res, err := r.db.Exec(query, scopeID, storeID)
+	
+	if err == nil {
+		rowsAff, _ := res.RowsAffected()
+		if rowsAff > 0 && scopeName != "" {
+			r.SendNotificationToEmails(emails, storeID, "🔴 Programa Encerrado", fmt.Sprintf("O cartão '%s' foi descontinuado. Este cartão já não aparecerá na sua carteira.", scopeName), "error")
+		}
+	}
+	return err
+}
+
+// --- NOTIFICAÇÕES DA WALLET ---
+
+func (r *CardRepository) GetUserNotifications(email string) ([]models.WalletNotification, error) {
+	query := `
+		SELECT n.id, n.email, n.store_id, s.name, COALESCE(s.logo_url, ''), n.title, n.message, n.type, n.is_read, n.created_at
+		FROM wallet_notifications n
+		JOIN stores s ON n.store_id = s.id
+		WHERE n.email = $1
+		ORDER BY n.created_at DESC LIMIT 50
+	`
+	rows, err := r.db.Query(query, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifs []models.WalletNotification
+	for rows.Next() {
+		var n models.WalletNotification
+		rows.Scan(&n.ID, &n.Email, &n.StoreID, &n.StoreName, &n.StoreLogo, &n.Title, &n.Message, &n.Type, &n.IsRead, &n.CreatedAt)
+		notifs = append(notifs, n)
+	}
+	return notifs, nil
+}
+
+func (r *CardRepository) MarkNotificationsAsRead(email string) error {
+	_, err := r.db.Exec(`UPDATE wallet_notifications SET is_read = TRUE WHERE email = $1`, email)
+	return err
+}
+
+func (r *CardRepository) SendNotificationToEmails(emails []string, storeID, title, message, nType string) {
+	for _, email := range emails {
+		if email == "" {
+			continue
+		}
+		id := uuid.New().String()
+		r.db.Exec(`INSERT INTO wallet_notifications (id, email, store_id, title, message, type) VALUES ($1, $2, $3, $4, $5, $6)`, id, email, storeID, title, message, nType)
+	}
 }
