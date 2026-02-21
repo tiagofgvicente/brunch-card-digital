@@ -612,10 +612,10 @@ func WalletMyCardsHandler(w http.ResponseWriter, r *http.Request, repo *database
 // --- GESTÃO DE ÂMBITOS (ADMIN) ---
 
 func GetScopesHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	storeSlug := r.URL.Query().Get("store")
-	store, err := repo.GetStoreBySlug(storeSlug)
-	if err != nil {
-		http.Error(w, "Store not found", 404)
+	// AGORA É 100% SEGURO
+	store := getCurrentStore(r)
+	if store == nil {
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
@@ -628,8 +628,7 @@ func GetScopesHandler(w http.ResponseWriter, r *http.Request, repo *database.Car
 }
 
 func CreateScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	storeSlug := r.URL.Query().Get("store")
-	store, _ := repo.GetStoreBySlug(storeSlug)
+	store := getCurrentStore(r)
 
 	var req models.StoreScope
 	json.NewDecoder(r.Body).Decode(&req)
@@ -648,15 +647,18 @@ func CreateScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 }
 
 func ToggleScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	storeSlug := r.URL.Query().Get("store")
-	store, _ := repo.GetStoreBySlug(storeSlug)
+	store := getCurrentStore(r)
 
 	var req struct {
 		ID       string `json:"id"`
 		IsActive bool   `json:"is_active"`
 	}
-	json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid Payload", 400)
+		return
+	}
 
+	// Faz o Update usando o ID validado
 	err := repo.ToggleScopeStatus(req.ID, store.ID, req.IsActive)
 	if err != nil {
 		http.Error(w, "Erro ao atualizar", 500)
@@ -666,8 +668,7 @@ func ToggleScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 }
 
 func UpdateScopeHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
-	storeSlug := r.URL.Query().Get("store")
-	store, _ := repo.GetStoreBySlug(storeSlug)
+	store := getCurrentStore(r)
 
 	var req struct {
 		ID        string `json:"id"`

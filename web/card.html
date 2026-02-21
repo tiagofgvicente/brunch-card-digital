@@ -151,18 +151,21 @@
             </div>
             
             <div class="wallet-list" v-else>
-                <div v-for="c in myWalletCards" :key="c.id" class="wallet-card-item" :style="{ '--primary': c.primary_color || '#00a896' }" @click="openWalletCard(c.store_slug, c.id)">
+                <div v-for="c in myWalletCards" :key="c.id" class="wallet-card-item" :style="{ '--primary': c.scope_is_active === false ? '#555555' : (c.primary_color || '#00a896') }" @click="openWalletCard(c.store_slug, c.id)">
                     
                     <div class="reward-badge" v-if="calcRewards(c.total_stamps, c.total_redeemed_bonuses) > 0">
                         {{ calcRewards(c.total_stamps, c.total_redeemed_bonuses) }} 🎁
                     </div>
 
-                    <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="display: flex; align-items: center; gap: 15px;" :style="{ opacity: c.scope_is_active === false ? '0.5' : '1' }">
                         <img v-if="c.logo_url && c.logo_url.length > 10" :src="c.logo_url" class="wallet-card-img">
                         <div v-else class="wallet-card-img" style="display:flex; align-items:center; justify-content:center; font-size:1.5rem; background: var(--primary);">🏪</div>
                         
                         <div>
-                            <h3 style="margin: 0; font-size: 1.1rem; color: white;">{{ c.store_name }}</h3>
+                            <h3 style="margin: 0; font-size: 1.1rem; color: white; display: flex; align-items: center; gap: 8px;">
+                                {{ c.store_name }}
+                                <span v-if="c.scope_is_active === false" style="font-size: 0.55rem; background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Desativado</span>
+                            </h3>
                             
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
                                 <span style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 12px; letter-spacing: 0.5px; color: var(--text-main);">
@@ -191,7 +194,7 @@
 
                 <div class="card-wrapper" :style="tierGlowStyle">
                     
-                    <div v-if="hasStore && card.scope_is_active === false" style="position: absolute; top: -15px; left: 0; width: 100%; text-align: center; z-index: 50;">
+                    <div v-if="card.scope_is_active === false" style="position: absolute; top: -15px; left: 0; width: 100%; text-align: center; z-index: 50;">
                         <span style="background: #ef4444; color: white; padding: 5px 15px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); letter-spacing: 1px;">
                             ⚠️ Programa Encerrado
                         </span>

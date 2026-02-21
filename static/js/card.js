@@ -223,8 +223,8 @@ createApp({
         };
 
         const themeStyles = computed(() => {
-            // 👇 ÚNICA ADIÇÃO: SE O ÂMBITO FOI DESATIVADO, FORÇA O CARTÃO A FICAR CINZENTO MORTO
-            if (hasStore.value && card.value.scope_is_active === false) {
+            // 👇 Tirámos a restrição do hasStore para funcionar na Wallet Global!
+            if (card.value.scope_is_active === false) {
                 return { bg: '#333333', bgImage: 'none', bgSize: 'cover', bgPos: 'center', color: 'rgba(255,255,255,0.5)', stampBorder: 'rgba(255,255,255,0.2)' };
             }
 

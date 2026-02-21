@@ -45,7 +45,7 @@ const AdminApp = {
         
         const fetchScopes = async () => {
             try {
-                const res = await fetch(api('/api/v1/admin/scopes'));
+                const res = await fetch(api('/api/v1/admin/scopes'), { headers: { 'Cache-Control': 'no-cache' } });
                 if (res.ok) {
                     storeScopes.value = await res.json();
                     const activeScopes = storeScopes.value.filter(s => s.is_active);

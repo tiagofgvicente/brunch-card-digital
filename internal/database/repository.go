@@ -727,6 +727,11 @@ func (r *CardRepository) GetMyWalletCards(email string) ([]map[string]interface{
 			continue
 		}
 
+		scopeActive := true
+		if scopeIsActive.Valid {
+			scopeActive = scopeIsActive.Bool
+		}
+
 		myCards = append(myCards, map[string]interface{}{
 			"id":                     id,
 			"total_stamps":           totalStamps,
@@ -737,7 +742,7 @@ func (r *CardRepository) GetMyWalletCards(email string) ([]map[string]interface{
 			"primary_color":          primaryColor.String,
 			"scope_name":             scopeName.String,
 			"scope_icon":             scopeIcon.String,
-			"scope_is_active":        scopeIsActive.Bool,
+			"scope_is_active":        scopeActive,
 		})
 	}
 	return myCards, nil
