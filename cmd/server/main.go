@@ -206,6 +206,14 @@ func main() {
 		}
 	}, repo)))
 
+	mux.HandleFunc("/api/v1/master/notifications/send", masterAuth(makeHandler(func(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+		if r.Method == http.MethodPost {
+			api.MasterSendNotificationHandler(w, r, repo)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}, repo)))
+
 	// 2. PUBLIC / TENANT ROUTES
 	mux.HandleFunc("/", tenantMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -293,6 +301,8 @@ func main() {
 	mux.HandleFunc("/api/v1/admin/verify-password", tenantMiddleware(makeHandler(api.VerifyPasswordHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/cards", tenantMiddleware(storeAuth(makeHandler(api.ListAllCardsHandler, repo))))
 	mux.HandleFunc("/api/v1/admin/reset", tenantMiddleware(storeAuth(makeHandler(api.AdminResetHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/notifications", tenantMiddleware(storeAuth(makeHandler(api.GetAdminNotificationsHandler, repo))))
+	mux.HandleFunc("/api/v1/admin/notifications/read", tenantMiddleware(storeAuth(makeHandler(api.MarkAdminNotificationsReadHandler, repo))))
 	mux.HandleFunc("/api/v1/admin/update", tenantMiddleware(storeAuth(makeHandler(api.UpdateCardHandler, repo))))
 	mux.HandleFunc("/api/v1/admin/update-skin", tenantMiddleware(storeAuth(makeHandler(api.UpdateSkinHandler, repo))))
 	mux.HandleFunc("/api/v1/admin/settings", tenantMiddleware(storeAuth(makeHandler(api.UpdateSettingsHandler, repo))))

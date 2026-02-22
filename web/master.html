@@ -93,12 +93,16 @@
             <div class="nav-section">Tenant Management</div>
             <div class="nav-item" :class="{active: view === 'stores'}" @click="view = 'stores'">🏢 Stores & Maintenance</div>
             <div class="nav-item" :class="{active: view === 'create'}" @click="view = 'create'">🚀 Create New Store</div>
+            
+            <div class="nav-item" :class="{active: view === 'announcements'}" @click="view = 'announcements'">📣 Announcements</div>
+
             <div class="nav-section">Platform Assets</div>
             <div class="nav-item" :class="{active: view === 'skins'}" @click="view = 'skins'">🎨 Card Skins</div>
         </aside>
 
         <main class="main-content">
             <master-stores-maintenance v-if="view === 'stores'" @show-toast="showToast"></master-stores-maintenance>
+            <master-announcements v-if="view === 'announcements'" @show-toast="showToast"></master-announcements>
             <master-card-skins v-if="view === 'skins'" @show-toast="showToast"></master-card-skins>
             
             <div v-if="view === 'create'">
@@ -112,6 +116,7 @@
 
     <script src="/static/js/menus/master_card_skins.js?v=2.2"></script>
     <script src="/static/js/menus/master_stores_maintenance.js?v=2.2"></script>
+    <script src="/static/js/menus/master_announcements.js"></script>
 
     <script>
         const { createApp, ref, computed, onMounted } = Vue;
@@ -131,7 +136,7 @@
         // Safely register components
         if (typeof MasterCardSkins !== 'undefined') app.component('master-card-skins', MasterCardSkins);
         if (typeof MasterStoresMaintenance !== 'undefined') app.component('master-stores-maintenance', MasterStoresMaintenance);
-
+        if (typeof MasterAnnouncements !== 'undefined') app.component('master-announcements', MasterAnnouncements);
         app.mount('#app');
     </script>
 </body>

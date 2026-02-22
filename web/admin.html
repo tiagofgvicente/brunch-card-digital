@@ -35,8 +35,15 @@
         .brand-row h2 { color: var(--text-main); font-size: 1.1rem; margin: 0; font-weight: 800; }
         .toggle-row { display: flex; align-items: center; gap: 12px; }
 
+        /* --- BOTÕES DO TOPO --- */
         .theme-btn, .lang-btn { background-color: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden; }
         .theme-btn { width: 42px; height: 42px; border-radius: 50%; font-size: 1.4rem; }
+        
+        /* BOTÃO DE NOTIFICAÇÃO (Sem overflow hidden para a bolinha não cortar) */
+        .notif-btn { background-color: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; width: 42px; height: 42px; border-radius: 50%; font-size: 1.4rem; }
+        .notif-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .notif-badge { position: absolute; top: -3px; right: -3px; background: #ef4444; color: white; width: 18px; height: 18px; font-size: 0.65rem; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-side); z-index: 10; }
+
         .lang-btn { width: 42px; height: 42px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; background-repeat: no-repeat; background-position: left center; background-size: 0% 100%; }
         .lang-pt { background-image: url('https://flagcdn.com/w160/pt.png'); }
         .lang-en { background-image: url('https://flagcdn.com/w160/gb.png'); }
@@ -190,7 +197,13 @@
                     <span v-else style="font-size: 1.5rem;">⚡</span>
                     <h2>{{ storeConfig.name }}</h2>
                 </div>
+                
                 <div class="toggle-row">
+                    <button class="notif-btn" @click="changePage('messages')" title="Caixa de Mensagens">
+                        <span>✉️</span>
+                        <span v-if="unreadAdminCount > 0" class="notif-badge">{{ unreadAdminCount }}</span>
+                    </button>
+
                     <button class="theme-btn" @click="toggleTheme" :title="theme === 'dark' ? 'Light Mode' : 'Dark Mode'">
                         <span v-if="theme === 'dark'" class="icon-moon">🌙</span>
                         <span v-else class="icon-sun">☀️</span>
@@ -205,6 +218,10 @@
                 <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 {{ t('nav_customers') }}</div>
                 <div class="nav-item" :class="{active: currentPage === 'register'}" @click="changePage('register')">➕ {{ t('nav_register') }}</div>
                 <div class="nav-item" :class="{active: currentPage === 'scanner'}" @click="changePage('scanner')">📷 {{ t('nav_scanner') }}</div>
+                <div class="nav-item" :class="{active: currentPage === 'messages'}" @click="changePage('messages')">
+                    📬 Mensagens 
+                    <span v-if="unreadAdminCount > 0" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.6rem; font-weight: bold; margin-left: auto;">{{ unreadAdminCount }}</span>
+                </div>
                 <div class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 {{ t('nav_skins') }}</div>
                 <div class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ {{ t('nav_settings') }}</div>
                 <div class="nav-item" @click="logout" style="margin-top:auto; color:var(--red);">🚪 {{ t('nav_logout') }}</div>
@@ -212,6 +229,18 @@
         </aside>
 
         <main class="main-content">
+            
+            <div v-if="storeConfig.tier === 'free_trial' && trialDaysLeft > 0" style="background: linear-gradient(90deg, #f59e0b, #fbbf24); color: #fffbeb; padding: 12px 20px; border-radius: 12px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">⏱️</span>
+                    <div>
+                        <strong style="color: black; font-size: 0.95rem;">Período de Teste Gratuito</strong>
+                        <div style="font-size: 0.8rem; color: rgba(0,0,0,0.7); font-weight: 600;">Faltam {{ trialDaysLeft }} dias para o seu teste expirar.</div>
+                    </div>
+                </div>
+                <button @click="changePage('settings')" style="background: black; color: #ffd166; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem;">Fazer Upgrade</button>
+            </div>
+
             <div v-if="currentPage === 'customers'">
                 <div class="header-row" style="margin-bottom: 20px;">
                     <div class="page-header"><h1 style="margin:0;">{{ t('title_customers') }}</h1></div>
@@ -285,6 +314,33 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div v-else-if="currentPage === 'messages'" class="messages-container" style="max-width: 800px; margin: 0 auto;">
+                <div class="header-row" style="margin-bottom: 30px;">
+                    <div class="page-header">
+                        <h1 style="margin:0; display: flex; align-items: center; gap: 10px;"><span>📬</span> Centro de Mensagens</h1>
+                        <p style="color: var(--text-sub); margin-top: 5px;">Comunicações e avisos do sistema Volto.</p>
+                    </div>
+                </div>
+
+                <div v-if="adminNotifications.length === 0" style="text-align: center; padding: 100px 0; color: var(--text-sub); background: var(--bg-side); border-radius: 16px; border: 1px solid var(--border-color);">
+                    <span style="font-size: 4rem; display: block; margin-bottom: 15px; opacity: 0.5;">📭</span>
+                    <h3 style="margin:0;">A sua caixa de entrada está vazia.</h3>
+                </div>
+
+                <div v-else style="display: flex; flex-direction: column; gap: 15px;">
+                    <div v-for="n in adminNotifications" :key="n.id" style="background: var(--bg-side); padding: 20px 25px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center;">
+                            <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-sub);">{{ formatDate(n.created_at) }}</span>
+                            <span style="font-size: 0.65rem; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; font-weight: bold;" :style="{ background: n.type === 'warning' ? 'var(--warn-bg)' : (n.type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0,168,150,0.1)'), color: n.type === 'warning' ? 'var(--warn-text)' : (n.type === 'error' ? '#ef4444' : 'var(--primary)'), border: '1px solid ' + (n.type === 'warning' ? 'var(--warn-border)' : (n.type === 'error' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0,168,150,0.3)')) }">
+                                {{ n.type === 'warning' ? 'Aviso' : (n.type === 'error' ? 'Urgente' : 'Sistema') }}
+                            </span>
+                        </div>
+                        <h4 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 1.1rem;">{{ n.title }}</h4>
+                        <p style="margin: 0; color: var(--text-sub); font-size: 0.95rem; line-height: 1.5;">{{ n.message }}</p>
+                    </div>
+                </div>
             </div>
 
             <div v-else-if="currentPage === 'register'" class="reg-container">
@@ -727,6 +783,7 @@
                 <button class="btn-save-modal" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); margin-top:20px;" @click="showPreview = false">CLOSE</button>
             </div>
         </div>
+
         <div class="modal-overlay" v-if="isAccountExpired" style="background: rgba(0,0,0,0.9); z-index: 10000; display: flex; flex-direction: column; backdrop-filter: blur(10px);">
             <div style="background: var(--bg-card); padding: 50px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
                 <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>

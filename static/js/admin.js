@@ -17,8 +17,10 @@ const AdminApp = {
         const lang = ref('pt');
         
         const showIconPicker = ref(false);
-        const iconPickerTarget = ref(null); // 'new' ou 'edit'
+        const iconPickerTarget = ref(null); 
         const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢', '💳', '🎁', '🛒'];
+
+        const isAccountExpired = ref(false);
 
         const storeConfig = ref({ 
             name: 'Store', logo_url: '', themeMode: 'dark', 
@@ -26,17 +28,15 @@ const AdminApp = {
             card_image_url: '', card_image_zoom: 100, card_image_pos_x: 0, card_image_pos_y: 0,
             social_instagram: '', social_facebook: '', social_twitter: '', social_whatsapp: '', social_tiktok: '', social_youtube: '', social_website: '',
             menu_url: '', location_url: '', 
-            bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100, tier: 'pro'
+            bronzeThreshold: 15, silverThreshold: 40, goldThreshold: 100, tier: 'pro', tier_expiration: null
         });
 
         // --- GESTÃO DE ÂMBITOS (SCOPES) ---
         const storeScopes = ref([]); 
         const activeScannerScope = ref('');
-        
-        // A LISTA DEFINIDA POR TI
         const predefinedScopeNames = ['Geral', 'Pequeno-Almoço', 'Menu de Almoço', 'Sopa', 'Lanche', 'Jantar', 'Cafetaria', 'Bebidas'];
         
-        const newScopeName = ref(predefinedScopeNames[7]); // Bebidas default
+        const newScopeName = ref(predefinedScopeNames[7]); 
         const newScopeIcon = ref('🍹');
 
         const editingScopeId = ref(null);
@@ -62,72 +62,85 @@ const AdminApp = {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: newScopeName.value, stamp_icon: newScopeIcon.value })
             });
-            if(res.ok) {
-                showToast("Novo cartão criado!", "success");
-                newScopeName.value = predefinedScopeNames[7];
-                fetchScopes();
-            } else showToast("Erro (Âmbito já existe?)", "error");
-        };
-
-        const startEditScope = (scope) => {
-            editingScopeId.value = scope.id;
-            editScopeTempName.value = scope.name;
-            editScopeTempIcon.value = scope.stamp_icon;
-        };
-
-        const cancelEditScope = () => { editingScopeId.value = null; };
-
-        const saveEditScope = async () => {
-            const res = await fetch(api('/api/v1/admin/scopes/update'), {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: editingScopeId.value, name: editScopeTempName.value, stamp_icon: editScopeTempIcon.value })
-            });
-            if(res.ok) {
-                showToast("Cartão atualizado!", "success");
-                editingScopeId.value = null;
-                fetchScopes();
-            } else showToast("Erro ao atualizar", "error");
-        };
-
-        const toggleScope = async (scope) => {
-            if(scope.is_main) { showToast("Não pode desativar o cartão principal", "error"); return; }
-            const res = await fetch(api('/api/v1/admin/scopes/toggle'), {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: scope.id, is_active: !scope.is_active })
-            });
-            if(res.ok) { showToast("Status atualizado!", "success"); fetchScopes(); }
-        };
-
-        const deleteScope = async (scope) => {
-            if (scope.is_main) { showToast("Não pode apagar o cartão principal", "error"); return; }
-            
-            // Alerta de segurança
-            if (!confirm(`⚠️ ATENÇÃO!\nTem a certeza que quer APAGAR o cartão "${scope.name}"?\nTodos os clientes que têm este cartão vão perdê-lo permanentemente.`)) return;
-
-            const res = await fetch(api('/api/v1/admin/scopes/delete'), {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: scope.id })
-            });
-            
-            if (res.ok) {
-                showToast("Cartão apagado com sucesso!", "success");
-                fetchScopes(); // Atualiza a lista de âmbitos
-                fetchCards();  // Atualiza a tabela de clientes para remover os cartões apagados
+            if(res.ok) { 
+                showToast("Novo cartão criado!", "success"); 
+                newScopeName.value = predefinedScopeNames[7]; 
+                fetchScopes(); 
             } else {
-                showToast("Erro ao apagar cartão.", "error");
+                showToast("Erro (Âmbito já existe?)", "error");
             }
         };
 
-        const openIconPicker = (target) => {
-            iconPickerTarget.value = target;
-            showIconPicker.value = true;
+        const startEditScope = (scope) => { 
+            editingScopeId.value = scope.id; 
+            editScopeTempName.value = scope.name; 
+            editScopeTempIcon.value = scope.stamp_icon; 
+        };
+
+        const cancelEditScope = () => { 
+            editingScopeId.value = null; 
+        };
+
+        const saveEditScope = async () => {
+            const res = await fetch(api('/api/v1/admin/scopes/update'), { 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ id: editingScopeId.value, name: editScopeTempName.value, stamp_icon: editScopeTempIcon.value }) 
+            });
+            if(res.ok) { 
+                showToast("Cartão atualizado!", "success"); 
+                editingScopeId.value = null; 
+                fetchScopes(); 
+            } else {
+                showToast("Erro ao atualizar", "error");
+            }
+        };
+
+        const toggleScope = async (scope) => {
+            if(scope.is_main) { 
+                showToast("Não pode desativar o cartão principal", "error"); 
+                return; 
+            }
+            const res = await fetch(api('/api/v1/admin/scopes/toggle'), { 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ id: scope.id, is_active: !scope.is_active }) 
+            });
+            if(res.ok) { 
+                showToast("Status atualizado!", "success"); 
+                fetchScopes(); 
+            }
+        };
+
+        const deleteScope = async (scope) => {
+            if (scope.is_main) { 
+                showToast("Não pode apagar o cartão principal", "error"); 
+                return; 
+            }
+            if (!confirm(`⚠️ ATENÇÃO!\nTem a certeza que quer APAGAR o cartão "${scope.name}"?\nTodos os clientes que têm este cartão vão perdê-lo permanentemente.`)) return;
+            
+            const res = await fetch(api('/api/v1/admin/scopes/delete'), { 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ id: scope.id }) 
+            });
+            if (res.ok) { 
+                showToast("Cartão apagado com sucesso!", "success"); 
+                fetchScopes(); 
+                fetchCards(); 
+            } else { 
+                showToast("Erro ao apagar cartão.", "error"); 
+            }
+        };
+
+        const openIconPicker = (target) => { 
+            iconPickerTarget.value = target; 
+            showIconPicker.value = true; 
         };
 
         const selectIcon = (icon) => { 
-            if (iconPickerTarget.value === 'new') newScopeIcon.value = icon;
-            if (iconPickerTarget.value === 'edit') editScopeTempIcon.value = icon;
+            if (iconPickerTarget.value === 'new') newScopeIcon.value = icon; 
+            if (iconPickerTarget.value === 'edit') editScopeTempIcon.value = icon; 
             showIconPicker.value = false; 
         };
+
         // ------------------------------------------
 
         const settingsForm = ref({});
@@ -143,15 +156,17 @@ const AdminApp = {
             nextTick(() => {
                 if (!html5Qrcode) html5Qrcode = new Html5Qrcode("reader");
                 if (!html5Qrcode.isScanning) {
-                    html5Qrcode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {}).catch(err => {
-                        lastScanStatus.value = "⚠️ Permita o acesso à câmara.";
+                    html5Qrcode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {}).catch(err => { 
+                        lastScanStatus.value = "⚠️ Permita o acesso à câmara."; 
                     });
                 }
             });
         };
 
-        const stopScanner = () => {
-            if (html5Qrcode && html5Qrcode.isScanning) html5Qrcode.stop().then(() => html5Qrcode.clear()).catch(e => console.error(e));
+        const stopScanner = () => { 
+            if (html5Qrcode && html5Qrcode.isScanning) {
+                html5Qrcode.stop().then(() => html5Qrcode.clear()).catch(e => console.error(e)); 
+            }
         };
 
         const onScanSuccess = async (decodedText) => {
@@ -162,13 +177,12 @@ const AdminApp = {
                 const data = JSON.parse(decodedText);
                 
                 if (data && data.action === 'global_register') {
-                    if (!activeScannerScope.value) {
-                        lastScanStatus.value = "❌ Erro: Selecione um Âmbito (Cartão) primeiro!";
-                        showToast("Selecione um cartão para atribuir.", "error");
-                        setTimeout(() => { isScanning = false; }, 2000);
-                        return;
+                    if (!activeScannerScope.value) { 
+                        lastScanStatus.value = "❌ Erro: Selecione um Âmbito (Cartão) primeiro!"; 
+                        showToast("Selecione um cartão para atribuir.", "error"); 
+                        setTimeout(() => { isScanning = false; }, 2000); 
+                        return; 
                     }
-
                     const res = await fetch(api('/api/v1/cards'), { 
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, 
                         body: JSON.stringify({ 
@@ -178,43 +192,52 @@ const AdminApp = {
                             rgpd_accepted: true, marketing_accepted: false 
                         }) 
                     });
-                    if(res.ok) {
-                        lastScanStatus.value = `✅ Novo cliente registado no cartão selecionado!`;
-                        showToast(`Cliente registado com sucesso`, "success");
-                        await fetchCards();
-                    } else lastScanStatus.value = "❌ O cliente já tem este cartão nesta loja.";
+                    if(res.ok) { 
+                        lastScanStatus.value = `✅ Novo cliente registado no cartão selecionado!`; 
+                        showToast(`Cliente registado com sucesso`, "success"); 
+                        await fetchCards(); 
+                    } else {
+                        lastScanStatus.value = "❌ O cliente já tem este cartão nesta loja.";
+                    }
                 } 
                 else if (data && data.action === 'redeem') {
-                    if (data.store !== currentStore) {
-                        lastScanStatus.value = "❌ Erro: Este prémio pertence a outra loja!";
+                    if (data.store !== currentStore) { 
+                        lastScanStatus.value = "❌ Erro: Este prémio pertence a outra loja!"; 
                     } else {
                         const res = await fetch(api(`/api/v1/cards/use-reward?id=${data.id}`), { method: 'POST' });
-                        if(res.ok) {
-                            lastScanStatus.value = `🎁 Prémio descontado com sucesso!`;
-                            await fetchCards();
-                        } else lastScanStatus.value = "❌ Erro ao validar prémio.";
+                        if(res.ok) { 
+                            lastScanStatus.value = `🎁 Prémio descontado com sucesso!`; 
+                            await fetchCards(); 
+                        } else {
+                            lastScanStatus.value = "❌ Erro ao validar prémio.";
+                        }
                     }
                 }
             } catch (error) {
-                let id = decodedText;
+                let id = decodedText; 
                 let storeInQr = '';
 
                 if (id.includes('store=')) storeInQr = id.split('store=')[1].split('&')[0];
                 if (id.includes('id=')) id = id.split('id=')[1].split('&')[0];
 
-                if (storeInQr && storeInQr !== currentStore) {
-                    lastScanStatus.value = "❌ Erro: Cartão pertence a outra loja!";
-                } 
-                else if(id.length > 5 && !id.includes('{')) {
+                if (storeInQr && storeInQr !== currentStore) { 
+                    lastScanStatus.value = "❌ Erro: Cartão pertence a outra loja!"; 
+                } else if(id.length > 5 && !id.includes('{')) {
                     try {
                         const res = await fetch(api(`/api/v1/cards/stamp?id=${id}`), { method: 'POST' });
-                        if(res.ok) {
-                            const d = await res.json();
-                            lastScanStatus.value = `✅ Selo adicionado a ${d.customer_id}!`;
+                        if(res.ok) { 
+                            const d = await res.json(); 
+                            lastScanStatus.value = `✅ Selo adicionado a ${d.customer_id}!`; 
                             await fetchCards(); 
-                        } else lastScanStatus.value = "❌ Erro ao adicionar selo.";
-                    } catch(e) { lastScanStatus.value = "❌ Erro de ligação."; }
-                } else lastScanStatus.value = "❌ QR Code Inválido.";
+                        } else {
+                            lastScanStatus.value = "❌ Erro ao adicionar selo.";
+                        }
+                    } catch(e) { 
+                        lastScanStatus.value = "❌ Erro de ligação."; 
+                    }
+                } else {
+                    lastScanStatus.value = "❌ QR Code Inválido.";
+                }
             }
 
             setTimeout(() => { lastScanStatus.value = ''; isScanning = false; }, 3000);
@@ -225,15 +248,30 @@ const AdminApp = {
         const showCustomDesigner = ref(false);
         const designForm = ref({ background: '#00a896', textColor: '#ffffff', borderColor: '#ffffff', image: null, zoom: 100, posX: 0, posY: 0 });
 
-        const startDrag = (e) => { if (!designForm.value.image) return; isDragging.value = true; dragStart.value.x = e.clientX - designForm.value.posX; dragStart.value.y = e.clientY - designForm.value.posY; };
-        const onDrag = (e) => { if (!isDragging.value) return; designForm.value.posX = e.clientX - dragStart.value.x; designForm.value.posY = e.clientY - dragStart.value.y; };
+        const startDrag = (e) => { 
+            if (!designForm.value.image) return; 
+            isDragging.value = true; 
+            dragStart.value.x = e.clientX - designForm.value.posX; 
+            dragStart.value.y = e.clientY - designForm.value.posY; 
+        };
+        const onDrag = (e) => { 
+            if (!isDragging.value) return; 
+            designForm.value.posX = e.clientX - dragStart.value.x; 
+            designForm.value.posY = e.clientY - dragStart.value.y; 
+        };
         const stopDrag = () => { isDragging.value = false; };
 
         const handleMenuUpload = (e) => { 
             const file = e.target.files[0]; 
             if (!file) return; 
-            if (file.type !== 'application/pdf') { showToast("Apenas ficheiros PDF são permitidos.", "error"); return; }
-            if (file.size > 5 * 1024 * 1024) { showToast("O PDF é demasiado grande. Máximo 5MB.", "error"); return; }
+            if (file.type !== 'application/pdf') { 
+                showToast("Apenas ficheiros PDF são permitidos.", "error"); 
+                return; 
+            }
+            if (file.size > 5 * 1024 * 1024) { 
+                showToast("O PDF é demasiado grande. Máximo 5MB.", "error"); 
+                return; 
+            }
             const reader = new FileReader(); 
             reader.onload = (ev) => { settingsForm.value.menu_url = ev.target.result; }; 
             reader.readAsDataURL(file); 
@@ -267,11 +305,28 @@ const AdminApp = {
         const t = (key) => translations[lang.value][key] || key;
 
         const theme = computed(() => storeConfig.value.themeMode);
-        const setTheme = (m) => { storeConfig.value.themeMode = m; document.documentElement.setAttribute('data-theme', m); };
-        const toggleTheme = () => { const newTheme = storeConfig.value.themeMode === 'dark' ? 'light' : 'dark'; setTheme(newTheme); localStorage.setItem('theme', newTheme); };
-        const toggleLang = () => { lang.value = lang.value === 'pt' ? 'en' : 'pt'; localStorage.setItem('lang', lang.value); };
-        const initSettings = () => { const savedLang = localStorage.getItem('lang'); if (savedLang) lang.value = savedLang; };
-        const showToast = (message, type = 'success') => { const id = Date.now(); toasts.value.push({ id, message, type }); setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000); };
+        const setTheme = (m) => { 
+            storeConfig.value.themeMode = m; 
+            document.documentElement.setAttribute('data-theme', m); 
+        };
+        const toggleTheme = () => { 
+            const newTheme = storeConfig.value.themeMode === 'dark' ? 'light' : 'dark'; 
+            setTheme(newTheme); 
+            localStorage.setItem('theme', newTheme); 
+        };
+        const toggleLang = () => { 
+            lang.value = lang.value === 'pt' ? 'en' : 'pt'; 
+            localStorage.setItem('lang', lang.value); 
+        };
+        const initSettings = () => { 
+            const savedLang = localStorage.getItem('lang'); 
+            if (savedLang) lang.value = savedLang; 
+        };
+        const showToast = (message, type = 'success') => { 
+            const id = Date.now(); 
+            toasts.value.push({ id, message, type }); 
+            setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000); 
+        };
 
         const previewColors = computed(() => {
             const skinId = previewDesign.value;
@@ -297,20 +352,16 @@ const AdminApp = {
         const filteredCards = computed(() => { 
             let result = cards.value;
             
-            // 1. Filtro pelas Abas Inteligente
             if (activeTabScope.value !== 'all') {
                 const mainScope = storeScopes.value.find(s => s.is_main);
                 const isMainTab = mainScope && activeTabScope.value === mainScope.id;
                 
                 result = result.filter(c => {
-                    // Se for a aba "Geral", puxa também os cartões antigos (sem scope_id)
                     if (isMainTab && (!c.scope_id || c.scope_id === '')) return true;
-                    // Caso contrário, tem de bater certo
                     return c.scope_id === activeTabScope.value;
                 });
             }
             
-            // 2. Filtro pela Pesquisa
             if (searchQuery.value) {
                 const q = searchQuery.value.toLowerCase(); 
                 result = result.filter(c => c.customer_id.toLowerCase().includes(q) || c.last_name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q))); 
@@ -319,8 +370,23 @@ const AdminApp = {
             return result;
         });
 
-        const fetchCards = async () => { try { const res = await fetch(api('/api/v1/admin/cards')); if (res.ok) cards.value = await res.json(); } catch(e) { console.error(e); } };
-        const fetchAvailableSkins = async () => { try { const res = await fetch(api('/api/v1/system/skins')); if(res.ok) { const globals = await res.json(); const customSkin = { id: 'custom', name: 'Custom Brand', type: 'standard', style: `background: ${storeConfig.value.primary_color || '#00a896'}` }; availableSkins.value = [customSkin, ...globals]; } } catch(e) { console.error(e); } };
+        const fetchCards = async () => { 
+            try { 
+                const res = await fetch(api('/api/v1/admin/cards')); 
+                if (res.ok) cards.value = await res.json(); 
+            } catch(e) { console.error(e); } 
+        };
+
+        const fetchAvailableSkins = async () => { 
+            try { 
+                const res = await fetch(api('/api/v1/system/skins')); 
+                if(res.ok) { 
+                    const globals = await res.json(); 
+                    const customSkin = { id: 'custom', name: 'Custom Brand', type: 'standard', style: `background: ${storeConfig.value.primary_color || '#00a896'}` }; 
+                    availableSkins.value = [customSkin, ...globals]; 
+                } 
+            } catch(e) { console.error(e); } 
+        };
 
         const getPreviewStyle = (skin) => {
             if (!skin) return {};
@@ -337,16 +403,36 @@ const AdminApp = {
             return { background: '#ccc', '--stamp-border': 'rgba(0,0,0,0.2)' };
         };
 
+        // --- GESTÃO DE MENSAGENS E ALERTAS ---
+        const adminNotifications = ref([]);
+        const unreadAdminCount = computed(() => adminNotifications.value.filter(n => !n.is_read).length);
+
+        const fetchAdminNotifications = async () => {
+            const res = await fetch(api('/api/v1/admin/notifications'));
+            if (res.ok) adminNotifications.value = await res.json();
+        };
+
+        // LÓGICA DE NAVEGAÇÃO QUE TRATA DAS MENSAGENS (Abre a aba e marca como lido)
         const changePage = (page) => { 
             if (currentPage.value === 'scanner' && page !== 'scanner') stopScanner();
             currentPage.value = page; 
+            
             if (page === 'settings') settingsForm.value = { ...storeConfig.value };
             if (page === 'scanner') startScanner();
-            if (page !== 'settings' && page !== 'skins' && page !== 'scanner') fetchCards(); 
+            if (page !== 'settings' && page !== 'skins' && page !== 'scanner' && page !== 'messages') fetchCards(); 
+            
+            if (page === 'messages' && unreadAdminCount.value > 0) {
+                adminNotifications.value.forEach(n => n.is_read = true);
+                fetch(api('/api/v1/admin/notifications/read'), { method: 'POST' });
+            }
         };
 
-        const handleLogoUpload = (e) => { const r=new FileReader(); r.onload=(ev)=>{ settingsForm.value.logo_url=ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
-        const removeLogo = () => { settingsForm.value.logo_url=''; };
+        const handleLogoUpload = (e) => { 
+            const r = new FileReader(); 
+            r.onload = (ev) => { settingsForm.value.logo_url = ev.target.result; }; 
+            r.readAsDataURL(e.target.files[0]); 
+        };
+        const removeLogo = () => { settingsForm.value.logo_url = ''; };
 
         const saveSettings = async () => { 
             await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsForm.value) }); 
@@ -355,33 +441,57 @@ const AdminApp = {
             document.title = `Volto Store Admin | ${storeConfig.value.name}`;
         };
 
-        const openCustomDesigner = () => {
-            designForm.value = { background: storeConfig.value.primary_color || '#00a896', textColor: storeConfig.value.text_color || '#ffffff', borderColor: storeConfig.value.border_color || '#ffffff', image: storeConfig.value.card_image_url || null, zoom: storeConfig.value.card_image_zoom || 100, posX: storeConfig.value.card_image_pos_x || 0, posY: storeConfig.value.card_image_pos_y || 0 };
-            showCustomDesigner.value = true;
+        const openCustomDesigner = () => { 
+            designForm.value = { background: storeConfig.value.primary_color || '#00a896', textColor: storeConfig.value.text_color || '#ffffff', borderColor: storeConfig.value.border_color || '#ffffff', image: storeConfig.value.card_image_url || null, zoom: storeConfig.value.card_image_zoom || 100, posX: storeConfig.value.card_image_pos_x || 0, posY: storeConfig.value.card_image_pos_y || 0 }; 
+            showCustomDesigner.value = true; 
         };
-
-        const handleBgUpload = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { designForm.value.image = ev.target.result; designForm.value.posX = 0; designForm.value.posY = 0; designForm.value.zoom = 100; }; reader.readAsDataURL(file); };
+        const handleBgUpload = (e) => { 
+            const file = e.target.files[0]; 
+            if (!file) return; 
+            const reader = new FileReader(); 
+            reader.onload = (ev) => { designForm.value.image = ev.target.result; designForm.value.posX = 0; designForm.value.posY = 0; designForm.value.zoom = 100; }; 
+            reader.readAsDataURL(file); 
+        };
         const removeBgImage = () => { designForm.value.image = null; designForm.value.zoom = 100; designForm.value.posX = 0; designForm.value.posY = 0; };
-
-        const saveCustomDesign = async () => {
-            const newConfig = { primary_color: designForm.value.background, text_color: designForm.value.textColor, border_color: designForm.value.borderColor, card_image_url: designForm.value.image || '', card_image_zoom: parseInt(designForm.value.zoom) || 100, card_image_pos_x: parseInt(designForm.value.posX) || 0, card_image_pos_y: parseInt(designForm.value.posY) || 0 };
-            storeConfig.value = { ...storeConfig.value, ...newConfig };
-            await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) });
-            showToast("Custom Brand Updated!", "success");
-            showCustomDesigner.value = false;
-            fetchAvailableSkins();
+        
+        const saveCustomDesign = async () => { 
+            const newConfig = { primary_color: designForm.value.background, text_color: designForm.value.textColor, border_color: designForm.value.borderColor, card_image_url: designForm.value.image || '', card_image_zoom: parseInt(designForm.value.zoom) || 100, card_image_pos_x: parseInt(designForm.value.posX) || 0, card_image_pos_y: parseInt(designForm.value.posY) || 0 }; 
+            storeConfig.value = { ...storeConfig.value, ...newConfig }; 
+            await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); 
+            showToast("Custom Brand Updated!", "success"); 
+            showCustomDesigner.value = false; 
+            fetchAvailableSkins(); 
         };
 
-        const updatePassword = async () => { const o=document.getElementById('pass-old').value, n=document.getElementById('pass-new').value; const res = await fetch(api('/api/v1/admin/update-password'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n})}); if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error"); };
-        const updateGlobalSkin = async (s) => { await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); activeSkin.value = s; showToast("Skin Activated!", "success"); };
+        const updatePassword = async () => { 
+            const o = document.getElementById('pass-old').value;
+            const n = document.getElementById('pass-new').value; 
+            const res = await fetch(api('/api/v1/admin/update-password'), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n}) }); 
+            if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error"); 
+        };
+
+        const updateGlobalSkin = async (s) => { 
+            await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); 
+            activeSkin.value = s; 
+            showToast("Skin Activated!", "success"); 
+        };
+        
         const openPreview = (d) => { previewDesign.value = d; showPreview.value = true; };
         const openEditModal = (c) => editingCard.value = { ...c };
-        const saveEdit = async () => { await fetch(api('/api/v1/admin/update'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) }); showToast("Customer Updated!", "success"); editingCard.value = null; fetchCards(); };
-        const toggleConsent = async (c, type) => { const f = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted'; c[f] = !c[f]; await fetch(api('/api/v1/admin/update-consent'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, [f]: c[f] }) }); };
+        const saveEdit = async () => { 
+            await fetch(api('/api/v1/admin/update'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) }); 
+            showToast("Customer Updated!", "success"); 
+            editingCard.value = null; 
+            fetchCards(); 
+        };
+        const toggleConsent = async (c, type) => { 
+            const f = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted'; 
+            c[f] = !c[f]; 
+            await fetch(api('/api/v1/admin/update-consent'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, [f]: c[f] }) }); 
+        };
+        
         const registerMember = async () => { 
-            // Vai procurar qual é o Cartão Principal (Geral) para atribuir por defeito no registo manual
             const mainScope = storeScopes.value.find(s => s.is_main);
-
             const res = await fetch(api('/api/v1/cards'), { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
@@ -391,30 +501,42 @@ const AdminApp = {
                     email: newMember.value.email, 
                     phone: newMember.value.phone, 
                     rgpd_accepted: newMember.value.rgpd, 
-                    marketing_accepted: newMember.value.marketing,
-                    // 👇 AGORA ENVIA O ÂMBITO 👇
+                    marketing_accepted: newMember.value.marketing, 
                     scope_id: mainScope ? mainScope.id : '' 
                 }) 
             }); 
-            
             if(res.ok) { 
                 showToast("Membro Registado!", "success"); 
                 newMember.value = {first_name:'', last_name:'', email:'', phone:'', rgpd:false, marketing:false}; 
                 changePage('customers'); 
-            } else {
-                showToast("Erro: Cliente já tem este cartão!", "error");
+            } else { 
+                showToast("Erro: Cliente já tem este cartão!", "error"); 
             }
         };
+
         const logout = async () => { await fetch(api('/api/v1/auth/logout'), { method: 'POST' }); window.location.href = "/"; };
         const calculateAvailable = (c) => Math.max(0, Math.floor(c.total_stamps / 10) - (c.total_redeemed_bonuses || 0));
         const addStampFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/stamp?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Stamp Added", "success"); };
         const redeemFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/use-reward?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Reward Redeemed", "success"); };
         const viewCard = (id) => window.open(`/card?store=${currentStore}&id=${id}`, '_blank');
         
+        const trialDaysLeft = computed(() => {
+            if (storeConfig.value.tier !== 'free_trial' || !storeConfig.value.tier_expiration) return 0;
+            const diff = new Date(storeConfig.value.tier_expiration) - new Date();
+            return Math.ceil(diff / (1000 * 60 * 60 * 24));
+        });
+
+        const formatDate = (dateStr) => { 
+            const d = new Date(dateStr); 
+            return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); 
+        };
+
         onMounted(() => { 
             initSettings(); 
             fetchCards(); 
             fetchScopes(); 
+            fetchAdminNotifications(); 
+            
             fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
                 storeConfig.value = { ...storeConfig.value, ...d }; 
                 settingsForm.value = { ...storeConfig.value }; 
@@ -423,8 +545,8 @@ const AdminApp = {
                 if (localTheme) { setTheme(localTheme); } else { setTheme(d.themeMode || 'dark'); }
                 fetchAvailableSkins();
                 document.title = `Volto Store Admin | ${d.name}`;
-                if (d.status === 'expired') {
-                    isAccountExpired.value = true;
+                if (d.status === 'expired') { 
+                    isAccountExpired.value = true; 
                 }
             }); 
         });
@@ -438,13 +560,13 @@ const AdminApp = {
             changePage, logout, registerMember, openEditModal, saveEdit, toggleConsent,
             calculateAvailable, addStampFromAdmin, redeemFromAdmin, viewCard, updatePassword, setTheme, toggleTheme,
             updateGlobalSkin, openPreview, showPreview, previewColors, getPreviewStyle,
-            toasts, showToast, lang, toggleLang, t,
+            toasts, showToast, lang, toggleLang, t, isAccountExpired,
             showCustomDesigner, designForm, openCustomDesigner, handleBgUpload, removeBgImage, saveCustomDesign,
             theme, isDragging, startDrag, onDrag, stopDrag, handleMenuUpload, removeMenu,
-            activeTabScope, deleteScope,
-            storeScopes, activeScannerScope, predefinedScopeNames,
+            activeTabScope, deleteScope, storeScopes, activeScannerScope, predefinedScopeNames,
             newScopeName, newScopeIcon, createScope, toggleScope, activeScopesList,
-            editingScopeId, editScopeTempName, editScopeTempIcon, startEditScope, cancelEditScope, saveEditScope, openIconPicker
+            editingScopeId, editScopeTempName, editScopeTempIcon, startEditScope, cancelEditScope, saveEditScope, openIconPicker,
+            adminNotifications, unreadAdminCount, trialDaysLeft, formatDate 
         };
     }
 };

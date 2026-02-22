@@ -190,3 +190,13 @@ type WalletNotification struct {
 	IsRead    bool      `json:"is_read"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type StoreNotification struct {
+	ID        string    `json:"id"`
+	StoreID   string    `json:"store_id"`
+	Title     string    `json:"title"`
+	Message   string    `json:"message"`
+	Type      string    `json:"type"`
+	IsRead    bool      `json:"is_read"`
+	CreatedAt time.Time `json:"created_at"`
+}

@@ -884,3 +884,45 @@ func (r *CardRepository) SendNotificationToEmails(emails []string, storeID, titl
 		r.db.Exec(`INSERT INTO wallet_notifications (id, email, store_id, title, message, type) VALUES ($1, $2, $3, $4, $5, $6)`, id, email, storeID, title, message, nType)
 	}
 }
+
+// --- MENSAGENS PARA OS LOJISTAS (ADMIN NOTIFICATIONS) ---
+
+func (r *CardRepository) GetStoreNotifications(storeID string) ([]models.StoreNotification, error) {
+	query := `SELECT id, store_id, title, message, type, is_read, created_at FROM store_notifications WHERE store_id = $1 ORDER BY created_at DESC LIMIT 50`
+	rows, err := r.db.Query(query, storeID)
+	if err != nil { return nil, err }
+	defer rows.Close()
+
+	var notifs []models.StoreNotification
+	for rows.Next() {
+		var n models.StoreNotification
+		rows.Scan(&n.ID, &n.StoreID, &n.Title, &n.Message, &n.Type, &n.IsRead, &n.CreatedAt)
+		notifs = append(notifs, n)
+	}
+	return notifs, nil
+}
+
+func (r *CardRepository) MarkStoreNotificationsAsRead(storeID string) error {
+	_, err := r.db.Exec(`UPDATE store_notifications SET is_read = TRUE WHERE store_id = $1`, storeID)
+	return err
+}
+
+func (r *CardRepository) SendStoreNotification(storeID, title, message, nType string) error {
+	id := uuid.New().String()
+	_, err := r.db.Exec(`INSERT INTO store_notifications (id, store_id, title, message, type) VALUES ($1, $2, $3, $4, $5)`, id, storeID, title, message, nType)
+	return err
+}
+
+func (r *CardRepository) BroadcastStoreNotification(title, message, nType string) error {
+	rows, err := r.db.Query(`SELECT id FROM stores`)
+	if err != nil { return err }
+	defer rows.Close()
+
+	for rows.Next() {
+		var storeID string
+		if err := rows.Scan(&storeID); err == nil {
+			r.SendStoreNotification(storeID, title, message, nType)
+		}
+	}
+	return nil
+}

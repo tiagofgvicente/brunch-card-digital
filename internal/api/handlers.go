@@ -536,13 +536,13 @@ func WalletRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 	}
 
 	newUser := models.GlobalUser{
-		ID:           uuid.New().String(),
-		FirstName:    req.FirstName,
-		LastName:     req.LastName,
-		Email:        req.Email,
-		Phone:        req.Phone,
-		Password:     req.Password,
-		RgpdAccepted: req.Rgpd,
+		ID:                uuid.New().String(),
+		FirstName:         req.FirstName,
+		LastName:          req.LastName,
+		Email:             req.Email,
+		Phone:             req.Phone,
+		Password:          req.Password,
+		RgpdAccepted:      req.Rgpd,
 		MarketingAccepted: req.Marketing,
 	}
 
@@ -730,5 +730,43 @@ func MarkNotificationsReadHandler(w http.ResponseWriter, r *http.Request, repo *
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 	repo.MarkNotificationsAsRead(req.Email)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+// --- ADMIN NOTIFICATIONS ---
+
+func GetAdminNotificationsHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	store := getCurrentStore(r)
+	notifs, err := repo.GetStoreNotifications(store.ID)
+	if err != nil {
+		http.Error(w, "Erro BD", 500)
+		return
+	}
+	if notifs == nil {
+		notifs = []models.StoreNotification{}
+	}
+	json.NewEncoder(w).Encode(notifs)
+}
+
+func MarkAdminNotificationsReadHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	store := getCurrentStore(r)
+	repo.MarkStoreNotificationsAsRead(store.ID)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func MasterSendNotificationHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct {
+		StoreID string `json:"store_id"` // "all" para todas as lojas
+		Title   string `json:"title"`
+		Message string `json:"message"`
+		Type    string `json:"type"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	if req.StoreID == "all" {
+		repo.BroadcastStoreNotification(req.Title, req.Message, req.Type)
+	} else {
+		repo.SendStoreNotification(req.StoreID, req.Title, req.Message, req.Type)
+	}
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
