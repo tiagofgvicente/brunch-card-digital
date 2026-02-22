@@ -22,6 +22,30 @@ const AdminApp = {
 
         const isAccountExpired = ref(false);
 
+        // 👇 NOVA LÓGICA DE MOBILE / MODO SCANNER 👇
+        const showMobilePrompt = ref(false);
+        const isMobileScannerMode = ref(false);
+
+        const chooseScannerMode = () => {
+            showMobilePrompt.value = false;
+            isMobileScannerMode.value = true;
+            sessionStorage.setItem('mobile_mode', 'scanner');
+            changePage('scanner');
+        };
+
+        const chooseFullDashboard = () => {
+            showMobilePrompt.value = false;
+            isMobileScannerMode.value = false;
+            sessionStorage.setItem('mobile_mode', 'dashboard');
+        };
+
+        const exitScannerMode = () => {
+            isMobileScannerMode.value = false;
+            sessionStorage.setItem('mobile_mode', 'dashboard');
+            changePage('customers');
+        };
+        // 👆 FIM DA LÓGICA MOBILE 👆
+
         const storeConfig = ref({ 
             name: 'Store', logo_url: '', themeMode: 'dark', 
             primary_color: '#00a896', text_color: '#ffffff', border_color: '#ffffff',    
@@ -412,7 +436,6 @@ const AdminApp = {
             if (res.ok) adminNotifications.value = await res.json();
         };
 
-        // LÓGICA DE NAVEGAÇÃO QUE TRATA DAS MENSAGENS (Abre a aba e marca como lido)
         const changePage = (page) => { 
             if (currentPage.value === 'scanner' && page !== 'scanner') stopScanner();
             currentPage.value = page; 
@@ -427,11 +450,7 @@ const AdminApp = {
             }
         };
 
-        const handleLogoUpload = (e) => { 
-            const r = new FileReader(); 
-            r.onload = (ev) => { settingsForm.value.logo_url = ev.target.result; }; 
-            r.readAsDataURL(e.target.files[0]); 
-        };
+        const handleLogoUpload = (e) => { const r = new FileReader(); r.onload = (ev) => { settingsForm.value.logo_url = ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
         const removeLogo = () => { settingsForm.value.logo_url = ''; };
 
         const saveSettings = async () => { 
@@ -441,77 +460,25 @@ const AdminApp = {
             document.title = `Volto Store Admin | ${storeConfig.value.name}`;
         };
 
-        const openCustomDesigner = () => { 
-            designForm.value = { background: storeConfig.value.primary_color || '#00a896', textColor: storeConfig.value.text_color || '#ffffff', borderColor: storeConfig.value.border_color || '#ffffff', image: storeConfig.value.card_image_url || null, zoom: storeConfig.value.card_image_zoom || 100, posX: storeConfig.value.card_image_pos_x || 0, posY: storeConfig.value.card_image_pos_y || 0 }; 
-            showCustomDesigner.value = true; 
-        };
-        const handleBgUpload = (e) => { 
-            const file = e.target.files[0]; 
-            if (!file) return; 
-            const reader = new FileReader(); 
-            reader.onload = (ev) => { designForm.value.image = ev.target.result; designForm.value.posX = 0; designForm.value.posY = 0; designForm.value.zoom = 100; }; 
-            reader.readAsDataURL(file); 
-        };
+        const openCustomDesigner = () => { designForm.value = { background: storeConfig.value.primary_color || '#00a896', textColor: storeConfig.value.text_color || '#ffffff', borderColor: storeConfig.value.border_color || '#ffffff', image: storeConfig.value.card_image_url || null, zoom: storeConfig.value.card_image_zoom || 100, posX: storeConfig.value.card_image_pos_x || 0, posY: storeConfig.value.card_image_pos_y || 0 }; showCustomDesigner.value = true; };
+        const handleBgUpload = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { designForm.value.image = ev.target.result; designForm.value.posX = 0; designForm.value.posY = 0; designForm.value.zoom = 100; }; reader.readAsDataURL(file); };
         const removeBgImage = () => { designForm.value.image = null; designForm.value.zoom = 100; designForm.value.posX = 0; designForm.value.posY = 0; };
-        
-        const saveCustomDesign = async () => { 
-            const newConfig = { primary_color: designForm.value.background, text_color: designForm.value.textColor, border_color: designForm.value.borderColor, card_image_url: designForm.value.image || '', card_image_zoom: parseInt(designForm.value.zoom) || 100, card_image_pos_x: parseInt(designForm.value.posX) || 0, card_image_pos_y: parseInt(designForm.value.posY) || 0 }; 
-            storeConfig.value = { ...storeConfig.value, ...newConfig }; 
-            await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); 
-            showToast("Custom Brand Updated!", "success"); 
-            showCustomDesigner.value = false; 
-            fetchAvailableSkins(); 
-        };
+        const saveCustomDesign = async () => { const newConfig = { primary_color: designForm.value.background, text_color: designForm.value.textColor, border_color: designForm.value.borderColor, card_image_url: designForm.value.image || '', card_image_zoom: parseInt(designForm.value.zoom) || 100, card_image_pos_x: parseInt(designForm.value.posX) || 0, card_image_pos_y: parseInt(designForm.value.posY) || 0 }; storeConfig.value = { ...storeConfig.value, ...newConfig }; await fetch(api('/api/v1/admin/settings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(storeConfig.value) }); showToast("Custom Brand Updated!", "success"); showCustomDesigner.value = false; fetchAvailableSkins(); };
 
-        const updatePassword = async () => { 
-            const o = document.getElementById('pass-old').value;
-            const n = document.getElementById('pass-new').value; 
-            const res = await fetch(api('/api/v1/admin/update-password'), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n}) }); 
-            if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error"); 
-        };
-
-        const updateGlobalSkin = async (s) => { 
-            await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); 
-            activeSkin.value = s; 
-            showToast("Skin Activated!", "success"); 
-        };
-        
+        const updatePassword = async () => { const o = document.getElementById('pass-old').value; const n = document.getElementById('pass-new').value; const res = await fetch(api('/api/v1/admin/update-password'), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old:o, new:n}) }); if(res.ok) showToast("Password Updated!", "success"); else showToast("Error updating password", "error"); };
+        const updateGlobalSkin = async (s) => { await fetch(api('/api/v1/admin/update-skin'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({design:s})}); activeSkin.value = s; showToast("Skin Activated!", "success"); };
         const openPreview = (d) => { previewDesign.value = d; showPreview.value = true; };
         const openEditModal = (c) => editingCard.value = { ...c };
-        const saveEdit = async () => { 
-            await fetch(api('/api/v1/admin/update'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) }); 
-            showToast("Customer Updated!", "success"); 
-            editingCard.value = null; 
-            fetchCards(); 
-        };
-        const toggleConsent = async (c, type) => { 
-            const f = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted'; 
-            c[f] = !c[f]; 
-            await fetch(api('/api/v1/admin/update-consent'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, [f]: c[f] }) }); 
-        };
+        const saveEdit = async () => { await fetch(api('/api/v1/admin/update'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingCard.value) }); showToast("Customer Updated!", "success"); editingCard.value = null; fetchCards(); };
+        const toggleConsent = async (c, type) => { const f = type === 'rgpd' ? 'rgpd_accepted' : 'marketing_accepted'; c[f] = !c[f]; await fetch(api('/api/v1/admin/update-consent'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, [f]: c[f] }) }); };
         
         const registerMember = async () => { 
             const mainScope = storeScopes.value.find(s => s.is_main);
             const res = await fetch(api('/api/v1/cards'), { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ 
-                    customer_id: newMember.value.first_name, 
-                    last_name: newMember.value.last_name, 
-                    email: newMember.value.email, 
-                    phone: newMember.value.phone, 
-                    rgpd_accepted: newMember.value.rgpd, 
-                    marketing_accepted: newMember.value.marketing, 
-                    scope_id: mainScope ? mainScope.id : '' 
-                }) 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ customer_id: newMember.value.first_name, last_name: newMember.value.last_name, email: newMember.value.email, phone: newMember.value.phone, rgpd_accepted: newMember.value.rgpd, marketing_accepted: newMember.value.marketing, scope_id: mainScope ? mainScope.id : '' }) 
             }); 
-            if(res.ok) { 
-                showToast("Membro Registado!", "success"); 
-                newMember.value = {first_name:'', last_name:'', email:'', phone:'', rgpd:false, marketing:false}; 
-                changePage('customers'); 
-            } else { 
-                showToast("Erro: Cliente já tem este cartão!", "error"); 
-            }
+            if(res.ok) { showToast("Membro Registado!", "success"); newMember.value = {first_name:'', last_name:'', email:'', phone:'', rgpd:false, marketing:false}; changePage('customers'); } else { showToast("Erro: Cliente já tem este cartão!", "error"); }
         };
 
         const logout = async () => { await fetch(api('/api/v1/auth/logout'), { method: 'POST' }); window.location.href = "/"; };
@@ -526,16 +493,26 @@ const AdminApp = {
             return Math.ceil(diff / (1000 * 60 * 60 * 24));
         });
 
-        const formatDate = (dateStr) => { 
-            const d = new Date(dateStr); 
-            return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); 
-        };
+        const formatDate = (dateStr) => { const d = new Date(dateStr); return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); };
 
         onMounted(() => { 
             initSettings(); 
             fetchCards(); 
             fetchScopes(); 
             fetchAdminNotifications(); 
+            
+            // 👇 EXECUTA A DETEÇÃO DE MOBILE AQUI 👇
+            if (window.innerWidth <= 768) {
+                const savedMode = sessionStorage.getItem('mobile_mode');
+                if (savedMode === 'scanner') {
+                    isMobileScannerMode.value = true;
+                    changePage('scanner');
+                } else if (savedMode === 'dashboard') {
+                    isMobileScannerMode.value = false;
+                } else {
+                    showMobilePrompt.value = true;
+                }
+            }
             
             fetch(api('/api/v1/system/config')).then(r => r.json()).then(d => { 
                 storeConfig.value = { ...storeConfig.value, ...d }; 
@@ -545,9 +522,7 @@ const AdminApp = {
                 if (localTheme) { setTheme(localTheme); } else { setTheme(d.themeMode || 'dark'); }
                 fetchAvailableSkins();
                 document.title = `Volto Store Admin | ${d.name}`;
-                if (d.status === 'expired') { 
-                    isAccountExpired.value = true; 
-                }
+                if (d.status === 'expired') { isAccountExpired.value = true; }
             }); 
         });
 
@@ -566,7 +541,9 @@ const AdminApp = {
             activeTabScope, deleteScope, storeScopes, activeScannerScope, predefinedScopeNames,
             newScopeName, newScopeIcon, createScope, toggleScope, activeScopesList,
             editingScopeId, editScopeTempName, editScopeTempIcon, startEditScope, cancelEditScope, saveEditScope, openIconPicker,
-            adminNotifications, unreadAdminCount, trialDaysLeft, formatDate 
+            adminNotifications, unreadAdminCount, trialDaysLeft, formatDate,
+            // 👇 EXPORTA AS NOVAS FUNÇÕES PARA O HTML CONSEGUIR LER 👇
+            showMobilePrompt, isMobileScannerMode, chooseScannerMode, chooseFullDashboard, exitScannerMode
         };
     }
 };

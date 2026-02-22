@@ -35,11 +35,8 @@
         .brand-row h2 { color: var(--text-main); font-size: 1.1rem; margin: 0; font-weight: 800; }
         .toggle-row { display: flex; align-items: center; gap: 12px; }
 
-        /* --- BOTÕES DO TOPO --- */
         .theme-btn, .lang-btn { background-color: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden; }
         .theme-btn { width: 42px; height: 42px; border-radius: 50%; font-size: 1.4rem; }
-        
-        /* BOTÃO DE NOTIFICAÇÃO (Sem overflow hidden para a bolinha não cortar) */
         .notif-btn { background-color: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; width: 42px; height: 42px; border-radius: 50%; font-size: 1.4rem; }
         .notif-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
         .notif-badge { position: absolute; top: -3px; right: -3px; background: #ef4444; color: white; width: 18px; height: 18px; font-size: 0.65rem; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-side); z-index: 10; }
@@ -59,7 +56,7 @@
         .nav-item:hover { background: var(--bg-btn); color: var(--text-main); }
         .nav-item.active { background: rgba(0, 168, 150, 0.1); color: var(--primary); border-right: 3px solid var(--primary); }
         
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; box-sizing: border-box; background: var(--bg-main); }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; box-sizing: border-box; background: var(--bg-main); transition: padding 0.3s; }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .page-header h1 { font-size: 1.8rem; margin: 0; font-weight: 800; letter-spacing: -0.5px; }
         .search-container { position: relative; }
@@ -180,6 +177,16 @@
         #reader video { object-fit: cover; width: 100%; height: 100%; }
 
         .scope-edit-row { display: flex; gap: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 8px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; }
+
+        /* --- CSS NOVO PARA O MODO MOBILE --- */
+        .btn-prompt { width: 100%; padding: 15px; border-radius: 12px; font-weight: 800; font-size: 1.1rem; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; margin-bottom: 15px; transition: 0.2s; }
+        .btn-prompt-scanner { background: var(--primary); color: white; box-shadow: 0 10px 20px rgba(0, 168, 150, 0.3); }
+        .btn-prompt-scanner:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(0, 168, 150, 0.4); }
+        .btn-prompt-dash { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); }
+        .btn-prompt-dash:hover { border-color: var(--primary); color: var(--primary); }
+
+        .fab-exit-scanner { position: fixed; bottom: 30px; right: 30px; background: var(--bg-side); border: 2px solid var(--border-color); color: var(--text-main); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); cursor: pointer; z-index: 9999; transition: 0.3s; }
+        .fab-exit-scanner:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.1); }
     </style>
 </head>
 <body>
@@ -190,7 +197,7 @@
             </div>
         </div>
 
-        <aside class="sidebar">
+        <aside class="sidebar" v-if="!isMobileScannerMode">
             <div class="sidebar-header">
                 <div class="brand-row">
                     <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" alt="Logo">
@@ -228,7 +235,7 @@
             </nav>
         </aside>
 
-        <main class="main-content">
+        <main class="main-content" :style="isMobileScannerMode ? 'padding: 20px;' : ''">
             
             <div v-if="storeConfig.tier === 'free_trial' && trialDaysLeft > 0" style="background: linear-gradient(90deg, #f59e0b, #fbbf24); color: #fffbeb; padding: 12px 20px; border-radius: 12px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -260,60 +267,62 @@
                         <span>{{ scope.stamp_icon }}</span> {{ scope.name }}
                     </button>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 20%;">{{ t('th_name') }}</th>
-                            <th style="width: 15%;">Cartão</th>
-                            <th style="width: 10%;">{{ t('th_status') }}</th>
-                            <th style="width: 10%;">{{ t('th_consent') }}</th>
-                            <th>{{ t('th_avail') }}</th>
-                            <th>{{ t('th_redeem') }}</th>
-                            <th>Visits</th>
-                            <th style="width: 140px; text-align: center;">{{ t('th_actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="card in filteredCards" :key="card.id">
-                            <td>
-                                <span class="customer-name">{{ card.customer_id }} {{ card.last_name }}</span>
-                                <div class="contact-details">
-                                    <div class="contact-row" v-if="card.email"><span>✉️</span>{{ card.email }}</div>
-                                    <div class="contact-row" v-if="card.phone"><span>📞</span>{{ card.phone }}</div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="scope-badge" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px;">
-                                    <span style="font-size: 1.1rem;">{{ card.scope_icon || storeConfig.stamp_icon || '🍳' }}</span> 
-                                    {{ card.scope_name || 'Geral' }}
-                                </span>
-                            </td>
-                            <td>
-                                <span v-if="card.total_stamps >= storeConfig.goldThreshold" class="status-pill pill-gold">Gold</span>
-                                <span v-else-if="card.total_stamps >= storeConfig.silverThreshold" class="status-pill pill-silver">Silver</span>
-                                <span v-else-if="card.total_stamps >= storeConfig.bronzeThreshold" class="status-pill pill-bronze">Bronze</span>
-                                <span v-else class="status-pill pill-new">New</span>
-                            </td>
-                            <td>
-                                <div class="consent-wrapper">
-                                    <span class="consent-btn" :class="{'is-rgpd': card.rgpd_accepted}" @click="toggleConsent(card, 'rgpd')">RGPD</span>
-                                    <span class="consent-btn" :class="{'is-mkt': card.marketing_accepted}" @click="toggleConsent(card, 'marketing')">MKT</span>
-                                </div>
-                            </td>
-                            <td style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">{{ calculateAvailable(card) }}<span style="font-size:0.8rem; margin-left:5px;">🎁</span></td>
-                            <td style="color: var(--gold); font-weight: 800; font-size: 1.1rem;">{{ card.total_redeemed_bonuses || 0 }}<span style="font-size:0.8rem; margin-left:5px;">🏆</span></td>
-                            <td><strong>{{ card.total_stamps }}</strong></td>
-                            <td>
-                                <div class="action-grid">
-                                    <button class="btn-action btn-edit" @click="openEditModal(card)">Edit</button>
-                                    <button class="btn-action btn-view" @click="viewCard(card.id)">View</button>
-                                    <button class="btn-action btn-stamp" @click="addStampFromAdmin(card)">Stamp</button>
-                                    <button class="btn-action btn-redeem" :disabled="calculateAvailable(card) === 0" @click="redeemFromAdmin(card)">Use</button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">{{ t('th_name') }}</th>
+                                <th style="width: 15%;">Cartão</th>
+                                <th style="width: 10%;">{{ t('th_status') }}</th>
+                                <th style="width: 10%;">{{ t('th_consent') }}</th>
+                                <th>{{ t('th_avail') }}</th>
+                                <th>{{ t('th_redeem') }}</th>
+                                <th>Visits</th>
+                                <th style="width: 140px; text-align: center;">{{ t('th_actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="card in filteredCards" :key="card.id">
+                                <td>
+                                    <span class="customer-name">{{ card.customer_id }} {{ card.last_name }}</span>
+                                    <div class="contact-details">
+                                        <div class="contact-row" v-if="card.email"><span>✉️</span>{{ card.email }}</div>
+                                        <div class="contact-row" v-if="card.phone"><span>📞</span>{{ card.phone }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="scope-badge" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px;">
+                                        <span style="font-size: 1.1rem;">{{ card.scope_icon || storeConfig.stamp_icon || '🍳' }}</span> 
+                                        {{ card.scope_name || 'Geral' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span v-if="card.total_stamps >= storeConfig.goldThreshold" class="status-pill pill-gold">Gold</span>
+                                    <span v-else-if="card.total_stamps >= storeConfig.silverThreshold" class="status-pill pill-silver">Silver</span>
+                                    <span v-else-if="card.total_stamps >= storeConfig.bronzeThreshold" class="status-pill pill-bronze">Bronze</span>
+                                    <span v-else class="status-pill pill-new">New</span>
+                                </td>
+                                <td>
+                                    <div class="consent-wrapper">
+                                        <span class="consent-btn" :class="{'is-rgpd': card.rgpd_accepted}" @click="toggleConsent(card, 'rgpd')">RGPD</span>
+                                        <span class="consent-btn" :class="{'is-mkt': card.marketing_accepted}" @click="toggleConsent(card, 'marketing')">MKT</span>
+                                    </div>
+                                </td>
+                                <td style="color: var(--primary); font-weight: 800; font-size: 1.1rem;">{{ calculateAvailable(card) }}<span style="font-size:0.8rem; margin-left:5px;">🎁</span></td>
+                                <td style="color: var(--gold); font-weight: 800; font-size: 1.1rem;">{{ card.total_redeemed_bonuses || 0 }}<span style="font-size:0.8rem; margin-left:5px;">🏆</span></td>
+                                <td><strong>{{ card.total_stamps }}</strong></td>
+                                <td>
+                                    <div class="action-grid">
+                                        <button class="btn-action btn-edit" @click="openEditModal(card)">Edit</button>
+                                        <button class="btn-action btn-view" @click="viewCard(card.id)">View</button>
+                                        <button class="btn-action btn-stamp" @click="addStampFromAdmin(card)">Stamp</button>
+                                        <button class="btn-action btn-redeem" :disabled="calculateAvailable(card) === 0" @click="redeemFromAdmin(card)">Use</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div v-else-if="currentPage === 'messages'" class="messages-container" style="max-width: 800px; margin: 0 auto;">
@@ -618,6 +627,30 @@
             </div>
 
         </main>
+
+        <div class="modal-overlay" v-if="showMobilePrompt" style="background: var(--bg-main); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+            <div style="padding: 30px; max-width: 400px; width: 100%; text-align: center;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">📱</div>
+                <h1 style="margin: 0 0 10px; font-weight: 900; font-size: 1.8rem; color: var(--text-main);">Modo de Ecrã</h1>
+                <p style="color: var(--text-sub); margin-bottom: 30px; font-size: 0.95rem; line-height: 1.5;">Detetámos que está num telemóvel. Pretende usar este dispositivo apenas para ler cartões?</p>
+
+                <button class="btn-prompt btn-prompt-scanner" @click="chooseScannerMode">
+                    <span style="font-size: 1.5rem;">📷</span>
+                    Modo Scanner
+                    <span style="font-size: 0.75rem; font-weight: 500; opacity: 0.8;">Apenas ler QR Codes (Rápido)</span>
+                </button>
+
+                <button class="btn-prompt btn-prompt-dash" @click="chooseFullDashboard">
+                    <span style="font-size: 1.5rem;">📊</span>
+                    Painel Completo
+                    <span style="font-size: 0.75rem; font-weight: 500; opacity: 0.8;">Aceder a clientes e definições</span>
+                </button>
+            </div>
+        </div>
+
+        <button v-if="isMobileScannerMode" class="fab-exit-scanner" @click="exitScannerMode" title="Sair do Scanner">
+            ⚙️
+        </button>
 
         <div class="modal-overlay" v-if="editingCard">
             <div class="modal-content">
