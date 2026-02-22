@@ -11,7 +11,7 @@ createApp({
         const card = ref({ id: null, customer_id: '', last_name: '', email: '', phone: '', total_stamps: 0, stamps_count: 0 });
         const myWalletCards = ref([]); 
         
-        // --- NOVO: NOTIFICAÇÕES ---
+        // --- NOTIFICAÇÕES ---
         const notifications = ref([]);
         const unreadCount = computed(() => notifications.value.filter(n => !n.is_read).length);
 
@@ -36,9 +36,8 @@ createApp({
             currentView.value = view; isMenuOpen.value = false; isEditingProfile.value = false; 
             if (view === 'my_cards' && card.value.email) fetchWalletCards(card.value.email);
             
-            // NOVO: Se abrir as notificações, marca-as como lidas na Base de Dados
             if (view === 'notifications' && card.value.email && unreadCount.value > 0) {
-                notifications.value.forEach(n => n.is_read = true); // Atualiza visualmente na hora
+                notifications.value.forEach(n => n.is_read = true); 
                 fetch('/api/v1/public/wallet-notifications/read', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: card.value.email })
@@ -115,9 +114,11 @@ createApp({
             }
         };
 
-        const fetchSkinDetails = async () => {
+        // 👇 CORREÇÃO: AGORA CONSEGUE PEDIR A SKIN DE UMA LOJA ESPECÍFICA NA WALLET 👇
+        const fetchSkinDetails = async (targetStore = null) => {
             try {
-                const res = await fetch(api('/api/v1/system/skins'));
+                const endpoint = targetStore ? `/api/v1/system/skins?store=${targetStore}` : api('/api/v1/system/skins');
+                const res = await fetch(endpoint);
                 if (res.ok) {
                     const skins = await res.json();
                     activeSkinData.value = skins.find(s => s.id === storeConfig.value.card_skin);
@@ -133,7 +134,6 @@ createApp({
             } catch(e) {}
         };
 
-        // --- NOVO: BUSCAR NOTIFICAÇÕES DA BD ---
         const fetchNotifications = async (email) => {
             if(!email) return;
             try {
@@ -149,7 +149,7 @@ createApp({
                 card.value = await res.json(); 
                 if(!hasStore.value && card.value.email) {
                     fetchWalletCards(card.value.email);
-                    fetchNotifications(card.value.email); // Despoleta a busca das mensagens
+                    fetchNotifications(card.value.email); 
                 }
             }
         };
@@ -194,13 +194,21 @@ createApp({
             const newConfig = configRes.ok ? await configRes.json() : null;
             const newCard = cardRes.ok ? await cardRes.json() : null;
 
-            const finalizeSwap = () => {
+            // 👇 CORREÇÃO: AGORA FORÇA A IR BUSCAR A SKIN QUANDO ABRE UM CARTÃO 👇
+            const finalizeSwap = async () => {
                 isFlipped.value = false; 
                 activeWalletCardId.value = cId;
                 activeWalletStoreSlug.value = storeSlug;
                 
-                if (newConfig) { storeConfig.value = { ...storeConfig.value, ...newConfig }; applyTheme(); }
-                if (newCard) { card.value = newCard; currentView.value = 'wallet_active_card'; }
+                if (newConfig) { 
+                    storeConfig.value = { ...storeConfig.value, ...newConfig }; 
+                    applyTheme(); 
+                    await fetchSkinDetails(storeSlug); // <-- A MÁGICA ACONTECE AQUI!
+                }
+                if (newCard) { 
+                    card.value = newCard; 
+                    currentView.value = 'wallet_active_card'; 
+                }
                 isChangingCard.value = false; 
             };
 
@@ -213,11 +221,13 @@ createApp({
             isChangingCard.value = true;
             activeWalletCardId.value = null;
             activeWalletStoreSlug.value = null;
+            activeSkinData.value = null; // <-- LIMPA A SKIN QUANDO VOLTAS ATRÁS
             await fetchCard();
             
             setTimeout(() => {
                 storeConfig.value.name = 'Volto Wallet';
                 storeConfig.value.logo_url = '';
+                storeConfig.value.card_skin = 'default';
                 applyTheme('#2563eb'); 
                 currentView.value = 'my_cards';
                 isChangingCard.value = false;
@@ -240,6 +250,7 @@ createApp({
             const skinId = storeConfig.value.card_skin || 'default';
             const mainColor = storeConfig.value.primary_color || defaultAppColor;
             let styles = { bg: mainColor, bgImage: 'none', bgSize: 'cover', bgPos: 'center', color: '#ffffff', stampBorder: 'gold' };
+            
             if (skinId === 'custom') {
                 styles.bg = storeConfig.value.card_image_url ? 'transparent' : mainColor;
                 styles.bgImage = storeConfig.value.card_image_url ? `url(${storeConfig.value.card_image_url})` : 'none';
@@ -249,9 +260,17 @@ createApp({
                 styles.stampBorder = storeConfig.value.border_color || '#ffffff';
                 return styles;
             } 
+            
             if (activeSkinData.value) {
-                if(activeSkinData.value.image) { styles.bgImage = `url(${activeSkinData.value.image})`; return styles; }
-                if(activeSkinData.value.style) { styles.bg = activeSkinData.value.style.replace('background:', '').replace(';', '').trim(); return styles; }
+                if(activeSkinData.value.image) { 
+                    styles.bgImage = `url(${activeSkinData.value.image})`; 
+                } else if (activeSkinData.value.colorBg) {
+                    styles.bg = activeSkinData.value.colorBg;
+                }
+                
+                styles.color = activeSkinData.value.colorText || '#ffffff';
+                styles.stampBorder = activeSkinData.value.colorBorder || 'gold';
+                return styles;
             }
             return styles;
         });
@@ -270,7 +289,6 @@ createApp({
             return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`;
         });
 
-        // UTILITÁRIO: Formatar a Data para as Notificações
         const formatDate = (dateStr) => {
             const d = new Date(dateStr);
             return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -280,7 +298,10 @@ createApp({
             window.addEventListener('keydown', handleKeydown); 
             if (window.location.hash === '#global_qr') currentView.value = 'global_qr';
             await fetchCard(); 
-            if (hasStore.value) { await fetchSettings(); fetchSkinDetails(); } 
+            if (hasStore.value) { 
+                await fetchSettings(); 
+                fetchSkinDetails(); // Carrega a Skin se vieste via link direto da loja
+            } 
             else { applyTheme('#2563eb'); }
         });
 
@@ -291,7 +312,7 @@ createApp({
             isMenuOpen, currentView, toggleMenu, changeView, logout, globalQrUrl,
             isEditingProfile, profileForm, startEditProfile, saveProfile, toasts, hasStore, myWalletCards, openWalletCard, backToWallet,
             showRedeemModal, nextWalletCard, prevWalletCard, isChangingCard,
-            notifications, unreadCount, formatDate // Exportado para o HTML
+            notifications, unreadCount, formatDate 
         };
     }
 }).mount('#app');

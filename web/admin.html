@@ -431,7 +431,14 @@
                             </div>
                         </div>
                         <div class="skin-body">
-                            <h3>{{ skin.name }}</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                                <h3 style="margin: 0; font-size: 1rem; color: var(--text-main);">{{ skin.name }}</h3>
+                                
+                                <span v-if="skin.type === 'seasonal' && skin.end" style="font-size: 0.55rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase;">
+                                    Até {{ formatShortDate(skin.end) }}
+                                </span>
+                            </div>
+                            
                             <div class="skin-actions">
                                 <button class="btn-skin-preview" @click="openPreview(skin.id)">{{ t('btn_preview') }}</button>
                                 <button v-if="skin.id === 'custom'" class="btn-skin-edit" @click="openCustomDesigner" title="Design Brand">✏️</button>
