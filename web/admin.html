@@ -348,6 +348,14 @@
                         </div>
                         <h4 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 1.1rem;">{{ n.title }}</h4>
                         <p style="margin: 0; color: var(--text-sub); font-size: 0.95rem; line-height: 1.5;">{{ n.message }}</p>
+
+                        <div v-if="n.image_data" style="margin-top: 15px; height: 120px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1);" 
+                             :style="(n.image_data.startsWith('data:image') || n.image_data.startsWith('http')) ? { backgroundImage: 'url(' + n.image_data + ')', backgroundSize: 'cover', backgroundPosition: 'center' } : { backgroundColor: n.image_data }">
+                             
+                             <span style="background: rgba(0,0,0,0.6); padding: 6px 15px; border-radius: 20px; color: white; font-weight: 800; font-size: 0.75rem; border: 1px dashed rgba(255,255,255,0.5); letter-spacing: 0.5px; backdrop-filter: blur(2px);">
+                                 ✨ NOVO DESIGN
+                             </span>
+                        </div>
                     </div>
                 </div>
             </div>

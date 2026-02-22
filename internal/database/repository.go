@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"brunch-card-digital/internal/models"
@@ -295,6 +296,22 @@ func (r *CardRepository) GetAvailableSkins() ([]models.Skin, error) {
 }
 
 func (r *CardRepository) SaveSkin(s models.Skin) error {
+	// 1. Garantir que tem um ID antes de procurar
+	if s.ID == "" {
+		s.ID = uuid.New().String()
+	}
+
+	var exists bool
+	var oldStoreID sql.NullString
+
+	// 2. Verifica se a Skin já existia
+	err := r.db.QueryRow("SELECT store_id FROM skins WHERE id=$1", s.ID).Scan(&oldStoreID)
+	if err == sql.ErrNoRows {
+		exists = false
+	} else if err == nil {
+		exists = true
+	}
+
 	query := `
         INSERT INTO skins (id, name, type, image_data, color_bg, color_text, color_border, is_global, store_id, start_date, end_date, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
@@ -309,8 +326,40 @@ func (r *CardRepository) SaveSkin(s models.Skin) error {
 		storeID = *s.StoreID
 	}
 
-	_, err := r.db.Exec(query, s.ID, s.Name, s.Type, s.ImageData, s.ColorBg, s.ColorText, s.ColorBorder, s.IsGlobal, storeID, s.StartDate, s.EndDate)
-	return err
+	_, err = r.db.Exec(query, s.ID, s.Name, s.Type, s.ImageData, s.ColorBg, s.ColorText, s.ColorBorder, s.IsGlobal, storeID, s.StartDate, s.EndDate)
+	if err != nil {
+		log.Printf("❌ Erro SQL ao guardar Skin: %v", err)
+		return err
+	}
+
+	// --- AUTOMAÇÃO DE NOTIFICAÇÕES ---
+	visual := s.ImageData
+	if visual == "" {
+		visual = s.ColorBg
+	}
+
+	log.Printf("ℹ️ DETEÇÃO SKIN: ID=%s | Nome=%s | Nova=%v | Global=%v | Tipo=%s", s.ID, s.Name, !exists, s.IsGlobal, s.Type)
+
+	if !exists {
+		if s.IsGlobal {
+			log.Println("📢 A disparar Broadcast de Skin 100% NOVA!")
+			r.BroadcastStoreNotification("🎨 Novo Cartão: "+s.Name, "Lançámos um novo design na plataforma! Vá ao menu 'Estilo do Cartão' para o ativar.", "success", visual)
+		} else if storeID != nil {
+			r.SendStoreNotification(*s.StoreID, "🎁 Design Exclusivo: "+s.Name, "Foi-lhe atribuído um novo estilo de cartão exclusivo. Verifique o menu 'Estilo do Cartão'.", "success", visual)
+		}
+	} else {
+		if storeID != nil && (!oldStoreID.Valid || oldStoreID.String != *s.StoreID) {
+			r.SendStoreNotification(*s.StoreID, "🎁 Novo Design Exclusivo: "+s.Name, "A equipa Volto acabou de lhe atribuir um estilo de cartão exclusivo!", "success", visual)
+		}
+
+		// Aceita minúsculas ou maiúsculas ("seasonal" ou "Seasonal")
+		if s.IsGlobal && strings.ToLower(s.Type) == "seasonal" {
+			log.Println("📢 A disparar Broadcast de Skin SAZONAL atualizada!")
+			r.BroadcastStoreNotification("🗓️ Época Especial: "+s.Name, "O cartão sazonal de época está disponível para uso na sua loja!", "info", visual)
+		}
+	}
+
+	return nil
 }
 
 func (r *CardRepository) DeleteSkin(id string) error {
@@ -888,15 +937,17 @@ func (r *CardRepository) SendNotificationToEmails(emails []string, storeID, titl
 // --- MENSAGENS PARA OS LOJISTAS (ADMIN NOTIFICATIONS) ---
 
 func (r *CardRepository) GetStoreNotifications(storeID string) ([]models.StoreNotification, error) {
-	query := `SELECT id, store_id, title, message, type, is_read, created_at FROM store_notifications WHERE store_id = $1 ORDER BY created_at DESC LIMIT 50`
+	query := `SELECT id, store_id, title, message, type, is_read, created_at, COALESCE(image_data, '') FROM store_notifications WHERE store_id = $1 ORDER BY created_at DESC LIMIT 50`
 	rows, err := r.db.Query(query, storeID)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var notifs []models.StoreNotification
 	for rows.Next() {
 		var n models.StoreNotification
-		rows.Scan(&n.ID, &n.StoreID, &n.Title, &n.Message, &n.Type, &n.IsRead, &n.CreatedAt)
+		rows.Scan(&n.ID, &n.StoreID, &n.Title, &n.Message, &n.Type, &n.IsRead, &n.CreatedAt, &n.ImageData)
 		notifs = append(notifs, n)
 	}
 	return notifs, nil
@@ -907,21 +958,28 @@ func (r *CardRepository) MarkStoreNotificationsAsRead(storeID string) error {
 	return err
 }
 
-func (r *CardRepository) SendStoreNotification(storeID, title, message, nType string) error {
+func (r *CardRepository) SendStoreNotification(storeID, title, message, nType, imageData string) error {
 	id := uuid.New().String()
-	_, err := r.db.Exec(`INSERT INTO store_notifications (id, store_id, title, message, type) VALUES ($1, $2, $3, $4, $5)`, id, storeID, title, message, nType)
+	_, err := r.db.Exec(`INSERT INTO store_notifications (id, store_id, title, message, type, image_data) VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''))`, id, storeID, title, message, nType, imageData)
+
+	// SE FALHAR NA BD, VAI GRITAR NO TERMINAL!
+	if err != nil {
+		log.Printf("❌ ERRO SQL NA NOTIFICAÇÃO (Loja: %s): %v", storeID, err)
+	}
 	return err
 }
 
-func (r *CardRepository) BroadcastStoreNotification(title, message, nType string) error {
+func (r *CardRepository) BroadcastStoreNotification(title, message, nType, imageData string) error {
 	rows, err := r.db.Query(`SELECT id FROM stores`)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var storeID string
 		if err := rows.Scan(&storeID); err == nil {
-			r.SendStoreNotification(storeID, title, message, nType)
+			r.SendStoreNotification(storeID, title, message, nType, imageData)
 		}
 	}
 	return nil

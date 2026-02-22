@@ -136,12 +136,13 @@ CREATE TABLE wallet_notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE store_notifications (
+CREATE TABLE IF NOT EXISTS store_notifications (
     id VARCHAR(36) PRIMARY KEY,
-    store_id VARCHAR(36) REFERENCES stores(id) ON DELETE CASCADE,
+    store_id TEXT REFERENCES stores(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     type VARCHAR(50) DEFAULT 'info',
+    image_data TEXT,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

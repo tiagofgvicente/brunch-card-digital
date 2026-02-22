@@ -197,6 +197,7 @@ type StoreNotification struct {
 	Title     string    `json:"title"`
 	Message   string    `json:"message"`
 	Type      string    `json:"type"`
+	ImageData string    `json:"image_data"`
 	IsRead    bool      `json:"is_read"`
 	CreatedAt time.Time `json:"created_at"`
 }

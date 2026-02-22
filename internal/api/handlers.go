@@ -756,7 +756,7 @@ func MarkAdminNotificationsReadHandler(w http.ResponseWriter, r *http.Request, r
 
 func MasterSendNotificationHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
 	var req struct {
-		StoreID string `json:"store_id"` // "all" para todas as lojas
+		StoreID string `json:"store_id"`
 		Title   string `json:"title"`
 		Message string `json:"message"`
 		Type    string `json:"type"`
@@ -764,9 +764,9 @@ func MasterSendNotificationHandler(w http.ResponseWriter, r *http.Request, repo 
 	json.NewDecoder(r.Body).Decode(&req)
 
 	if req.StoreID == "all" {
-		repo.BroadcastStoreNotification(req.Title, req.Message, req.Type)
+		repo.BroadcastStoreNotification(req.Title, req.Message, req.Type, "")
 	} else {
-		repo.SendStoreNotification(req.StoreID, req.Title, req.Message, req.Type)
+		repo.SendStoreNotification(req.StoreID, req.Title, req.Message, req.Type, "")
 	}
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
