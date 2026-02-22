@@ -98,7 +98,17 @@ func LoginHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRep
 	// ---------------------------------------------------------
 	// Usamos a função AuthenticateStore que criámos no repository.go
 	store, err := repo.AuthenticateStore(req.Identifier, req.Password)
+	if err != nil {
+		// 👇 ADICIONA ESTA VERIFICAÇÃO 👇
+		if err.Error() == "store is suspended" {
+			http.Error(w, "SUSPENDED", http.StatusForbidden) // Retorna 403 Forbidden com palavra-chave
+			return
+		}
 
+		// Se não for suspensa, então é mesmo password errada
+		http.Error(w, "Credenciais inválidas", http.StatusUnauthorized)
+		return
+	}
 	if err == nil && store != nil {
 		log.Printf("✅ Login Store Admin: '%s' -> %s", req.Identifier, store.Slug)
 

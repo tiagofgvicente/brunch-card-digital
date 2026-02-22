@@ -89,15 +89,36 @@ const LandingPage = {
         const fetchConfig = async () => { try { const res = await fetch('/api/v1/system/config'); if(res.ok) storeConfig.value = await res.json(); } catch(e){} };
         const fetchStats = async () => { try { const res = await fetch('/api/v1/public/stats'); if(res.ok) stats.value = await res.json(); } catch(e){} };
 
-        // --- LOGIN LOJA ---
+        // --- LOGIN LOJA (ATUALIZADO PARA LER SUSPENSÃO) ---
         const handleLogin = async () => {
             loading.value = true; errorMsg.value = '';
             try {
-                const res = await fetch('/api/v1/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifier: loginForm.value.email, password: loginForm.value.password }) });
-                if (res.ok) { const data = await res.json(); window.location.href = data.redirect; } 
-                else { errorMsg.value = lang.value === 'pt' ? "Email ou Password incorretos." : "Invalid email or password."; }
-            } catch (e) { errorMsg.value = lang.value === 'pt' ? "Erro de conexão." : "Connection error."; } 
-            finally { loading.value = false; }
+                const res = await fetch('/api/v1/auth/login', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ identifier: loginForm.value.email, password: loginForm.value.password }) 
+                });
+                
+                if (res.ok) { 
+                    const data = await res.json(); 
+                    window.location.href = data.redirect; 
+                } else { 
+                    // Lê o erro que vem do Go
+                    const errorText = await res.text();
+                    
+                    if (errorText.includes("SUSPENDED")) {
+                        errorMsg.value = lang.value === 'pt' 
+                            ? "⛔ A sua conta encontra-se suspensa. Por favor, contacte o suporte." 
+                            : "⛔ Your account is suspended. Please contact support.";
+                    } else {
+                        errorMsg.value = lang.value === 'pt' ? "Email ou Password incorretos." : "Invalid email or password."; 
+                    }
+                }
+            } catch (e) { 
+                errorMsg.value = lang.value === 'pt' ? "Erro de conexão." : "Connection error."; 
+            } finally { 
+                loading.value = false; 
+            }
         };
         
         // --- REGISTO NOVA LOJA ---
