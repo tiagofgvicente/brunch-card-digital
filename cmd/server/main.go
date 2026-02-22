@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"brunch-card-digital/internal/api"
@@ -78,15 +79,11 @@ func main() {
 
 	tenantMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			// 1. Tenta ler do URL (?store=xyz)
 			slug := r.URL.Query().Get("store")
-
-			// 2. Se estiver vazio (acesso à raiz /), força "brunch"
 			if slug == "" {
 				slug = "brunch"
 			}
 
-			// 3. Vai buscar à BD
 			store, err := repo.GetStoreBySlug(slug)
 			if err != nil {
 				log.Printf("❌ Critical: Default store '%s' not found. DETALHE DO ERRO: %v", slug, err)
@@ -94,7 +91,22 @@ func main() {
 				return
 			}
 
-			// 4. Injeta e segue
+			// --- LÓGICA DE BLOQUEIO (TRIAL/PAGAMENTO) ---
+			// Verifica se a data de expiração já passou.
+			isExpired := time.Now().After(store.TierExpiration)
+
+			// Se estiver expirado E o status não for "lifetime" ou "paid", bloqueamos a API
+			if isExpired && store.Status != "paid" && store.Status != "lifetime" {
+				// Se a chamada for para modificar dados (/admin/update, /cards, etc), bloqueia com 403
+				if r.Method != http.MethodGet && strings.Contains(r.URL.Path, "/api/v1/admin/") {
+					http.Error(w, "Subscrição expirada. Por favor regularize o pagamento.", http.StatusForbidden)
+					return
+				}
+
+				// Se for um GET (ex: carregar as settings), alteramos temporariamente o status para o Frontend saber que tem de mostrar o Modal
+				store.Status = "expired"
+			}
+
 			ctx := context.WithValue(r.Context(), "current_store", store)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}

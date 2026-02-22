@@ -423,6 +423,9 @@ const AdminApp = {
                 if (localTheme) { setTheme(localTheme); } else { setTheme(d.themeMode || 'dark'); }
                 fetchAvailableSkins();
                 document.title = `Volto Store Admin | ${d.name}`;
+                if (d.status === 'expired') {
+                    isAccountExpired.value = true;
+                }
             }); 
         });
 

@@ -727,6 +727,25 @@
                 <button class="btn-save-modal" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); margin-top:20px;" @click="showPreview = false">CLOSE</button>
             </div>
         </div>
+        <div class="modal-overlay" v-if="isAccountExpired" style="background: rgba(0,0,0,0.9); z-index: 10000; display: flex; flex-direction: column; backdrop-filter: blur(10px);">
+            <div style="background: var(--bg-card); padding: 50px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+                <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>
+                <h1 style="margin: 0 0 10px; color: var(--primary); font-weight: 900;">O seu período de teste terminou.</h1>
+                <p style="color: var(--text-sub); font-size: 0.95rem; margin-bottom: 30px; line-height: 1.5;">
+                    Esperamos que tenha gostado da <strong>Volto</strong>!<br>Para continuar a premiar os seus clientes e aceder à sua base de dados, escolha um dos nossos planos.
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <a href="mailto:suporte@volto.com?subject=Atualizar Plano - {{ storeConfig.name }}" style="background: var(--primary); color: white; padding: 15px; border-radius: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; transition: 0.2s;">
+                        Falar com o Suporte
+                    </a>
+                    
+                    <button @click="logout" style="background: transparent; color: var(--text-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; font-weight: 700; cursor: pointer;">
+                        Sair da Conta
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="/static/js/admin.js"></script>
 </body>

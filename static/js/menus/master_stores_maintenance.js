@@ -59,17 +59,22 @@ const MasterStoresMaintenance = {
             </div>
         </div>
 
-        <div v-if="suspendedStores.length > 0">
+        <div v-if="inactiveStores.length > 0">
             <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #991b1b; margin-bottom: 15px; letter-spacing: 0.5px;">SUSPENDED / EXPIRED ACCOUNTS</div>
             <div style="width: 100%; height: 1px; background: #fecaca; margin-bottom: 25px;"></div>
 
             <div class="grid-stores" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px;">
-                <div v-for="store in suspendedStores" :key="store.id" class="card-box" style="background: #fef2f2; border: 1px dashed #f87171; border-radius: 12px; padding: 25px; opacity: 0.9;">
+                <div v-for="store in inactiveStores" :key="store.id" class="card-box" style="background: #fef2f2; border: 1px dashed #f87171; border-radius: 12px; padding: 25px; opacity: 0.9;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <h3 style="margin: 0; color: #991b1b; font-size: 1.1rem;">{{ store.name }}</h3>
-                        <span style="font-size: 0.6rem; font-weight: 800; color: #991b1b; background: #fee2e2; padding: 4px 10px; border-radius: 20px;">⛔ SUSPENDED</span>
+                        
+                        <span v-if="!store.isActive" style="font-size: 0.6rem; font-weight: 800; color: #991b1b; background: #fee2e2; padding: 4px 10px; border-radius: 20px;">⛔ SUSPENDED</span>
+                        <span v-else style="font-size: 0.6rem; font-weight: 800; color: #92400e; background: #fef3c7; padding: 4px 10px; border-radius: 20px;">⏳ EXPIRED</span>
                     </div>
-                    <p style="font-size: 0.85rem; color: #7f1d1d; margin-bottom: 20px;">This store is currently offline.</p>
+                    
+                    <p v-if="!store.isActive" style="font-size: 0.85rem; color: #7f1d1d; margin-bottom: 20px;">This store was manually suspended by the Master Admin.</p>
+                    <p v-else style="font-size: 0.85rem; color: #7f1d1d; margin-bottom: 20px;">Trial or subscription expired {{ Math.abs(getDays(store.tier_expiration)) }} days ago.</p>
+                    
                     <button @click="openEdit(store)" style="width: 100%; padding: 12px; background: #dc2626; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">MANAGE & REACTIVATE</button>
                 </div>
             </div>
@@ -128,7 +133,7 @@ const MasterStoresMaintenance = {
                 <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; display:flex; justify-content: space-between; align-items: center;">
                     <div>
                         <div style="font-size: 0.8rem; font-weight: 800; color: #991b1b;">STORE STATUS</div>
-                        <div style="font-size: 0.75rem; color: #6b7280;">Suspend access immediately?</div>
+                        <div style="font-size: 0.75rem; color: #6b7280;">Suspend access manually?</div>
                     </div>
                     <button @click="toggleStatus(editingStore)" :style="editingStore.isActive ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;' : 'background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;'" style="padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.8rem;">
                         {{ editingStore.isActive ? '⛔ SUSPEND STORE' : '✅ REACTIVATE STORE' }}
@@ -151,13 +156,29 @@ const MasterStoresMaintenance = {
             } catch(e) { console.error(e); }
         };
 
+        // Função utilitária para calcular os dias
+        const getDays = (dateStr) => {
+            if(!dateStr) return 0;
+            const target = new Date(dateStr);
+            const now = new Date();
+            const diff = target - now;
+            return Math.ceil(diff / (1000 * 60 * 60 * 24));
+        };
+
+        // Identifica automaticamente se a conta expirou
+        const isStoreExpired = (s) => getDays(s.tier_expiration) <= 0;
+
         const filtered = computed(() => { 
             if(!stores.value) return []; 
             return stores.value.filter(s => s.name.toLowerCase().includes(search.value.toLowerCase())); 
         });
         
-        const activeStores = computed(() => filtered.value.filter(s => s.isActive));
-        const suspendedStores = computed(() => filtered.value.filter(s => !s.isActive));
+        // --- A MAGIA DA ARRUMAÇÃO INTELIGENTE ---
+        // Lojas ativas E que ainda têm dias restantes
+        const activeStores = computed(() => filtered.value.filter(s => s.isActive && !isStoreExpired(s)));
+        
+        // Lojas suspensas manualmente OU que já expiraram
+        const inactiveStores = computed(() => filtered.value.filter(s => !s.isActive || isStoreExpired(s)));
 
         const toggleStatus = async (s) => {
             const newStatus = !s.isActive;
@@ -171,7 +192,6 @@ const MasterStoresMaintenance = {
             });
             if(res.ok) { 
                 fetchStores(); 
-                // Atualiza o estado local do modal para refletir a mudança imediata no botão
                 if(editingStore.value && editingStore.value.id === s.id) {
                     editingStore.value.isActive = newStatus;
                 }
@@ -180,7 +200,6 @@ const MasterStoresMaintenance = {
         };
 
         const saveChanges = async () => { 
-            // Converter data de volta para ISO string se necessário, ou enviar como está se o backend aceitar
             const payload = { ...editingStore.value };
             if (payload.tier_expiration) {
                 payload.tier_expiration = new Date(payload.tier_expiration).toISOString();
@@ -227,14 +246,6 @@ const MasterStoresMaintenance = {
             return map[cycle] || 'Monthly Billing';
         };
 
-        const getDays = (dateStr) => {
-            if(!dateStr) return 0;
-            const target = new Date(dateStr);
-            const now = new Date();
-            const diff = target - now;
-            return Math.ceil(diff / (1000 * 60 * 60 * 24));
-        };
-
         const getCountdownText = (s) => {
             const days = getDays(s.tier_expiration);
             if(s.tier === 'free_trial') {
@@ -245,7 +256,7 @@ const MasterStoresMaintenance = {
 
         const getCountdownIcon = (s) => {
             const days = getDays(s.tier_expiration);
-            if (days < 0) return '🚨'; 
+            if (days <= 0) return '🚨'; 
             if (days < 5) return '⚠️'; 
             return '🕒'; 
         };
@@ -269,8 +280,8 @@ const MasterStoresMaintenance = {
         Vue.onMounted(fetchStores);
 
         return { 
-            stores, search, activeStores, suspendedStores, editingStore, toggleStatus, openEdit, saveChanges, handleLogoUpload, emit,
-            formatTier, getTierStyle, formatCycle, getCountdownText, getCountdownStyle, getCountdownIcon
+            stores, search, activeStores, inactiveStores, editingStore, toggleStatus, openEdit, saveChanges, handleLogoUpload, emit,
+            formatTier, getTierStyle, formatCycle, getCountdownText, getCountdownStyle, getCountdownIcon, getDays
         };
     }
 };
