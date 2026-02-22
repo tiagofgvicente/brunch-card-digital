@@ -76,56 +76,39 @@
         .btn-register:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
         /* --- TEMA BTN: ANIMAÇÕES CELESTIAIS --- */
-        
-        /* Base do botão */
         .theme-btn {
             background: var(--bg-card); border: 1px solid var(--border);
             font-size: 1.3rem; cursor: pointer; 
             width: 42px; height: 42px; border-radius: 50%;
             color: var(--text-main); display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            /* Transição suave para todas as propriedades */
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        /* Definição das Animações */
         @keyframes sun-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes moon-rock { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(10deg); } }
 
-        /* HOVER NO TEMA CLARO (SOL ☀️) */
-        /* Quando o body NÃO tem o atributo data-theme="dark" */
         body:not([data-theme="dark"]) .theme-btn:hover {
-            /* Fundo gradiente quente */
             background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            border-color: transparent;
-            color: white; /* Ícone fica branco */
-            /* Brilho dourado intenso */
+            border-color: transparent; color: white; 
             box-shadow: 0 0 20px rgba(246, 211, 101, 0.7);
-            /* Animação de rotação contínua */
             animation: sun-spin 3s linear infinite;
         }
 
-        /* HOVER NO TEMA ESCURO (LUA 🌙) */
-        /* Quando o body TEM o atributo data-theme="dark" */
         [data-theme="dark"] .theme-btn:hover {
-            /* Fundo céu noturno profundo */
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            border-color: transparent;
-            color: #fffadd; /* Ícone num branco amarelado de lua */
-            /* Brilho frio azulado */
+            border-color: transparent; color: #fffadd; 
             box-shadow: 0 0 20px rgba(42, 82, 152, 0.7);
-            /* Animação de baloiçar suave */
             animation: moon-rock 3s ease-in-out infinite;
         }
 
-
-        /* --- BOTÃO DE IDIOMA (EFEITO BANDEIRA) --- */
+        /* --- BOTÃO DE IDIOMA --- */
         .lang-btn {
             font-size: 0.75rem; font-weight: 900; text-transform: uppercase;
             border-radius: 12px; width: 42px; height: 42px; 
             position: relative; overflow: hidden;
             background-repeat: no-repeat; background-position: left center;
-            background-size: 0% 100%; /* Começa invisível */
+            background-size: 0% 100%;
             transition: background-size 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
                         transform 0.2s ease, color 0.3s, border-color 0.3s;
         }
@@ -136,9 +119,7 @@
             text-shadow: 0 1px 3px rgba(0,0,0,0.8);
             border-color: transparent; transform: rotate(15deg) scale(1.1); 
         }
-        /* Reutiliza o estilo base do theme-btn para tamanho e borda */
         .lang-btn { background-color: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: var(--text-main); display:flex; align-items:center; justify-content:center;}
-
 
         /* --- HERO CENTER --- */
         .hero-center {
@@ -217,14 +198,23 @@
         }
         input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
         
-        .otp-container { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
-        .otp-input { width: 45px; height: 50px; text-align: center; font-size: 1.5rem; letter-spacing: 5px; font-weight: 700; }
-
         .btn-submit {
             width: 100%; padding: 14px; background: var(--primary);
             color: white; border: none; border-radius: 8px;
             font-weight: 700; cursor: pointer; font-size: 0.9rem; margin-top: 10px;
+            transition: all 0.2s;
         }
+        
+        /* 👇 ESTILO MÁGICO PARA QUANDO O BOTÃO ESTÁ DESATIVADO 👇 */
+        .btn-submit:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(80%);
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .btn-submit:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-2px); }
+
         .switch-auth { margin-top: 20px; text-align: center; font-size: 0.85rem; color: var(--text-sub); }
         .switch-auth span { color: var(--primary); font-weight: 700; cursor: pointer; }
 
@@ -337,14 +327,21 @@
                             <div class="form-group"><label>Phone (Optional)</label><input type="tel" v-model="globalUserForm.phone" placeholder="+351 900 000 000"></div>
                             <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="globalUserForm.password" required placeholder="••••••••"></div>
                             
-                            <div style="display: flex; align-items: flex-start; gap: 10px; margin: 20px 0; font-size: 0.75rem; color: var(--text-sub); text-align: left;">
-                                <input type="checkbox" v-model="globalUserForm.rgpd" required style="width: auto; margin-top: 3px;">
-                                <span>I agree to the processing of my personal data for the creation of my Volto Wallet in accordance with the Privacy Policy. *</span>
+                            <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0; text-align: left;">
+                                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" v-model="globalUserForm.rgpd" style="margin-top: 3px; width: auto; accent-color: var(--primary);">
+                                    <span style="font-size: 0.75rem; color: var(--text-sub);">I agree to the processing of my personal data for the creation of my Volto Wallet in accordance with the Privacy Policy. *</span>
+                                </label>
+                                
+                                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" v-model="globalUserForm.marketing" style="margin-top: 3px; width: auto; accent-color: var(--primary);">
+                                    <span style="font-size: 0.75rem; color: var(--text-sub);">I want to receive news, offers, and new loyalty cards directly in my wallet. (Optional)</span>
+                                </label>
                             </div>
 
-                            <button type="submit" class="btn-submit" :disabled="loading || !globalUserForm.rgpd || !globalUserForm.firstName || !globalUserForm.lastName || !globalUserForm.email || !globalUserForm.password">
-    {{ loading ? 'A criar...' : 'Create Wallet' }}
-</button>
+                            <button type="submit" class="btn-submit" :disabled="loading || !isWalletFormValid">
+                                {{ loading ? 'A criar...' : 'Create Wallet' }}
+                            </button>
                         </form>
                     </div>
                 </div>

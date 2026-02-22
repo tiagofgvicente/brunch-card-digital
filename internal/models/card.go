@@ -147,13 +147,15 @@ type LoginResponse struct {
 }
 
 type GlobalUser struct {
-	ID           string `json:"id"`
-	FirstName    string `json:"first_name"`
-	LastName     string `json:"last_name"`
-	Email        string `json:"email"`
-	Phone        string `json:"phone"`
-	Password     string `json:"-"`
-	RgpdAccepted bool   `json:"rgpd_accepted"`
+	ID                string    `json:"id"`
+	FirstName         string    `json:"first_name"`
+	LastName          string    `json:"last_name"`
+	Email             string    `json:"email"`
+	Phone             string    `json:"phone"`
+	Password          string    `json:"-"`
+	RgpdAccepted      bool      `json:"rgpd_accepted"`
+	MarketingAccepted bool      `json:"marketing_accepted"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 type RegisterGlobalUserRequest struct {
@@ -163,15 +165,17 @@ type RegisterGlobalUserRequest struct {
 	Phone     string `json:"phone"`
 	Password  string `json:"password"`
 	Rgpd      bool   `json:"rgpd"`
+	Marketing bool   `json:"marketing"`
 }
 
 type StoreScope struct {
-	ID        string `json:"id"`
-	StoreID   string `json:"store_id"`
-	Name      string `json:"name"`
-	StampIcon string `json:"stamp_icon"`
-	IsMain    bool   `json:"is_main"`
-	IsActive  bool   `json:"is_active"`
+	ID        string    `json:"id"`
+	StoreID   string    `json:"store_id"`
+	Name      string    `json:"name"`
+	StampIcon string    `json:"stamp_icon"`
+	IsMain    bool      `json:"is_main"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type WalletNotification struct {

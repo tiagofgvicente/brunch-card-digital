@@ -1,6 +1,7 @@
 const LandingPage = {
     setup() {
-        const { ref, onMounted } = Vue;
+        // 👇 Adicionado o 'computed' aqui
+        const { ref, computed, onMounted } = Vue;
 
         // --- ESTADO ---
         const theme = ref('light'); 
@@ -22,7 +23,19 @@ const LandingPage = {
         
         // Formulários da Wallet (Global Users)
         const walletForm = ref({ email: '', password: '' });
-        const globalUserForm = ref({ firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false });
+        
+        // 👇 Adicionado o campo 'marketing' aqui 👇
+        const globalUserForm = ref({ firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false, marketing: false });
+
+        // 👇 NOVA LÓGICA: Verifica se os campos obrigatórios estão todos preenchidos 👇
+        const isWalletFormValid = computed(() => {
+            const f = globalUserForm.value;
+            return f.firstName.trim() !== '' &&
+                   f.lastName.trim() !== '' &&
+                   f.email.trim() !== '' &&
+                   f.password.trim() !== '' &&
+                   f.rgpd === true; // Marketing não está aqui porque é opcional
+        });
 
         // --- TRADUÇÕES ---
         const translations = {
@@ -142,6 +155,7 @@ const LandingPage = {
         return {
             theme, lang, currentModal, loading, errorMsg, storeConfig, stats,
             loginForm, registerForm, walletForm, walletTab, globalUserForm,
+            isWalletFormValid, // 👇 Exportado para o HTML conseguir ler!
             t, toggleTheme, toggleLang, 
             handleLogin, handleRegister, handleWalletRegister, handleWalletLogin,
             openLogin: () => { currentModal.value = 'login'; errorMsg.value = ''; },
@@ -150,7 +164,7 @@ const LandingPage = {
                 currentModal.value = 'wallet'; 
                 walletTab.value = 'login'; 
                 walletForm.value = { email: '', password: '' };
-                globalUserForm.value = { firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false };
+                globalUserForm.value = { firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false, marketing: false };
                 errorMsg.value = ''; 
             },
             closeModal: () => currentModal.value = null

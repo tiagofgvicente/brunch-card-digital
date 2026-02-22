@@ -672,8 +672,8 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
 // --- GESTÃO DE UTILIZADORES GLOBAIS (VOLTO WALLET) ---
 
 func (r *CardRepository) CreateGlobalUser(u models.GlobalUser) error {
-	query := `INSERT INTO global_users (id, first_name, last_name, email, phone, password, rgpd_accepted) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	_, err := r.db.Exec(query, u.ID, u.FirstName, u.LastName, u.Email, u.Phone, u.Password, u.RgpdAccepted)
+	query := `INSERT INTO global_users (id, first_name, last_name, email, phone, password, rgpd_accepted, marketing_accepted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := r.db.Exec(query, u.ID, u.FirstName, u.LastName, u.Email, u.Phone, u.Password, u.RgpdAccepted, u.MarketingAccepted)
 	return err
 }
 
@@ -793,13 +793,17 @@ func (r *CardRepository) ToggleScopeStatus(scopeID string, storeID string, isAct
 	query := `UPDATE store_scopes SET is_active = $1 WHERE id = $2 AND store_id = $3 AND is_main = FALSE RETURNING name`
 	var scopeName string
 	err := r.db.QueryRow(query, isActive, scopeID, storeID).Scan(&scopeName)
-	
+
 	if err == nil {
 		rows, _ := r.db.Query(`SELECT DISTINCT email FROM loyalty_cards WHERE scope_id = $1 AND email IS NOT NULL AND email != ''`, scopeID)
 		var emails []string
-		for rows.Next() { var e string; rows.Scan(&e); emails = append(emails, e) }
+		for rows.Next() {
+			var e string
+			rows.Scan(&e)
+			emails = append(emails, e)
+		}
 		rows.Close()
-		
+
 		if !isActive {
 			r.SendNotificationToEmails(emails, storeID, "⏸️ Cartão Pausado", fmt.Sprintf("O programa '%s' foi temporariamente pausado. Os seus selos estão salvaguardados.", scopeName), "warning")
 		} else {
@@ -819,15 +823,19 @@ func (r *CardRepository) DeleteStoreScope(scopeID string, storeID string) error 
 	// COMO VAMOS APAGAR, TEMOS DE IR BUSCAR OS EMAILS *ANTES* DO CASCADE DESTRUIR OS CARTÕES!
 	var scopeName string
 	r.db.QueryRow(`SELECT name FROM store_scopes WHERE id = $1`, scopeID).Scan(&scopeName)
-	
+
 	rows, _ := r.db.Query(`SELECT DISTINCT email FROM loyalty_cards WHERE scope_id = $1 AND email IS NOT NULL AND email != ''`, scopeID)
 	var emails []string
-	for rows.Next() { var e string; rows.Scan(&e); emails = append(emails, e) }
+	for rows.Next() {
+		var e string
+		rows.Scan(&e)
+		emails = append(emails, e)
+	}
 	rows.Close()
 
 	query := `DELETE FROM store_scopes WHERE id = $1 AND store_id = $2 AND is_main = FALSE`
 	res, err := r.db.Exec(query, scopeID, storeID)
-	
+
 	if err == nil {
 		rowsAff, _ := res.RowsAffected()
 		if rowsAff > 0 && scopeName != "" {

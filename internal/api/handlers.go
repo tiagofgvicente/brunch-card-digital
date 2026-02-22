@@ -543,6 +543,7 @@ func WalletRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		Phone:        req.Phone,
 		Password:     req.Password,
 		RgpdAccepted: req.Rgpd,
+		MarketingAccepted: req.Marketing,
 	}
 
 	if err := repo.CreateGlobalUser(newUser); err != nil {

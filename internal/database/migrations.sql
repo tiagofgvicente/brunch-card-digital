@@ -105,6 +105,7 @@ CREATE TABLE global_users (
     phone VARCHAR(50),
     password VARCHAR(255) NOT NULL,
     rgpd_accepted BOOLEAN DEFAULT FALSE,
+    marketing_accepted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
