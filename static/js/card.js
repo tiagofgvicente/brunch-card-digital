@@ -11,7 +11,6 @@ createApp({
         const card = ref({ id: null, customer_id: '', last_name: '', email: '', phone: '', total_stamps: 0, stamps_count: 0 });
         const myWalletCards = ref([]); 
         
-        // --- NOTIFICAÇÕES ---
         const notifications = ref([]);
         const unreadCount = computed(() => notifications.value.filter(n => !n.is_read).length);
 
@@ -109,12 +108,18 @@ createApp({
             const endpoint = specificStore ? `/api/v1/system/config?store=${specificStore}` : api('/api/v1/system/config');
             const res = await fetch(endpoint);
             if (res.ok) {
-                storeConfig.value = { ...storeConfig.value, ...(await res.json()) }; 
+                const data = await res.json();
+                // 👇 GARANTIA: Inicializamos campos sociais para evitar que fiquem undefined
+                const socialDefaults = {
+                    social_instagram: '', social_facebook: '', social_twitter: '', social_whatsapp: '', 
+                    social_tiktok: '', social_youtube: '', social_website: '', 
+                    menu_url: '', location_url: ''
+                };
+                storeConfig.value = { ...storeConfig.value, ...socialDefaults, ...data }; 
                 applyTheme(); 
             }
         };
 
-        // 👇 CORREÇÃO: AGORA CONSEGUE PEDIR A SKIN DE UMA LOJA ESPECÍFICA NA WALLET 👇
         const fetchSkinDetails = async (targetStore = null) => {
             try {
                 const endpoint = targetStore ? `/api/v1/system/skins?store=${targetStore}` : api('/api/v1/system/skins');
@@ -194,21 +199,18 @@ createApp({
             const newConfig = configRes.ok ? await configRes.json() : null;
             const newCard = cardRes.ok ? await cardRes.json() : null;
 
-            // 👇 CORREÇÃO: AGORA FORÇA A IR BUSCAR A SKIN QUANDO ABRE UM CARTÃO 👇
             const finalizeSwap = async () => {
                 isFlipped.value = false; 
                 activeWalletCardId.value = cId;
                 activeWalletStoreSlug.value = storeSlug;
                 
                 if (newConfig) { 
-                    storeConfig.value = { ...storeConfig.value, ...newConfig }; 
+                    const socialDefaults = { social_instagram: '', social_facebook: '', social_twitter: '', social_whatsapp: '', social_tiktok: '', social_youtube: '', social_website: '', menu_url: '', location_url: '' };
+                    storeConfig.value = { ...storeConfig.value, ...socialDefaults, ...newConfig }; 
                     applyTheme(); 
-                    await fetchSkinDetails(storeSlug); // <-- A MÁGICA ACONTECE AQUI!
+                    await fetchSkinDetails(storeSlug); 
                 }
-                if (newCard) { 
-                    card.value = newCard; 
-                    currentView.value = 'wallet_active_card'; 
-                }
+                if (newCard) { card.value = newCard; currentView.value = 'wallet_active_card'; }
                 isChangingCard.value = false; 
             };
 
@@ -221,7 +223,7 @@ createApp({
             isChangingCard.value = true;
             activeWalletCardId.value = null;
             activeWalletStoreSlug.value = null;
-            activeSkinData.value = null; // <-- LIMPA A SKIN QUANDO VOLTAS ATRÁS
+            activeSkinData.value = null; 
             await fetchCard();
             
             setTimeout(() => {
@@ -267,7 +269,6 @@ createApp({
                 } else if (activeSkinData.value.colorBg) {
                     styles.bg = activeSkinData.value.colorBg;
                 }
-                
                 styles.color = activeSkinData.value.colorText || '#ffffff';
                 styles.stampBorder = activeSkinData.value.colorBorder || 'gold';
                 return styles;
@@ -300,7 +301,7 @@ createApp({
             await fetchCard(); 
             if (hasStore.value) { 
                 await fetchSettings(); 
-                fetchSkinDetails(); // Carrega a Skin se vieste via link direto da loja
+                fetchSkinDetails(); 
             } 
             else { applyTheme('#2563eb'); }
         });

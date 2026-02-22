@@ -185,12 +185,13 @@
         .btn-prompt-dash { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); }
         .btn-prompt-dash:hover { border-color: var(--primary); color: var(--primary); }
 
-        .fab-exit-scanner { position: fixed; bottom: 30px; right: 30px; background: var(--bg-side); border: 2px solid var(--border-color); color: var(--text-main); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); cursor: pointer; z-index: 9999; transition: 0.3s; }
-        .fab-exit-scanner:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.1); }
+        /* REMOVI O CSS DO FAB-EXIT-SCANNER */
     </style>
 </head>
 <body>
     <div id="app">
+        <audio id="beep-sound" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
+
         <div class="toast-container">
             <div v-for="(t, i) in toasts" :key="i" class="toast" :class="'toast-' + t.type">
                 <span>{{ t.message }}</span>
@@ -222,15 +223,18 @@
             </div>
             
             <nav>
-                <div class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 {{ t('nav_customers') }}</div>
-                <div class="nav-item" :class="{active: currentPage === 'register'}" @click="changePage('register')">➕ {{ t('nav_register') }}</div>
-                <div class="nav-item" :class="{active: currentPage === 'scanner'}" @click="changePage('scanner')">📷 {{ t('nav_scanner') }}</div>
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 {{ t('nav_customers') }}</div>
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'register'}" @click="changePage('register')">➕ {{ t('nav_register') }}</div>
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'scanner'}" @click="changePage('scanner')">📷 {{ t('nav_scanner') }}</div>
+                
                 <div class="nav-item" :class="{active: currentPage === 'messages'}" @click="changePage('messages')">
                     📬 Mensagens 
                     <span v-if="unreadAdminCount > 0" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.6rem; font-weight: bold; margin-left: auto;">{{ unreadAdminCount }}</span>
                 </div>
-                <div class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 {{ t('nav_skins') }}</div>
-                <div class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ {{ t('nav_settings') }}</div>
+                
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 {{ t('nav_skins') }}</div>
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ {{ t('nav_settings') }}</div>
+                
                 <div class="nav-item" @click="logout" style="margin-top:auto; color:var(--red);">🚪 {{ t('nav_logout') }}</div>
             </nav>
         </aside>
@@ -248,7 +252,7 @@
                 <button @click="changePage('settings')" style="background: black; color: #ffd166; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem;">Fazer Upgrade</button>
             </div>
 
-            <div v-if="currentPage === 'customers'">
+            <div v-if="currentPage === 'customers' && !isStoreLocked">
                 <div class="header-row" style="margin-bottom: 20px;">
                     <div class="page-header"><h1 style="margin:0;">{{ t('title_customers') }}</h1></div>
                     <div class="search-container"><input v-model="searchQuery" class="search-input" :placeholder="t('search_placeholder')"><span class="search-icon">🔍</span></div>
@@ -333,6 +337,16 @@
                     </div>
                 </div>
 
+                <div v-if="isAccountSuspended" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-left: 5px solid #ef4444; color: var(--text-main); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+                    <h3 style="margin: 0 0 10px 0; color: #ef4444;">⛔ A sua loja encontra-se Suspensa</h3>
+                    <p style="margin: 0; font-size: 0.95rem;">Por motivos administrativos, o acesso à gestão de clientes e scanner foi bloqueado. Por favor, verifique as mensagens abaixo ou contacte a nossa equipa de suporte.</p>
+                </div>
+
+                <div v-if="isAccountExpired" style="background: rgba(245, 158, 11, 0.1); border: 1px solid #fbbf24; border-left: 5px solid #fbbf24; color: var(--text-main); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+                    <h3 style="margin: 0 0 10px 0; color: #fbbf24;">⏳ O seu plano expirou</h3>
+                    <p style="margin: 0; font-size: 0.95rem;">Esperamos que tenha gostado do seu período na Volto! Para voltar a premiar os seus clientes e utilizar o painel, por favor ative um dos nossos planos entrando em contacto com o suporte através das mensagens abaixo.</p>
+                </div>
+
                 <div v-if="adminNotifications.length === 0" style="text-align: center; padding: 100px 0; color: var(--text-sub); background: var(--bg-side); border-radius: 16px; border: 1px solid var(--border-color);">
                     <span style="font-size: 4rem; display: block; margin-bottom: 15px; opacity: 0.5;">📭</span>
                     <h3 style="margin:0;">A sua caixa de entrada está vazia.</h3>
@@ -360,7 +374,7 @@
                 </div>
             </div>
 
-            <div v-else-if="currentPage === 'register'" class="reg-container">
+            <div v-else-if="currentPage === 'register' && !isStoreLocked" class="reg-container">
                 <div style="text-align: center; margin-bottom: 30px;">
                     <h1 style="margin: 0; font-weight: 800; font-size: 1.8rem; color: var(--primary);">{{ t('title_register') }}</h1>
                     <p style="color: var(--text-sub); margin-top: 5px;">Fill in the details to create a new digital card.</p>
@@ -399,7 +413,7 @@
                 <button class="btn-create-card" :disabled="!newMember.rgpd || (!newMember.first_name || !newMember.last_name)" @click="registerMember">{{ t('btn_create') }}</button>
             </div>
 
-            <div v-else-if="currentPage === 'scanner'" class="scanner-box" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+            <div v-else-if="currentPage === 'scanner' && !isStoreLocked" class="scanner-box" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
                 
                 <div v-if="activeScopesList.length > 1" style="background: var(--bg-card); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; text-align: center; width: 100%; max-width: 400px; box-sizing: border-box;">
                     <p style="font-size: 0.8rem; font-weight: bold; margin-top: 0; color: var(--text-sub);">Selecione o Cartão a atribuir:</p>
@@ -425,7 +439,7 @@
                 </div>
             </div>
 
-            <div v-else-if="currentPage === 'skins'" class="skins-container">
+            <div v-else-if="currentPage === 'skins' && !isStoreLocked" class="skins-container">
                 <div class="page-header"><h1>{{ t('title_skins') }}</h1><p style="color:var(--text-sub);">{{ t('sub_skins') }}</p></div>
                 <div class="skins-grid">
                     <div v-for="skin in availableSkins" :key="skin.id" class="skin-card" :class="{'is-active': activeSkin === skin.id}">
@@ -441,12 +455,10 @@
                         <div class="skin-body">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
                                 <h3 style="margin: 0; font-size: 1rem; color: var(--text-main);">{{ skin.name }}</h3>
-                                
                                 <span v-if="skin.type === 'seasonal' && skin.end" style="font-size: 0.55rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase;">
                                     Até {{ formatShortDate(skin.end) }}
                                 </span>
                             </div>
-                            
                             <div class="skin-actions">
                                 <button class="btn-skin-preview" @click="openPreview(skin.id)">{{ t('btn_preview') }}</button>
                                 <button v-if="skin.id === 'custom'" class="btn-skin-edit" @click="openCustomDesigner" title="Design Brand">✏️</button>
@@ -459,17 +471,15 @@
                 </div>
             </div>
 
-            <div v-else-if="currentPage === 'settings'" class="settings-wrapper">
+            <div v-else-if="currentPage === 'settings' && !isStoreLocked" class="settings-wrapper">
                 <div class="page-header"><h1>{{ t('title_settings') }}</h1><p style="color:var(--text-sub);">{{ t('sub_settings') }}</p></div>
                 <div class="settings-container">
-                    
                     <div class="settings-section">
                         <h3 class="section-label">{{ t('sec_brand') }}</h3>
                         <div class="setting-row">
                             <div class="setting-info"><label>{{ t('lbl_store_name') }}</label></div>
                             <div class="setting-control"><input type="text" v-model="settingsForm.name" class="custom-input"></div>
                         </div>
-                        
                         <div class="setting-row">
                             <div class="setting-info"><label>{{ t('lbl_logo') }}</label></div>
                             <div class="setting-control">
@@ -483,18 +493,12 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="divider"></div>
-
                     <div class="settings-section" v-if="storeConfig.tier === 'pro'">
                         <h3 class="section-label">Os Meus Cartões (Planos)</h3>
-                        <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 20px;">
-                            Crie até 3 cartões para diferentes serviços da loja.
-                        </p>
-
+                        <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 20px;">Crie até 3 cartões para diferentes serviços da loja.</p>
                         <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
                             <div v-for="scope in storeScopes" :key="scope.id">
-                                
                                 <div v-if="editingScopeId === scope.id" class="scope-edit-row">
                                     <button class="custom-input" style="width:60px; font-size:1.2rem; padding:5px; cursor:pointer; flex:none; text-align:center;" @click="openIconPicker('edit')">{{ editScopeTempIcon }}</button>
                                     <select v-model="editScopeTempName" class="custom-input" style="flex:1;">
@@ -503,30 +507,20 @@
                                     <button @click="cancelEditScope" class="btn-action btn-edit" style="width:auto; padding:0 15px;">Cancelar</button>
                                     <button @click="saveEditScope" class="btn-action btn-stamp" style="width:auto; padding:0 15px;">Guardar</button>
                                 </div>
-
                                 <div v-else style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--bg-main); border-radius: 8px; border: 1px solid var(--border-color);">
                                     <div style="display: flex; align-items: center; gap: 10px; font-weight: bold;">
                                         <span style="font-size: 1.5rem;">{{ scope.stamp_icon }}</span>
                                         <span :style="!scope.is_active ? 'text-decoration: line-through; opacity: 0.5;' : ''">{{ scope.name }}</span>
                                         <span v-if="scope.is_main" style="font-size: 0.6rem; background: var(--primary); color: white; padding: 3px 6px; border-radius: 4px; text-transform: uppercase;">Principal</span>
                                     </div>
-                                    
                                     <div style="display: flex; gap: 8px;">
                                         <button @click="startEditScope(scope)" class="btn-action btn-edit" style="width: auto; padding: 6px 12px; font-size: 0.75rem;">Editar</button>
-                                        
-                                        <button v-if="!scope.is_main" @click="toggleScope(scope)" class="btn-action" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" :class="scope.is_active ? 'btn-edit' : 'btn-view'">
-                                            {{ scope.is_active ? 'Desativar' : 'Reativar' }}
-                                        </button>
-                                        
-                                        <button v-if="!scope.is_main" @click="deleteScope(scope)" class="btn-action" style="width: auto; padding: 6px 12px; font-size: 0.75rem; background: var(--red); border: none;">
-                                            Apagar
-                                        </button>
+                                        <button v-if="!scope.is_main" @click="toggleScope(scope)" class="btn-action" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" :class="scope.is_active ? 'btn-edit' : 'btn-view'">{{ scope.is_active ? 'Desativar' : 'Reativar' }}</button>
+                                        <button v-if="!scope.is_main" @click="deleteScope(scope)" class="btn-action" style="width: auto; padding: 6px 12px; font-size: 0.75rem; background: var(--red); border: none;">Apagar</button>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
-
                         <div v-if="storeScopes.length < 3" style="display: flex; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 20px;">
                             <button class="custom-input" style="width:60px; font-size:1.2rem; text-align:center; padding:5px; cursor:pointer;" @click="openIconPicker('new')">{{ newScopeIcon }}</button>
                             <select v-model="newScopeName" class="custom-input" style="flex:1;">
@@ -534,25 +528,18 @@
                             </select>
                             <button @click="createScope" class="btn-action btn-stamp" style="width: auto; padding: 10px 20px; border-radius: 8px; font-weight: bold;">Adicionar</button>
                         </div>
-                        <div v-else style="padding: 10px; border-top: 1px solid var(--border-color); padding-top: 20px; text-align: center; color: var(--text-sub); font-size: 0.8rem; font-weight: bold;">
-                            ✨ Atingiu o limite de 3 cartões simultâneos.
-                        </div>
+                        <div v-else style="padding: 10px; border-top: 1px solid var(--border-color); padding-top: 20px; text-align: center; color: var(--text-sub); font-size: 0.8rem; font-weight: bold;">✨ Atingiu o limite de 3 cartões simultâneos.</div>
                     </div>
                     <div class="divider" v-if="storeConfig.tier === 'pro'"></div>
-                    
                     <div class="settings-section">
                         <h3 class="section-label">Localização & Menu</h3>
-                        
                         <div class="setting-row" style="margin-bottom: 20px;">
                             <div class="setting-info">
                                 <label>Google Maps URL</label>
                                 <span>O link direto para a morada do restaurante.</span>
                             </div>
-                            <div class="setting-control">
-                                <input type="text" v-model="settingsForm.location_url" class="custom-input" placeholder="https://maps.app.goo.gl/...">
-                            </div>
+                            <div class="setting-control"><input type="text" v-model="settingsForm.location_url" class="custom-input" placeholder="https://maps.app.goo.gl/..."></div>
                         </div>
-
                         <div class="setting-row">
                             <div class="setting-info">
                                 <label>Menu (Ementa)</label>
@@ -565,7 +552,6 @@
                                 </div>
                                 <div v-else style="display: flex; gap: 10px; width: 100%;">
                                     <input type="text" v-model="settingsForm.menu_url" class="custom-input" placeholder="Link (ex: https://site.com/menu)" style="flex: 1;">
-                                    
                                     <label style="cursor:pointer; background:var(--bg-main); padding:12px 20px; border-radius:8px; border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.8rem; white-space: nowrap;">
                                         UPLOAD PDF <input type="file" @change="handleMenuUpload" accept="application/pdf" hidden>
                                     </label>
@@ -573,45 +559,20 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="divider"></div>
-
                     <div class="settings-section">
                         <h3 class="section-label">Redes Sociais & Website</h3>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                            <div class="form-row">
-                                <label>Website</label>
-                                <input type="text" v-model="settingsForm.social_website" class="custom-input" placeholder="https://www.loja.com">
-                            </div>
-                            <div class="form-row">
-                                <label>Instagram</label>
-                                <input type="text" v-model="settingsForm.social_instagram" class="custom-input" placeholder="https://instagram.com/loja">
-                            </div>
-                            <div class="form-row">
-                                <label>Facebook</label>
-                                <input type="text" v-model="settingsForm.social_facebook" class="custom-input" placeholder="https://facebook.com/loja">
-                            </div>
-                            <div class="form-row">
-                                <label>TikTok</label>
-                                <input type="text" v-model="settingsForm.social_tiktok" class="custom-input" placeholder="https://tiktok.com/@loja">
-                            </div>
-                            <div class="form-row">
-                                <label>X (Twitter)</label>
-                                <input type="text" v-model="settingsForm.social_twitter" class="custom-input" placeholder="https://x.com/loja">
-                            </div>
-                            <div class="form-row">
-                                <label>WhatsApp</label>
-                                <input type="text" v-model="settingsForm.social_whatsapp" class="custom-input" placeholder="https://wa.me/351900000000">
-                            </div>
-                            <div class="form-row">
-                                <label>YouTube</label>
-                                <input type="text" v-model="settingsForm.social_youtube" class="custom-input" placeholder="https://youtube.com/@loja">
-                            </div>
+                            <div class="form-row"><label>Website</label><input type="text" v-model="settingsForm.social_website" class="custom-input" placeholder="https://www.loja.com"></div>
+                            <div class="form-row"><label>Instagram</label><input type="text" v-model="settingsForm.social_instagram" class="custom-input" placeholder="https://instagram.com/loja"></div>
+                            <div class="form-row"><label>Facebook</label><input type="text" v-model="settingsForm.social_facebook" class="custom-input" placeholder="https://facebook.com/loja"></div>
+                            <div class="form-row"><label>TikTok</label><input type="text" v-model="settingsForm.social_tiktok" class="custom-input" placeholder="https://tiktok.com/@loja"></div>
+                            <div class="form-row"><label>X (Twitter)</label><input type="text" v-model="settingsForm.social_twitter" class="custom-input" placeholder="https://x.com/loja"></div>
+                            <div class="form-row"><label>WhatsApp</label><input type="text" v-model="settingsForm.social_whatsapp" class="custom-input" placeholder="https://wa.me/351900000000"></div>
+                            <div class="form-row"><label>YouTube</label><input type="text" v-model="settingsForm.social_youtube" class="custom-input" placeholder="https://youtube.com/@loja"></div>
                         </div>
                     </div>
-
                     <div class="divider"></div>
-                    
                     <div class="settings-section">
                         <h3 class="section-label">{{ t('sec_tiers') }}</h3>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
@@ -620,16 +581,11 @@
                             <div><label style="display:block; font-size:0.7rem; font-weight:900; color:var(--gold); margin-bottom:5px;">GOLD</label><input type="number" v-model.number="settingsForm.goldThreshold" class="custom-input"></div>
                         </div>
                     </div>
-                    
                     <div class="divider"></div>
-                    
                     <div class="settings-section">
                         <h3 class="section-label">{{ t('sec_security') }}</h3>
                         <div class="setting-row">
-                            <div class="setting-info">
-                                <label>{{ t('lbl_pass_key') }}</label>
-                                <span>{{ t('sub_pass_key') }}</span>
-                            </div>
+                            <div class="setting-info"><label>{{ t('lbl_pass_key') }}</label><span>{{ t('sub_pass_key') }}</span></div>
                             <div class="setting-control">
                                 <input type="password" id="pass-old" placeholder="Current Password" class="custom-input" style="margin-bottom:10px;">
                                 <input type="password" id="pass-new" placeholder="New Password" class="custom-input">
@@ -648,24 +604,21 @@
                 <div style="font-size: 4rem; margin-bottom: 20px;">📱</div>
                 <h1 style="margin: 0 0 10px; font-weight: 900; font-size: 1.8rem; color: var(--text-main);">Modo de Ecrã</h1>
                 <p style="color: var(--text-sub); margin-bottom: 30px; font-size: 0.95rem; line-height: 1.5;">Detetámos que está num telemóvel. Pretende usar este dispositivo apenas para ler cartões?</p>
-
-                <button class="btn-prompt btn-prompt-scanner" @click="chooseScannerMode">
-                    <span style="font-size: 1.5rem;">📷</span>
-                    Modo Scanner
-                    <span style="font-size: 0.75rem; font-weight: 500; opacity: 0.8;">Apenas ler QR Codes (Rápido)</span>
-                </button>
-
-                <button class="btn-prompt btn-prompt-dash" @click="chooseFullDashboard">
-                    <span style="font-size: 1.5rem;">📊</span>
-                    Painel Completo
-                    <span style="font-size: 0.75rem; font-weight: 500; opacity: 0.8;">Aceder a clientes e definições</span>
-                </button>
+                <button class="btn-prompt btn-prompt-scanner" @click="chooseScannerMode"><span style="font-size: 1.5rem;">📷</span>Modo Scanner<span style="font-size: 0.75rem; font-weight: 500; opacity: 0.8;">Apenas ler QR Codes (Rápido)</span></button>
+                <button class="btn-prompt btn-prompt-dash" @click="chooseFullDashboard"><span style="font-size: 1.5rem;">📊</span>Painel Completo<span style="font-size: 0.75rem; font-weight: 500; opacity: 0.8;">Aceder a clientes e definições</span></button>
             </div>
         </div>
 
-        <button v-if="isMobileScannerMode" class="fab-exit-scanner" @click="exitScannerMode" title="Sair do Scanner">
-            ⚙️
-        </button>
+        <div class="modal-overlay" v-if="showMobileSuccessModal" style="background: var(--bg-main); z-index: 10001; display: flex; align-items: center; justify-content: center;">
+            <div style="padding: 40px; max-width: 400px; width: 90%; text-align: center; background: var(--bg-side); border-radius: 20px; border: 2px solid var(--primary); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                <div style="font-size: 5rem; margin-bottom: 20px; animation: scaleUp 0.3s ease;">✅</div>
+                <h1 style="margin: 0 0 10px; font-weight: 900; color: var(--text-main);">Leitura com Sucesso!</h1>
+                <p style="color: var(--text-sub); margin-bottom: 30px; font-size: 1rem;">O cartão do cliente foi processado corretamente.</p>
+                <button class="btn-prompt btn-prompt-scanner" @click="resetMobileScanner" style="margin-bottom:0;">
+                    PRÓXIMO CLIENTE 📷
+                </button>
+            </div>
+        </div>
 
         <div class="modal-overlay" v-if="editingCard">
             <div class="modal-content">
@@ -676,12 +629,9 @@
                     <label>Last Name</label><input v-model="editingCard.last_name" class="custom-input">
                     <label>Email</label><input v-model="editingCard.email" class="custom-input">
                     <label>Phone</label><input v-model="editingCard.phone" class="custom-input">
-                    
                     <label style="margin-top: 15px;">Cartão / Âmbito</label>
                     <select v-model="editingCard.scope_id" class="custom-input" style="color: var(--primary); font-weight: bold;">
-                        <option v-for="scope in storeScopes" :key="scope.id" :value="scope.id">
-                            {{ scope.stamp_icon }} {{ scope.name }}
-                        </option>
+                        <option v-for="scope in storeScopes" :key="scope.id" :value="scope.id">{{ scope.stamp_icon }} {{ scope.name }}</option>
                     </select>
                 </div>
                 <div style="text-align: right;"><button class="btn-save-modal" @click="saveEdit">SAVE CHANGES</button></div>
@@ -691,10 +641,8 @@
         <div class="modal-overlay" v-if="showCustomDesigner">
             <div class="modal-content designer-modal">
                 <span class="close-modal" @click="showCustomDesigner = false">✕</span>
-                
                 <div class="designer-left">
                     <h2 style="margin-top:0; color:var(--text-main);">Theme Designer</h2>
-                    
                     <span class="design-label">BACKGROUND</span>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <label class="upload-clean" style="flex: 1;">
@@ -702,78 +650,19 @@
                             <span class="upload-text" style="font-weight: 700; font-size: 0.75rem; color: var(--text-main);">{{ designForm.image ? 'CHANGE IMAGE' : 'UPLOAD IMAGE' }}</span>
                             <input type="file" hidden @change="handleBgUpload" accept="image/*">
                         </label>
-                        <button v-if="designForm.image" class="btn-action btn-edit" style="width: 50px; height: 50px; font-size: 1.2rem; padding: 0; display: flex; align-items: center; justify-content: center;" @click="removeBgImage" title="Remove Image">
-                            ✕
-                        </button>
+                        <button v-if="designForm.image" class="btn-action btn-edit" style="width: 50px; height: 50px; font-size: 1.2rem; padding: 0; display: flex; align-items: center; justify-content: center;" @click="removeBgImage" title="Remove Image">✕</button>
                     </div>
-
-                    <div style="margin-top:20px;">
-                        <span class="design-label">BACKGROUND COLOR (SOLID)</span>
-                        <div class="color-block-wrapper">
-                            <input type="color" v-model="designForm.background" class="color-block">
-                        </div>
-                    </div>
-
-                    <div style="margin-top:15px;">
-                        <span class="design-label">TEXT COLOR</span>
-                        <div class="color-block-wrapper">
-                            <input type="color" v-model="designForm.textColor" class="color-block">
-                        </div>
-                    </div>
-
-                    <div style="margin-top:15px;">
-                        <span class="design-label">STAMP BORDER COLOR</span>
-                        <div class="color-block-wrapper">
-                            <input type="color" v-model="designForm.borderColor" class="color-block">
-                        </div>
-                    </div>
+                    <div style="margin-top:20px;"><span class="design-label">BACKGROUND COLOR (SOLID)</span><div class="color-block-wrapper"><input type="color" v-model="designForm.background" class="color-block"></div></div>
+                    <div style="margin-top:15px;"><span class="design-label">TEXT COLOR</span><div class="color-block-wrapper"><input type="color" v-model="designForm.textColor" class="color-block"></div></div>
+                    <div style="margin-top:15px;"><span class="design-label">STAMP BORDER COLOR</span><div class="color-block-wrapper"><input type="color" v-model="designForm.borderColor" class="color-block"></div></div>
                 </div>
-
                 <div class="designer-right">
-                    <div class="preview-card-shell" 
-                         @mousedown.prevent="startDrag"
-                         @mousemove.prevent="onDrag"
-                         @mouseup="stopDrag"
-                         @mouseleave="stopDrag"
-                         :style="{
-                             backgroundImage: designForm.image ? `url(${designForm.image})` : 'none',
-                             backgroundColor: designForm.image ? 'transparent' : designForm.background,
-                             backgroundSize: designForm.image ? (designForm.zoom + '%') : 'cover',
-                             backgroundPosition: designForm.image ? ('calc(50% + ' + designForm.posX + 'px) calc(50% + ' + designForm.posY + 'px)') : 'center center',
-                             backgroundRepeat: 'no-repeat',
-                             color: designForm.textColor,
-                             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-                             cursor: designForm.image ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                             userSelect: 'none'
-                         }">
-                        
-                        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; pointer-events: none;">
-                            <span>{{ storeConfig.name }} VIP</span>
-                            <span style="border: 1px solid currentColor; padding: 2px 8px; border-radius: 12px; font-size: 0.55rem;">
-                                Geral
-                            </span>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; pointer-events: none;">
-                            <div v-for="n in 10" :key="n" 
-                                 style="width: 35px; height: 35px; border-radius: 50%;" 
-                                 :style="{ 
-                                     border: '2px dashed ' + designForm.borderColor,
-                                     background: n <= 2 ? 'white' : 'transparent'
-                                 }">
-                            </div>
-                        </div>
-                        
-                        <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase; pointer-events: none;">
-                            JOHN DOE <br><span style="color: var(--gold); font-size: 0.65rem;">GOLD MEMBER</span>
-                        </div>
+                    <div class="preview-card-shell" @mousedown.prevent="startDrag" @mousemove.prevent="onDrag" @mouseup="stopDrag" @mouseleave="stopDrag" :style="{ backgroundImage: designForm.image ? `url(${designForm.image})` : 'none', backgroundColor: designForm.image ? 'transparent' : designForm.background, backgroundSize: designForm.image ? (designForm.zoom + '%') : 'cover', backgroundPosition: designForm.image ? ('calc(50% + ' + designForm.posX + 'px) calc(50% + ' + designForm.posY + 'px)') : 'center center', backgroundRepeat: 'no-repeat', color: designForm.textColor, boxShadow: '0 20px 60px rgba(0,0,0,0.3)', cursor: designForm.image ? (isDragging ? 'grabbing' : 'grab') : 'default', userSelect: 'none' }">
+                        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; pointer-events: none;"><span>{{ storeConfig.name }} VIP</span><span style="border: 1px solid currentColor; padding: 2px 8px; border-radius: 12px; font-size: 0.55rem;">Geral</span></div>
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; pointer-events: none;"><div v-for="n in 10" :key="n" style="width: 35px; height: 35px; border-radius: 50%;" :style="{ border: '2px dashed ' + designForm.borderColor, background: n <= 2 ? 'white' : 'transparent' }"></div></div>
+                        <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase; pointer-events: none;">JOHN DOE <br><span style="color: var(--gold); font-size: 0.65rem;">GOLD MEMBER</span></div>
                     </div>
-
-                    <div class="zoom-control" v-if="designForm.image">
-                        <span style="font-size:0.8rem; font-weight:bold;">ZOOM:</span>
-                        <input type="range" min="100" max="250" v-model="designForm.zoom" class="zoom-slider">
-                    </div>
-
+                    <div class="zoom-control" v-if="designForm.image"><span style="font-size:0.8rem; font-weight:bold;">ZOOM:</span><input type="range" min="100" max="250" v-model="designForm.zoom" class="zoom-slider"></div>
                     <div style="display: flex; gap: 15px; margin-top: 30px; width: 100%; justify-content: center;">
                         <button class="btn-save-modal" style="margin-top: 0; width: 150px; background: transparent; color: var(--text-main); border: 1px solid var(--border-color);" @click="showCustomDesigner = false">CANCEL</button>
                         <button class="btn-save-modal" style="margin-top: 0; width: 150px;" @click="saveCustomDesign">SAVE THEME</button>
@@ -796,61 +685,15 @@
             <div class="modal-content">
                 <span class="close-modal" @click="showPreview = false">✕</span>
                 <h2 style="text-align:center; color:var(--primary); margin-top:0;">Skin Preview</h2>
-                
-                <div class="preview-card-shell" 
-                     :style="{ 
-                         backgroundImage: previewColors.bg.includes('url') ? previewColors.bg : 'none',
-                         backgroundColor: previewColors.bg.includes('url') ? 'transparent' : previewColors.bg,
-                         backgroundSize: previewColors.bgSize || 'cover', 
-                         backgroundPosition: previewColors.bgPos || 'center',
-                         backgroundRepeat: 'no-repeat',
-                         color: previewColors.text 
-                     }">
-                    
-                    <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
-                        <span>{{ storeConfig.name }} VIP</span>
-                        <span style="border: 1px solid currentColor; padding: 2px 8px; border-radius: 12px; font-size: 0.55rem;">
-                                Geral
-                        </span>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0;">
-                        <div v-for="n in 10" :key="n" 
-                             style="width: 35px; height: 35px; border-radius: 50%;" 
-                             :style="{ 
-                                 background: n <= 6 ? 'white' : 'transparent', 
-                                 border: n <= 6 ? ('1px solid ' + (previewColors.border || 'gold')) : ('1px dashed ' + (previewColors.border || 'gold')) 
-                             }">
-                        </div>
-                    </div>
-                    
-                    <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">
-                        JOHN DOE <br><span style="color: var(--gold); font-size: 0.65rem;">GOLD MEMBER</span>
-                    </div>
+                <div class="preview-card-shell" :style="{ backgroundImage: previewColors.bg.includes('url') ? previewColors.bg : 'none', backgroundColor: previewColors.bg.includes('url') ? 'transparent' : previewColors.bg, backgroundSize: previewColors.bgSize || 'cover', backgroundPosition: previewColors.bgPos || 'center', backgroundRepeat: 'no-repeat', color: previewColors.text }">
+                    <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;"><span>{{ storeConfig.name }} VIP</span><span style="border: 1px solid currentColor; padding: 2px 8px; border-radius: 12px; font-size: 0.55rem;">Geral</span></div>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0;"><div v-for="n in 10" :key="n" style="width: 35px; height: 35px; border-radius: 50%;" :style="{ background: n <= 6 ? 'white' : 'transparent', border: n <= 6 ? ('1px solid ' + (previewColors.border || 'gold')) : ('1px dashed ' + (previewColors.border || 'gold')) }"></div></div>
+                    <div style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">JOHN DOE <br><span style="color: var(--gold); font-size: 0.65rem;">GOLD MEMBER</span></div>
                 </div>
                 <button class="btn-save-modal" style="background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); margin-top:20px;" @click="showPreview = false">CLOSE</button>
             </div>
         </div>
 
-        <div class="modal-overlay" v-if="isAccountExpired" style="background: rgba(0,0,0,0.9); z-index: 10000; display: flex; flex-direction: column; backdrop-filter: blur(10px);">
-            <div style="background: var(--bg-card); padding: 50px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
-                <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>
-                <h1 style="margin: 0 0 10px; color: var(--primary); font-weight: 900;">O seu período de teste terminou.</h1>
-                <p style="color: var(--text-sub); font-size: 0.95rem; margin-bottom: 30px; line-height: 1.5;">
-                    Esperamos que tenha gostado da <strong>Volto</strong>!<br>Para continuar a premiar os seus clientes e aceder à sua base de dados, escolha um dos nossos planos.
-                </p>
-                
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    <a href="mailto:suporte@volto.com?subject=Atualizar Plano - {{ storeConfig.name }}" style="background: var(--primary); color: white; padding: 15px; border-radius: 12px; font-weight: 800; text-decoration: none; text-transform: uppercase; transition: 0.2s;">
-                        Falar com o Suporte
-                    </a>
-                    
-                    <button @click="logout" style="background: transparent; color: var(--text-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; font-weight: 700; cursor: pointer;">
-                        Sair da Conta
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
     <script src="/static/js/admin.js"></script>
 </body>

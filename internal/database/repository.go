@@ -657,40 +657,37 @@ func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (stri
 }
 
 func (repo *CardRepository) AuthenticateStore(email, password string) (*models.Store, error) {
-	var store models.Store
-	var hashedPassword string
+    var store models.Store
+    var hashedPassword string
 
-	query := `
+    // Mantemos a tua query original (admin_email e admin_password)
+    query := `
         SELECT id, slug, admin_password, tier, is_active 
         FROM stores 
         WHERE admin_email = $1
     `
 
-	err := repo.db.QueryRow(query, email).Scan(
-		&store.ID,
-		&store.Slug,
-		&hashedPassword,
-		&store.Tier,
-		&store.IsActive,
-	)
+    err := repo.db.QueryRow(query, email).Scan(
+        &store.ID,
+        &store.Slug,
+        &hashedPassword,
+        &store.Tier,
+        &store.IsActive,
+    )
 
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("email not found")
-		}
-		return nil, err
-	}
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, fmt.Errorf("email not found")
+        }
+        return nil, err
+    }
 
-	if !store.IsActive {
-		return nil, fmt.Errorf("store is suspended")
-	}
+    err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+    if err != nil {
+        return nil, fmt.Errorf("invalid password")
+    }
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	if err != nil {
-		return nil, fmt.Errorf("invalid password")
-	}
-
-	return &store, nil
+    return &store, nil
 }
 
 func (r *CardRepository) UpdateSettings(s models.Store) error {
