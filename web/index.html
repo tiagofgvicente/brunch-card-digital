@@ -205,7 +205,6 @@
             transition: all 0.2s;
         }
         
-        /* 👇 ESTILO MÁGICO PARA QUANDO O BOTÃO ESTÁ DESATIVADO 👇 */
         .btn-submit:disabled {
             opacity: 0.4;
             cursor: not-allowed;
@@ -219,6 +218,37 @@
         .switch-auth span { color: var(--primary); font-weight: 700; cursor: pointer; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- PASSWORD SENSORS --- */
+        .pwd-rules { margin-top: 5px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px; }
+        .pwd-rule { font-size: 0.75rem; color: var(--text-sub); display: flex; align-items: center; gap: 8px; transition: color 0.3s; }
+        .pwd-rule .indicator { 
+            width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); 
+            display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-sizing: border-box; 
+        }
+        .pwd-rule.valid { color: #10b981; font-weight: 700; }
+        .pwd-rule.valid .indicator { background: #10b981; border-color: #10b981; }
+        .pwd-rule.valid .indicator::after { content: '✓'; color: white; font-size: 9px; font-weight: bold; }
+
+        /* --- 👇 MEDIA QUERIES PARA MOBILE 👇 --- */
+        @media (max-width: 768px) {
+            body { height: auto; overflow-y: auto; }
+            .top-bar { padding: 15px 20px; }
+            .hide-mobile { display: none !important; }
+            
+            .hero-center { padding-top: 110px; padding-bottom: 40px; }
+            .store-title { font-size: 2.2rem; letter-spacing: -1px; }
+            .store-subtitle { font-size: 1rem; padding: 0 20px; }
+            
+            .stats-row { gap: 10px; flex-wrap: wrap; justify-content: center; }
+            .stat-card { flex: 1; min-width: 90px; padding: 10px; }
+            .stat-value { font-size: 1.2rem; }
+
+            .card-showcase { transform: scale(0.85); margin-bottom: 20px; }
+            
+            .auth-card { width: 92%; padding: 30px 20px; max-height: 90vh; overflow-y: auto; }
+            .form-grid-mobile { grid-template-columns: 1fr !important; }
+        }
     </style>
 </head>
 <body>
@@ -227,12 +257,12 @@
             <div class="brand-area">Volto<span>.</span></div>
             
             <div class="nav-area">
-                <button @click="openWallet" class="btn-nav btn-ghost">👛 {{ t('wallet_btn') }}</button>
-                <div style="width: 1px; height: 20px; background: var(--border);"></div>
-                <button @click="openLogin" class="btn-nav btn-login">{{ t('login_btn') }}</button>
+                <button @click="openWallet" class="btn-nav btn-ghost">👛 <span class="hide-mobile">{{ t('wallet_btn') }}</span></button>
+                <div class="hide-mobile" style="width: 1px; height: 20px; background: var(--border);"></div>
+                <button @click="openLogin" class="btn-nav btn-login hide-mobile">{{ t('login_btn') }}</button>
                 <button @click="openRegister" class="btn-nav btn-register">{{ t('register_btn') }}</button>
                 
-                <div style="width: 1px; height: 20px; background: var(--border);"></div>
+                <div class="hide-mobile" style="width: 1px; height: 20px; background: var(--border);"></div>
                 
                 <button @click="toggleTheme" class="theme-btn">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
                 
@@ -262,92 +292,137 @@
             <div class="auth-card">
                 <button class="close-btn" @click="closeModal">✕</button>
                 
-                <div v-if="currentModal === 'login'">
-                    <h2 style="text-align:center; margin:0 0 25px; color:var(--text-main);">{{ t('modal_login_title') }}</h2>
-                    <form @submit.prevent="handleLogin">
-                        <div class="form-group"><label>Admin Email</label><input type="email" v-model="loginForm.email" required placeholder="manager@store.com"></div>
-                        <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="loginForm.password" required placeholder="••••••••"></div>
-                        <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_enter') }}</button>
-                    </form>
-                    <div class="switch-auth">{{ t('new_business') }} <span @click="openRegister">{{ t('create_free_acc') }}</span></div>
+                <div v-if="successMsg" style="text-align: center; padding: 20px 0; animation: fadeIn 0.3s ease;">
+                    <div style="font-size: 4.5rem; margin-bottom: 15px;">✉️</div>
+                    <h2 style="color: var(--text-main); margin-bottom: 10px; font-weight: 900;">Quase lá!</h2>
+                    <p style="color: var(--text-sub); font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px;">
+                        {{ successMsg }}
+                    </p>
+                    <button class="btn-submit" @click="closeModal" style="background: #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                        Entendido
+                    </button>
                 </div>
 
-                <div v-if="currentModal === 'register'">
-                    <h2 style="text-align:center; margin:0 0 10px; color:var(--text-main);">{{ t('modal_register_title') }}</h2>
-                    <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">{{ t('modal_register_sub') }}</p>
-                    <form @submit.prevent="handleRegister">
-                        <div class="form-group"><label>{{ t('business_name') }}</label><input v-model="registerForm.name" required placeholder="Ex: Joe's Burgers"></div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div class="form-group"><label>Email</label><input type="email" v-model="registerForm.email" required></div>
-                            <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="registerForm.password" required></div>
-                        </div>
-                        <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_launch') }}</button>
-                    </form>
-                    <div class="switch-auth">{{ t('has_account') }} <span @click="openLogin">{{ t('btn_login') }}</span></div>
-                </div>
-
-                <div v-if="currentModal === 'wallet'">
-                    <div style="display: flex; border-bottom: 1px solid var(--border); margin-bottom: 25px;">
-                        <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" 
-                                :style="{ opacity: walletTab === 'login' ? 1 : 0.5, borderBottom: walletTab === 'login' ? '3px solid var(--primary)' : '3px solid transparent' }"
-                                @click="walletTab = 'login'">
-                            Login
-                        </button>
-                        <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" 
-                                :style="{ opacity: walletTab === 'register' ? 1 : 0.5, borderBottom: walletTab === 'register' ? '3px solid var(--primary)' : '3px solid transparent' }"
-                                @click="walletTab = 'register'">
-                            Create Account
-                        </button>
-                    </div>
-
-                    <div v-if="walletTab === 'login'">
-                        <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">
-                            {{ t('wallet_sub') }}
-                        </p>
-                        <form @submit.prevent="handleWalletLogin">
-                            <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" v-model="walletForm.email" required placeholder="client@gmail.com">
-                            </div>
-                            <div class="form-group">
-                                <label>{{ t('password') }}</label>
-                                <input type="password" v-model="walletForm.password" required placeholder="••••••••">
-                            </div>
-                            <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? 'A entrar...' : t('btn_login') }}</button>
+                <div v-else>
+                    <div v-if="currentModal === 'login'">
+                        <h2 style="text-align:center; margin:0 0 25px; color:var(--text-main);">{{ t('modal_login_title') }}</h2>
+                        <form @submit.prevent="handleLogin">
+                            <div class="form-group"><label>Admin Email</label><input type="email" v-model="loginForm.email" required placeholder="manager@store.com"></div>
+                            <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="loginForm.password" required placeholder="••••••••"></div>
+                            <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_enter') }}</button>
                         </form>
+                        <div class="switch-auth">{{ t('new_business') }} <span @click="openRegister">{{ t('create_free_acc') }}</span></div>
                     </div>
 
-                    <div v-if="walletTab === 'register'">
-                        <form @submit.prevent="handleWalletRegister">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                                <div class="form-group"><label>First Name</label><input v-model="globalUserForm.firstName" required placeholder="John"></div>
-                                <div class="form-group"><label>Last Name</label><input v-model="globalUserForm.lastName" required placeholder="Doe"></div>
+                    <div v-if="currentModal === 'register'">
+                        <h2 style="text-align:center; margin:0 0 10px; color:var(--text-main);">{{ t('modal_register_title') }}</h2>
+                        <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">{{ t('modal_register_sub') }}</p>
+                        <form @submit.prevent="handleRegister">
+                            <div class="form-group"><label>{{ t('business_name') }}</label><input v-model="registerForm.name" required placeholder="Ex: Joe's Burgers"></div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;" class="form-grid-mobile">
+                                <div class="form-group"><label>Email</label><input type="email" v-model="registerForm.email" required></div>
+                                <div class="form-group">
+                                    <label>{{ t('password') }}</label>
+                                    <input type="password" v-model="registerForm.password" required>
+                                    
+                                    <div class="pwd-rules" v-if="registerForm.password">
+                                        <div class="pwd-rule" :class="{valid: registerForm.password.length >= 8}">
+                                            <span class="indicator"></span> Mínimo 8 caracteres
+                                        </div>
+                                        <div class="pwd-rule" :class="{valid: /[A-Z]/.test(registerForm.password) && /[a-z]/.test(registerForm.password)}">
+                                            <span class="indicator"></span> Maiúscula e minúscula
+                                        </div>
+                                        <div class="pwd-rule" :class="{valid: /[0-9]/.test(registerForm.password)}">
+                                            <span class="indicator"></span> Pelo menos 1 número
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-group"><label>Email</label><input type="email" v-model="globalUserForm.email" required placeholder="john@example.com"></div>
-                            <div class="form-group"><label>Phone (Optional)</label><input type="tel" v-model="globalUserForm.phone" placeholder="+351 900 000 000"></div>
-                            <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="globalUserForm.password" required placeholder="••••••••"></div>
                             
-                            <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0; text-align: left;">
-                                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                                    <input type="checkbox" v-model="globalUserForm.rgpd" style="margin-top: 3px; width: auto; accent-color: var(--primary);">
-                                    <span style="font-size: 0.75rem; color: var(--text-sub);">I agree to the processing of my personal data for the creation of my Volto Wallet in accordance with the Privacy Policy. *</span>
-                                </label>
-                                
-                                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                                    <input type="checkbox" v-model="globalUserForm.marketing" style="margin-top: 3px; width: auto; accent-color: var(--primary);">
-                                    <span style="font-size: 0.75rem; color: var(--text-sub);">I want to receive news, offers, and new loyalty cards directly in my wallet. (Optional)</span>
-                                </label>
-                            </div>
-
-                            <button type="submit" class="btn-submit" :disabled="loading || !isWalletFormValid">
-                                {{ loading ? 'A criar...' : 'Create Wallet' }}
+                            <button type="submit" class="btn-submit" 
+                                    :disabled="loading || !registerForm.password || registerForm.password.length < 8 || !/[A-Z]/.test(registerForm.password) || !/[a-z]/.test(registerForm.password) || !/[0-9]/.test(registerForm.password)">
+                                {{ loading ? '...' : t('btn_launch') }}
                             </button>
                         </form>
+                        <div class="switch-auth">{{ t('has_account') }} <span @click="openLogin">{{ t('btn_login') }}</span></div>
                     </div>
-                </div>
 
-                <div v-if="errorMsg" class="error-msg" style="color:#ef4444; text-align:center; margin-top:15px; font-size:0.85rem;">{{ errorMsg }}</div>
-            </div>
+                    <div v-if="currentModal === 'wallet'">
+                        <div style="display: flex; border-bottom: 1px solid var(--border); margin-bottom: 25px;">
+                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" 
+                                    :style="{ opacity: walletTab === 'login' ? 1 : 0.5, borderBottom: walletTab === 'login' ? '3px solid var(--primary)' : '3px solid transparent' }"
+                                    @click="walletTab = 'login'">
+                                Login
+                            </button>
+                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" 
+                                    :style="{ opacity: walletTab === 'register' ? 1 : 0.5, borderBottom: walletTab === 'register' ? '3px solid var(--primary)' : '3px solid transparent' }"
+                                    @click="walletTab = 'register'">
+                                Create Account
+                            </button>
+                        </div>
+
+                        <div v-if="walletTab === 'login'">
+                            <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">
+                                {{ t('wallet_sub') }}
+                            </p>
+                            <form @submit.prevent="handleWalletLogin">
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" v-model="walletForm.email" required placeholder="client@gmail.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>{{ t('password') }}</label>
+                                    <input type="password" v-model="walletForm.password" required placeholder="••••••••">
+                                </div>
+                                <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? 'A entrar...' : t('btn_login') }}</button>
+                            </form>
+                        </div>
+
+                        <div v-if="walletTab === 'register'">
+                            <form @submit.prevent="handleWalletRegister">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;" class="form-grid-mobile">
+                                    <div class="form-group"><label>First Name</label><input v-model="globalUserForm.firstName" required placeholder="John"></div>
+                                    <div class="form-group"><label>Last Name</label><input v-model="globalUserForm.lastName" required placeholder="Doe"></div>
+                                </div>
+                                <div class="form-group"><label>Email</label><input type="email" v-model="globalUserForm.email" required placeholder="john@example.com"></div>
+                                <div class="form-group"><label>Phone (Optional)</label><input type="tel" v-model="globalUserForm.phone" placeholder="+351 900 000 000"></div>
+                                
+                                <div class="form-group">
+                                    <label>{{ t('password') }}</label>
+                                    <input type="password" v-model="globalUserForm.password" required placeholder="••••••••">
+                                    
+                                    <div class="pwd-rules" v-if="globalUserForm.password">
+                                        <div class="pwd-rule" :class="{valid: globalUserForm.password.length >= 6}">
+                                            <span class="indicator"></span> Mínimo 6 caracteres
+                                        </div>
+                                        <div class="pwd-rule" :class="{valid: /[a-zA-Z]/.test(globalUserForm.password) && /[0-9]/.test(globalUserForm.password)}">
+                                            <span class="indicator"></span> Letras e números
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0; text-align: left;">
+                                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                                        <input type="checkbox" v-model="globalUserForm.rgpd" style="margin-top: 3px; width: auto; accent-color: var(--primary);">
+                                        <span style="font-size: 0.75rem; color: var(--text-sub);">I agree to the processing of my personal data for the creation of my Volto Wallet in accordance with the Privacy Policy. *</span>
+                                    </label>
+                                    
+                                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                                        <input type="checkbox" v-model="globalUserForm.marketing" style="margin-top: 3px; width: auto; accent-color: var(--primary);">
+                                        <span style="font-size: 0.75rem; color: var(--text-sub);">I want to receive news, offers, and new loyalty cards directly in my wallet. (Optional)</span>
+                                    </label>
+                                </div>
+
+                                <button type="submit" class="btn-submit" 
+                                        :disabled="loading || !isWalletFormValid || !globalUserForm.password || globalUserForm.password.length < 6 || !/[a-zA-Z]/.test(globalUserForm.password) || !/[0-9]/.test(globalUserForm.password)">
+                                    {{ loading ? 'A criar...' : 'Create Wallet' }}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div v-if="errorMsg" class="error-msg" style="color:#ef4444; text-align:center; margin-top:15px; font-size:0.85rem;">{{ errorMsg }}</div>
+                </div> </div>
         </div>
     </div>
 

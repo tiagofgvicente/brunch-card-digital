@@ -6,6 +6,8 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/smtp"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -356,6 +358,12 @@ func UpdatePasswordHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		http.Error(w, "Wrong old password", 401)
 		return
 	}
+
+	if err := isValidStorePassword(req.New); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	repo.UpdatePassword(store.ID, req.New)
 	w.WriteHeader(http.StatusOK)
 }
@@ -495,13 +503,20 @@ func PublicRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		return
 	}
 
+	if err := isValidStorePassword(req.Password); err != nil {
+		// Devolve o erro diretamente para a landing page mostrar em vermelho
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	baseSlug := generateSlug(req.Name)
 	req.Slug = baseSlug
 
-	id, err := repo.RegisterStore(req)
+	// Recebemos o ID e o Token
+	_, token, err := repo.RegisterStore(req)
 	if err != nil {
 		req.Slug = fmt.Sprintf("%s-%d", baseSlug, rand.Intn(9999))
-		id, err = repo.RegisterStore(req)
+		_, token, err = repo.RegisterStore(req)
 
 		if err != nil {
 			log.Printf("Register Error: %v", err)
@@ -510,19 +525,72 @@ func PublicRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		}
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session_token",
-		Value:    id,
-		Path:     "/",
-		HttpOnly: true,
-		Expires:  time.Now().Add(24 * time.Hour),
-	})
+	// --- 👇 ENVIO DE EMAIL (Igual à Wallet) 👇 ---
+	go func() {
+		appURL := os.Getenv("APP_URL")
+		if appURL == "" {
+			appURL = "http://localhost:8080"
+		}
 
+		verifyLink := fmt.Sprintf("%s/verify-store?token=%s", appURL, token)
+
+		smtpHost := os.Getenv("SMTP_HOST")
+		smtpPort := os.Getenv("SMTP_PORT")
+		senderEmail := os.Getenv("SMTP_USER")
+		senderPassword := os.Getenv("SMTP_PASS")
+
+		if smtpHost == "" || senderEmail == "" {
+			log.Printf("⚠️ Erro: Credenciais SMTP em falta.")
+			return
+		}
+
+		to := []string{req.Email}
+		subject := "Subject: Ativa a tua Loja na Volto\n"
+		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+		body := fmt.Sprintf(`
+            <h2>Bem-vindo à Volto, %s!</h2>
+            <p>A tua loja está quase pronta a arrancar. Para começares a usar o painel de gestão, clica no link abaixo (válido por 30 minutos):</p>
+            <br>
+            <a href="%s" style="padding: 10px 20px; background: #00a896; color: white; text-decoration: none; border-radius: 5px;">Ativar Minha Loja</a>
+            <p>Se não criaste esta conta, ignora este email.</p>
+        `, req.Name, verifyLink)
+
+		message := []byte(subject + mime + body)
+		auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
+		err = smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, to, message)
+
+		if err != nil {
+			log.Printf("⚠️ Erro a enviar email de loja para %s: %v", req.Email, err)
+		} else {
+			log.Printf("📧 Email de loja disparado para %s", req.Email)
+		}
+	}()
+	// --- 👆 FIM DO ENVIO DE EMAIL 👆 ---
+
+	// Retornamos status pendente, já não fazemos login automático
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message":  "Loja criada! A entrar...",
-		"redirect": "/admin?store=" + req.Slug,
+		"status":  "pending_verification",
+		"message": "Loja criada com sucesso! Verifique o seu email para ativar.",
 	})
+}
+
+func StoreVerifyEmailHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "Token em falta", http.StatusBadRequest)
+		return
+	}
+
+	err := repo.VerifyStoreEmail(token)
+	if err != nil {
+		http.Error(w, "Link inválido ou expirado. Terá de registar a loja novamente.", http.StatusForbidden)
+		return
+	}
+
+	// Sucesso! Redireciona para o index com uma mensagem
+	http.Redirect(w, r, "/?store_verified=true", http.StatusSeeOther)
 }
 
 func generateSlug(name string) string {
@@ -545,6 +613,11 @@ func WalletRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		return
 	}
 
+	if err := isValidCustomerPassword(req.Password); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	newUser := models.GlobalUser{
 		ID:                uuid.New().String(),
 		FirstName:         req.FirstName,
@@ -556,15 +629,57 @@ func WalletRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		MarketingAccepted: req.Marketing,
 	}
 
-	if err := repo.CreateGlobalUser(newUser); err != nil {
+	token, err := repo.CreateGlobalUser(newUser)
+	if err != nil {
 		http.Error(w, "Email já existe", 409)
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{Name: "session_token", Value: newUser.ID, Path: "/", HttpOnly: true, Expires: time.Now().Add(24 * time.Hour)})
+	// --- ENVIO DE EMAIL COM VARIÁVEIS DE AMBIENTE ---
+	go func() {
+		appURL := os.Getenv("APP_URL")
 
+		verifyLink := fmt.Sprintf("%s/verify?token=%s", appURL, token)
+
+		smtpHost := os.Getenv("SMTP_HOST")
+		smtpPort := os.Getenv("SMTP_PORT")
+		senderEmail := os.Getenv("SMTP_USER")
+		senderPassword := os.Getenv("SMTP_PASS")
+
+		// Proteção: Se faltarem credenciais no .env, avisa no terminal e não rebenta a app
+		if smtpHost == "" || senderEmail == "" || senderPassword == "" {
+			log.Printf("⚠️ Erro: Credenciais SMTP em falta no .env. Email não enviado para %s", newUser.Email)
+			return
+		}
+
+		to := []string{newUser.Email}
+		subject := "Subject: Verifica a tua Volto Wallet\n"
+		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+		body := fmt.Sprintf(`
+            <h2>Olá %s,</h2>
+            <p>Bem-vindo à Volto Wallet! Para ativar a tua conta, clica no link abaixo (válido por 30 minutos):</p>
+            <a href="%s" style="padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px;">Ativar Minha Conta</a>
+            <p>Se não pediste este registo, ignora este email.</p>
+        `, newUser.FirstName, verifyLink)
+
+		message := []byte(subject + mime + body)
+
+		auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
+		err = smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, to, message)
+
+		if err != nil {
+			log.Printf("⚠️ Erro ao enviar email de verificação para %s: %v", newUser.Email, err)
+		} else {
+			log.Printf("📧 Email de verificação enviado para %s", newUser.Email)
+		}
+	}()
+	// --- FIM DO ENVIO DE EMAIL ---
+
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
-		"redirect": "/card?id=" + newUser.ID + "#global_qr",
+		"status":  "pending_verification",
+		"message": "Conta criada! Verifique o seu email para ativar.",
 	})
 }
 
@@ -779,4 +894,54 @@ func MasterSendNotificationHandler(w http.ResponseWriter, r *http.Request, repo 
 		repo.SendStoreNotification(req.StoreID, req.Title, req.Message, req.Type, "")
 	}
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func WalletVerifyEmailHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "Token em falta", http.StatusBadRequest)
+		return
+	}
+
+	err := repo.VerifyGlobalUser(token)
+	if err != nil {
+		// Se o token for falso ou já tiver passado 30 min (e a conta já foi apagada)
+		http.Error(w, "Link inválido ou expirado.", http.StatusForbidden)
+		return
+	}
+
+	// Sucesso! A conta está ativa. Podes redirecionar para o index com uma mensagem de sucesso
+	http.Redirect(w, r, "/?verified=true", http.StatusSeeOther)
+}
+
+func isValidStorePassword(pwd string) error {
+	if len(pwd) < 8 {
+		return fmt.Errorf("A password tem de ter pelo menos 8 caracteres")
+	}
+
+	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(pwd)
+	hasLower := regexp.MustCompile(`[a-z]`).MatchString(pwd)
+	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(pwd)
+
+	if !hasUpper || !hasLower || !hasNumber {
+		return fmt.Errorf("A password tem de ter pelo menos uma maiúscula, uma minúscula e um número")
+	}
+
+	return nil
+}
+
+// Função auxiliar para validar passwords de clientes (Volto Wallet)
+func isValidCustomerPassword(pwd string) error {
+	if len(pwd) < 6 {
+		return fmt.Errorf("A password tem de ter pelo menos 6 caracteres")
+	}
+
+	hasLetter := regexp.MustCompile(`[a-zA-Z]`).MatchString(pwd)
+	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(pwd)
+
+	if !hasLetter || !hasNumber {
+		return fmt.Errorf("A password tem de conter letras e números")
+	}
+
+	return nil
 }

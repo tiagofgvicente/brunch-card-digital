@@ -61,6 +61,7 @@ func main() {
 	}
 
 	repo := database.NewCardRepository(db)
+	repo.StartCleanupWorker()
 	mux := http.NewServeMux()
 
 	// --- MIDDLEWARES ---
@@ -255,6 +256,14 @@ func main() {
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
+	})
+
+	mux.HandleFunc("/verify", func(w http.ResponseWriter, r *http.Request) {
+		api.WalletVerifyEmailHandler(w, r, repo)
+	})
+
+	mux.HandleFunc("/verify-store", func(w http.ResponseWriter, r *http.Request) {
+		api.StoreVerifyEmailHandler(w, r, repo)
 	})
 
 	mux.HandleFunc("/api/v1/public/wallet-login", func(w http.ResponseWriter, r *http.Request) {

@@ -1,7 +1,9 @@
 package database
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strings"
@@ -615,79 +617,93 @@ func (repo *CardRepository) UpdateStore(s models.Store) error {
 	return err
 }
 
-func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (string, error) {
+func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (string, string, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	id := uuid.New().String()
 	expiration := time.Now().AddDate(0, 0, 30)
 
+	// 👇 Gera Token (Usa a função generateSecureToken() que já lá tens)
+	token := generateSecureToken()
+	tokenExpires := time.Now().Add(30 * time.Minute)
+
+	// Inserimos account_activated = FALSE e os dados do token
 	query := `
         INSERT INTO stores (
             id, name, slug, 
             admin_username, admin_email, admin_password, 
             tier, tier_expiration, billing_cycle, max_users, 
             account_activated, is_active, 
-            card_skin, primary_color, stamp_icon, theme_mode
+            card_skin, primary_color, stamp_icon, theme_mode,
+            verification_token, token_expires_at
         ) VALUES (
             $1, $2, $3, 
             $4, $4, $5, 
             'free_trial', $6, 'monthly', 1, 
-            TRUE, TRUE, 
-            'default', '#00a896', '🍳', 'dark'
+            FALSE, TRUE, 
+            'default', '#00a896', '🍳', 'dark',
+            $7, $8
         )
     `
 	_, err = repo.db.Exec(query,
 		id, req.Name, req.Slug,
 		req.Email, string(hashed),
-		expiration,
+		expiration, token, tokenExpires,
 	)
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	// Auto-cria o âmbito principal para a nova loja
 	scopeQuery := `INSERT INTO store_scopes (id, store_id, name, stamp_icon, is_main, is_active) VALUES ($1, $2, 'Geral', '💳', TRUE, TRUE)`
 	repo.db.Exec(scopeQuery, uuid.New().String(), id)
 
-	return id, nil
+	return id, token, nil
 }
 
 func (repo *CardRepository) AuthenticateStore(email, password string) (*models.Store, error) {
-    var store models.Store
-    var hashedPassword string
+	var store models.Store
+	var hashedPassword string
+	var isActivated bool
 
-    // Mantemos a tua query original (admin_email e admin_password)
-    query := `
-        SELECT id, slug, admin_password, tier, is_active 
+	// Lemos também o account_activated
+	query := `
+        SELECT id, slug, admin_password, tier, is_active, account_activated 
         FROM stores 
         WHERE admin_email = $1
     `
 
-    err := repo.db.QueryRow(query, email).Scan(
-        &store.ID,
-        &store.Slug,
-        &hashedPassword,
-        &store.Tier,
-        &store.IsActive,
-    )
+	err := repo.db.QueryRow(query, email).Scan(
+		&store.ID,
+		&store.Slug,
+		&hashedPassword,
+		&store.Tier,
+		&store.IsActive,
+		&isActivated,
+	)
 
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, fmt.Errorf("email not found")
-        }
-        return nil, err
-    }
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("email not found")
+		}
+		return nil, err
+	}
 
-    err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-    if err != nil {
-        return nil, fmt.Errorf("invalid password")
-    }
+	// 👇 PROTEÇÃO CONTRA LOJAS NÃO VERIFICADAS 👇
+	if !isActivated {
+		return nil, fmt.Errorf("unverified")
+	}
 
-    return &store, nil
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		return nil, fmt.Errorf("invalid password")
+	}
+
+	return &store, nil
 }
 
 func (r *CardRepository) UpdateSettings(s models.Store) error {
@@ -717,21 +733,70 @@ func (r *CardRepository) UpdateSettings(s models.Store) error {
 
 // --- GESTÃO DE UTILIZADORES GLOBAIS (VOLTO WALLET) ---
 
-func (r *CardRepository) CreateGlobalUser(u models.GlobalUser) error {
-	query := `INSERT INTO global_users (id, first_name, last_name, email, phone, password, rgpd_accepted, marketing_accepted) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	_, err := r.db.Exec(query, u.ID, u.FirstName, u.LastName, u.Email, u.Phone, u.Password, u.RgpdAccepted, u.MarketingAccepted)
-	return err
+func generateSecureToken() string {
+	b := make([]byte, 16) // 32 caracteres em Hex
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+func (r *CardRepository) CreateGlobalUser(u models.GlobalUser) (string, error) {
+	// 1. Gerar Token e Data de Expiração (+30 minutos)
+	token := generateSecureToken()
+	expiresAt := time.Now().Add(30 * time.Minute)
+
+	// 2. Inserir na base de dados com os novos campos
+	query := `
+        INSERT INTO global_users 
+        (id, first_name, last_name, email, phone, password, rgpd_accepted, marketing_accepted, verification_token, token_expires_at, is_verified) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE)`
+
+	_, err := r.db.Exec(query,
+		u.ID, u.FirstName, u.LastName, u.Email, u.Phone, u.Password,
+		u.RgpdAccepted, u.MarketingAccepted, token, expiresAt,
+	)
+
+	// Devolvemos o erro (se houver) e o Token para o Main.go poder enviar o email
+	return token, err
+}
+
+func (r *CardRepository) VerifyGlobalUser(token string) error {
+	// Procura o utilizador pelo token e verifica se não expirou
+	query := `
+        UPDATE global_users 
+        SET is_verified = TRUE, verification_token = NULL, token_expires_at = NULL 
+        WHERE verification_token = $1 AND token_expires_at > CURRENT_TIMESTAMP
+    `
+	res, err := r.db.Exec(query, token)
+	if err != nil {
+		return err
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("token inválido ou expirado")
+	}
+
+	return nil
 }
 
 func (r *CardRepository) AuthenticateGlobalUser(email, password string) (*models.GlobalUser, error) {
 	var u models.GlobalUser
-	query := `SELECT id, first_name, last_name, email, phone, password FROM global_users WHERE email = $1`
-
+	var isVerified bool
 	var dbPassword string
-	err := r.db.QueryRow(query, email).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone, &dbPassword)
+
+	// Atualizado para ler o is_verified
+	query := `SELECT id, first_name, last_name, email, phone, password, is_verified FROM global_users WHERE email = $1`
+
+	err := r.db.QueryRow(query, email).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone, &dbPassword, &isVerified)
 	if err != nil {
 		return nil, err
 	}
+
+	// 👇 PROTEÇÃO CONTRA CONTAS NÃO VERIFICADAS
+	if !isVerified {
+		return nil, fmt.Errorf("unverified") // Este erro específico avisa o Frontend
+	}
+
 	if dbPassword != password {
 		return nil, fmt.Errorf("password inválida")
 	}
@@ -979,5 +1044,50 @@ func (r *CardRepository) BroadcastStoreNotification(title, message, nType, image
 			r.SendStoreNotification(storeID, title, message, nType, imageData)
 		}
 	}
+	return nil
+}
+
+// CleanupUnverifiedUsers apaga utilizadores que não confirmaram o email após 30 mins
+func (r *CardRepository) CleanupUnverifiedUsers() {
+	// Apaga Wallet Users
+	res1, _ := r.db.Exec(`DELETE FROM global_users WHERE is_verified = FALSE AND token_expires_at < CURRENT_TIMESTAMP`)
+
+	// Apaga Lojas
+	res2, _ := r.db.Exec(`DELETE FROM stores WHERE account_activated = FALSE AND token_expires_at < CURRENT_TIMESTAMP`)
+
+	rows1, _ := res1.RowsAffected()
+	rows2, _ := res2.RowsAffected()
+	if rows1 > 0 || rows2 > 0 {
+		log.Printf("🧹 Limpeza automática: %d Wallets e %d Lojas não verificadas foram removidas.", rows1, rows2)
+	}
+}
+
+// StartCleanupWorker arranca a Goroutine que corre de 5 em 5 minutos
+func (r *CardRepository) StartCleanupWorker() {
+	go func() {
+		for {
+			r.CleanupUnverifiedUsers()
+			// Dorme durante 5 minutos antes de voltar a tentar
+			time.Sleep(5 * time.Minute)
+		}
+	}()
+}
+
+func (repo *CardRepository) VerifyStoreEmail(token string) error {
+	query := `
+        UPDATE stores 
+        SET account_activated = TRUE, verification_token = NULL, token_expires_at = NULL 
+        WHERE verification_token = $1 AND token_expires_at > CURRENT_TIMESTAMP
+    `
+	res, err := repo.db.Exec(query, token)
+	if err != nil {
+		return err
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("token inválido ou expirado")
+	}
+
 	return nil
 }

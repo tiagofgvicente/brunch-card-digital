@@ -1,17 +1,17 @@
 const LandingPage = {
     setup() {
-        // 👇 Adicionado o 'computed' aqui
         const { ref, computed, onMounted } = Vue;
 
         // --- ESTADO ---
         const theme = ref('light'); 
-        const lang = ref('pt'); // Default Português
+        const lang = ref('pt'); 
         const currentModal = ref(null); 
         const loading = ref(false);
         const errorMsg = ref('');
+        const successMsg = ref(''); // AQUI ESTÁ A VARIÁVEL DO SUCESSO
         
         // Estado da Wallet
-        const walletTab = ref('login'); // 'login' ou 'register'
+        const walletTab = ref('login'); 
 
         // --- DADOS ---
         const storeConfig = ref({ name: 'Volto', logo: '' });
@@ -20,21 +20,17 @@ const LandingPage = {
         // --- FORMULÁRIOS ---
         const loginForm = ref({ email: '', password: '' });
         const registerForm = ref({ name: '', email: '', password: '' });
-        
-        // Formulários da Wallet (Global Users)
         const walletForm = ref({ email: '', password: '' });
-        
-        // 👇 Adicionado o campo 'marketing' aqui 👇
         const globalUserForm = ref({ firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false, marketing: false });
 
-        // 👇 NOVA LÓGICA: Verifica se os campos obrigatórios estão todos preenchidos 👇
+        // LÓGICA: Verifica se os campos obrigatórios estão preenchidos
         const isWalletFormValid = computed(() => {
             const f = globalUserForm.value;
             return f.firstName.trim() !== '' &&
                    f.lastName.trim() !== '' &&
                    f.email.trim() !== '' &&
                    f.password.trim() !== '' &&
-                   f.rgpd === true; // Marketing não está aqui porque é opcional
+                   f.rgpd === true;
         });
 
         // --- TRADUÇÕES ---
@@ -48,8 +44,7 @@ const LandingPage = {
                 modal_register_title: "Grow Your Business", modal_register_sub: "30 days free. Setup in 1 minute.",
                 business_name: "Business Name", btn_launch: "Launch Platform 🚀",
                 has_account: "Have an account?", btn_login: "Login",
-                wallet_title: "My Wallet", wallet_sub: "Access all your cards securely.",
-                btn_send_code: "Send Access Code", btn_access_wallet: "Open Wallet"
+                wallet_title: "My Wallet", wallet_sub: "Access all your cards securely."
             },
             pt: {
                 wallet_btn: "Minha Carteira", login_btn: "Entrar (Lojas)", register_btn: "Teste Grátis",
@@ -60,14 +55,13 @@ const LandingPage = {
                 modal_register_title: "Comece a Crescer", modal_register_sub: "30 dias grátis. Configuração em 1 minuto.",
                 business_name: "Nome do Negócio", btn_launch: "Lançar Plataforma 🚀",
                 has_account: "Já tem conta?", btn_login: "Entrar",
-                wallet_title: "Minha Carteira", wallet_sub: "Aceda aos seus cartões com segurança.",
-                btn_send_code: "Enviar Código", btn_access_wallet: "Abrir Carteira"
+                wallet_title: "Minha Carteira", wallet_sub: "Aceda aos seus cartões com segurança."
             }
         };
 
         const t = (key) => translations[lang.value][key] || key;
 
-        // --- CONFIGURAÇÕES (THEME & LANG) ---
+        // --- CONFIGURAÇÕES ---
         const toggleTheme = () => {
             theme.value = theme.value === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', theme.value);
@@ -89,9 +83,9 @@ const LandingPage = {
         const fetchConfig = async () => { try { const res = await fetch('/api/v1/system/config'); if(res.ok) storeConfig.value = await res.json(); } catch(e){} };
         const fetchStats = async () => { try { const res = await fetch('/api/v1/public/stats'); if(res.ok) stats.value = await res.json(); } catch(e){} };
 
-        // --- LOGIN LOJA (ATUALIZADO PARA LER SUSPENSÃO) ---
+        // --- LOGIN LOJA ---
         const handleLogin = async () => {
-            loading.value = true; errorMsg.value = '';
+            loading.value = true; errorMsg.value = ''; successMsg.value = '';
             try {
                 const res = await fetch('/api/v1/auth/login', { 
                     method: 'POST', 
@@ -103,92 +97,112 @@ const LandingPage = {
                     const data = await res.json(); 
                     window.location.href = data.redirect; 
                 } else { 
-                    // Lê o erro que vem do Go
                     const errorText = await res.text();
-                    
                     if (errorText.includes("SUSPENDED")) {
-                        errorMsg.value = lang.value === 'pt' 
-                            ? "⛔ A sua conta encontra-se suspensa. Por favor, contacte o suporte." 
-                            : "⛔ Your account is suspended. Please contact support.";
+                        errorMsg.value = lang.value === 'pt' ? "⛔ A sua conta encontra-se suspensa." : "⛔ Account suspended.";
+                    } else if (errorText.includes("unverified")) {
+                        errorMsg.value = lang.value === 'pt' ? "📧 Vá ao seu email para ativar a conta." : "📧 Please check your email to activate.";
                     } else {
                         errorMsg.value = lang.value === 'pt' ? "Email ou Password incorretos." : "Invalid email or password."; 
                     }
                 }
-            } catch (e) { 
-                errorMsg.value = lang.value === 'pt' ? "Erro de conexão." : "Connection error."; 
-            } finally { 
-                loading.value = false; 
-            }
+            } catch (e) { errorMsg.value = lang.value === 'pt' ? "Erro de conexão." : "Connection error."; } 
+            finally { loading.value = false; }
         };
         
         // --- REGISTO NOVA LOJA ---
         const handleRegister = async () => {
-            loading.value = true; errorMsg.value = '';
+            loading.value = true; errorMsg.value = ''; successMsg.value = '';
             try {
-                const res = await fetch('/api/v1/public/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(registerForm.value) });
-                if (res.ok) { const data = await res.json(); window.location.href = data.redirect; } 
-                else { const txt = await res.text(); errorMsg.value = txt.includes("Email") ? (lang.value === 'pt' ? "Email já registado." : "Email already taken.") : (lang.value === 'pt' ? "Erro ao criar conta." : "Error creating account."); }
+                const res = await fetch('/api/v1/public/register', { 
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify(registerForm.value) 
+                });
+
+                if (res.ok) { 
+                    const data = await res.json(); 
+                    if (data.status === "pending_verification") {
+                        // ❌ TIREI O ALERT, AGORA INJETA SÓ A MSG!
+                        successMsg.value = data.message;
+                        registerForm.value = { name: '', email: '', password: '' };
+                    } else {
+                        window.location.href = data.redirect; 
+                    }
+                } else { 
+                    const txt = await res.text(); 
+                    errorMsg.value = txt.trim() || (lang.value === 'pt' ? "Erro ao criar conta." : "Error creating account."); 
+                }
             } catch (e) { errorMsg.value = lang.value === 'pt' ? "Erro de conexão." : "Connection error."; } 
             finally { loading.value = false; }
         };
 
-        // --- REGISTO UTILIZADOR GLOBAL (WALLET) ---
+        // --- REGISTO WALLET ---
         const handleWalletRegister = async () => {
-            loading.value = true; errorMsg.value = '';
+            loading.value = true; errorMsg.value = ''; successMsg.value = '';
             try {
                 const res = await fetch('/api/v1/public/wallet-register', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(globalUserForm.value)
                 });
+
                 if (res.ok) {
                     const data = await res.json();
-                    window.location.href = data.redirect;
+                    if (data.status === "pending_verification") {
+                        // ❌ TIREI O ALERT, AGORA INJETA SÓ A MSG!
+                        successMsg.value = data.message;
+                        globalUserForm.value = { firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false, marketing: false };
+                    } else {
+                        window.location.href = data.redirect;
+                    }
                 } else {
-                    errorMsg.value = lang.value === 'pt' ? "Email já registado." : "Email already registered.";
+                    const txt = await res.text();
+                    errorMsg.value = txt.trim() || (lang.value === 'pt' ? "Erro ao criar conta." : "Error creating account.");
                 }
-            } catch (e) {
-                errorMsg.value = lang.value === 'pt' ? "Erro de ligação." : "Connection error.";
-            } finally { loading.value = false; }
+            } catch (e) { errorMsg.value = lang.value === 'pt' ? "Erro de ligação." : "Connection error."; } 
+            finally { loading.value = false; }
         };
 
-        // --- LOGIN UTILIZADOR GLOBAL (WALLET) ---
+        // --- LOGIN WALLET ---
         const handleWalletLogin = async () => {
-            loading.value = true; errorMsg.value = '';
+            loading.value = true; errorMsg.value = ''; successMsg.value = '';
             try {
                 const res = await fetch('/api/v1/public/wallet-login', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ Email: walletForm.value.email, Password: walletForm.value.password })
                 });
+
                 if (res.ok) {
                     const data = await res.json();
                     window.location.href = data.redirect;
                 } else {
-                    errorMsg.value = lang.value === 'pt' ? "Email ou Password incorretos." : "Invalid credentials.";
+                    const txt = await res.text();
+                    if (txt.includes("unverified")) {
+                        errorMsg.value = lang.value === 'pt' ? "📧 Vá ao seu email para ativar a conta." : "📧 Please check your email to activate.";
+                    } else {
+                        errorMsg.value = lang.value === 'pt' ? "Email ou Password incorretos." : "Invalid credentials.";
+                    }
                 }
-            } catch (e) {
-                errorMsg.value = lang.value === 'pt' ? "Erro de ligação." : "Connection error.";
-            } finally { loading.value = false; }
+            } catch (e) { errorMsg.value = lang.value === 'pt' ? "Erro de ligação." : "Connection error."; } 
+            finally { loading.value = false; }
         };
 
-        // --- INICIALIZAÇÃO ---
         onMounted(() => { initSettings(); fetchConfig(); fetchStats(); });
 
         return {
-            theme, lang, currentModal, loading, errorMsg, storeConfig, stats,
+            theme, lang, currentModal, loading, errorMsg, successMsg, storeConfig, stats,
             loginForm, registerForm, walletForm, walletTab, globalUserForm,
-            isWalletFormValid, // 👇 Exportado para o HTML conseguir ler!
-            t, toggleTheme, toggleLang, 
+            isWalletFormValid, t, toggleTheme, toggleLang, 
             handleLogin, handleRegister, handleWalletRegister, handleWalletLogin,
-            openLogin: () => { currentModal.value = 'login'; errorMsg.value = ''; },
-            openRegister: () => { currentModal.value = 'register'; errorMsg.value = ''; },
+            openLogin: () => { currentModal.value = 'login'; errorMsg.value = ''; successMsg.value = ''; },
+            openRegister: () => { currentModal.value = 'register'; errorMsg.value = ''; successMsg.value = ''; },
             openWallet: () => { 
                 currentModal.value = 'wallet'; 
                 walletTab.value = 'login'; 
                 walletForm.value = { email: '', password: '' };
                 globalUserForm.value = { firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false, marketing: false };
-                errorMsg.value = ''; 
+                errorMsg.value = ''; successMsg.value = '';
             },
-            closeModal: () => currentModal.value = null
+            closeModal: () => { currentModal.value = null; successMsg.value = ''; errorMsg.value = ''; }
         };
     }
 };

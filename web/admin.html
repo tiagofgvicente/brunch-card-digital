@@ -155,6 +155,7 @@
         .toast { pointer-events: auto; padding: 15px 25px; border-radius: 10px; color: white; font-weight: 600; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 12px; animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); min-width: 280px; }
         .toast-success { background: var(--success); }
         .toast-error { background: var(--red); }
+        .toast-info { background: #3b82f6; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         .designer-modal { width: 850px; max-width: 90vw; padding: 0; display: flex; overflow: hidden; height: 500px; }
@@ -224,7 +225,6 @@
             
             <nav>
                 <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 {{ t('nav_customers') }}</div>
-                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'register'}" @click="changePage('register')">➕ {{ t('nav_register') }}</div>
                 <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'scanner'}" @click="changePage('scanner')">📷 {{ t('nav_scanner') }}</div>
                 
                 <div class="nav-item" :class="{active: currentPage === 'messages'}" @click="changePage('messages')">
@@ -372,45 +372,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div v-else-if="currentPage === 'register' && !isStoreLocked" class="reg-container">
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="margin: 0; font-weight: 800; font-size: 1.8rem; color: var(--primary);">{{ t('title_register') }}</h1>
-                    <p style="color: var(--text-sub); margin-top: 5px;">Fill in the details to create a new digital card.</p>
-                </div>
-                
-                <div class="form-grid">
-                    <div class="form-row"><label>{{ t('lbl_fname') }} *</label><input v-model="newMember.first_name" class="custom-input" placeholder="e.g. John"></div>
-                    <div class="form-row"><label>{{ t('lbl_lname') }} *</label><input v-model="newMember.last_name" class="custom-input" placeholder="e.g. Doe"></div>
-                    <div class="form-row">
-                        <label>{{ t('lbl_email') }}</label>
-                        <input v-model="newMember.email" class="custom-input" placeholder="john@example.com">
-                        <div v-if="!newMember.email" class="warning-box">
-                            <span style="font-size: 1rem;">⚠️</span> {{ t('msg_no_email') }}
-                        </div>
-                    </div>
-                    <div class="form-row"><label>{{ t('lbl_phone') }}</label><input v-model="newMember.phone" class="custom-input" placeholder="+351 912 345 678"></div>
-                </div>
-
-                <div class="checkbox-group">
-                    <label class="checkbox-item">
-                        <input type="checkbox" v-model="newMember.rgpd">
-                        <div>
-                            <span>{{ t('lbl_rgpd') }} *</span>
-                            <small>Required to store customer data.</small>
-                        </div>
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox" v-model="newMember.marketing">
-                        <div>
-                            <span>{{ t('lbl_mkt') }}</span>
-                            <small>Allow sending promotions and rewards via email.</small>
-                        </div>
-                    </label>
-                </div>
-
-                <button class="btn-create-card" :disabled="!newMember.rgpd || (!newMember.first_name || !newMember.last_name)" @click="registerMember">{{ t('btn_create') }}</button>
             </div>
 
             <div v-else-if="currentPage === 'scanner' && !isStoreLocked" class="scanner-box" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
@@ -615,6 +576,17 @@
                 <h1 style="margin: 0 0 10px; font-weight: 900; color: var(--text-main);">Leitura com Sucesso!</h1>
                 <p style="color: var(--text-sub); margin-bottom: 30px; font-size: 1rem;">O cartão do cliente foi processado corretamente.</p>
                 <button class="btn-prompt btn-prompt-scanner" @click="resetMobileScanner" style="margin-bottom:0;">
+                    PRÓXIMO CLIENTE 📷
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-overlay" v-if="showMobileInfoModal" style="background: var(--bg-main); z-index: 10001; display: flex; align-items: center; justify-content: center;">
+            <div style="padding: 40px; max-width: 400px; width: 90%; text-align: center; background: var(--bg-side); border-radius: 20px; border: 2px solid #3b82f6; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                <div style="font-size: 5rem; margin-bottom: 20px;">ℹ️</div>
+                <h1 style="margin: 0 0 10px; font-weight: 900; color: var(--text-main);">Já Registado</h1>
+                <p style="color: var(--text-sub); margin-bottom: 30px; font-size: 1rem;">O cliente já possui este cartão na sua base de dados.</p>
+                <button class="btn-prompt" @click="resetMobileScanner" style="margin-bottom:0; background: #3b82f6; color: white; border: none; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);">
                     PRÓXIMO CLIENTE 📷
                 </button>
             </div>

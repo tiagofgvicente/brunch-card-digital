@@ -40,6 +40,31 @@ spec:
             secretKeyRef:
               name: brunch-secrets
               key: DB_NAME
+        - name: SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: SMTP_HOST
+        - name: SMTP_PORT
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: SMTP_PORT
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: SMTP_USER
+        - name: SMTP_PASS
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: SMTP_PASS
+        - name: APP_URL
+          valueFrom:
+            secretKeyRef:
+              name: brunch-secrets
+              key: APP_URL
         - name: MASTER_PASSWORD
           valueFrom:
             secretKeyRef:

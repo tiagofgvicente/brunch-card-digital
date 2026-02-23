@@ -13,6 +13,8 @@ CREATE TABLE stores (
     admin_email VARCHAR(255) UNIQUE NOT NULL,
     admin_password TEXT NOT NULL, 
     account_activated BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255),
+    token_expires_at TIMESTAMP,
     logo_url TEXT,
     stamp_icon VARCHAR(50) DEFAULT '🍳',
     
@@ -106,6 +108,9 @@ CREATE TABLE global_users (
     password VARCHAR(255) NOT NULL,
     rgpd_accepted BOOLEAN DEFAULT FALSE,
     marketing_accepted BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255),
+    token_expires_at TIMESTAMP,
+    is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -117,7 +122,7 @@ CREATE TABLE store_scopes (
     is_main BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(store_id, name) -- Garante que a loja não cria dois âmbitos com o mesmo nome
+    UNIQUE(store_id, name)
 );
 
 ALTER TABLE loyalty_cards ADD COLUMN scope_id VARCHAR(36) REFERENCES store_scopes(id) ON DELETE CASCADE;
