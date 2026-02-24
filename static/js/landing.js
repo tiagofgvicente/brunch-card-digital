@@ -15,6 +15,13 @@ const LandingPage = {
         const storeTab = ref('login'); 
         const walletTab = ref('login'); 
 
+        // --- ESTADOS PARA FORGOT PASSWORD ---
+        const forgotMode = ref(false);
+        const forgotEmail = ref('');
+        const resetToken = ref('');
+        const resetType = ref(''); // 'store' ou 'wallet'
+        const resetPasswordForm = ref({ password: '' });
+
         const storeConfig = ref({ name: 'Volto', logo: '' });
         const stats = ref({ total_cards: 0, total_stamps: 0, total_redeems: 0 });
         
@@ -42,7 +49,9 @@ const LandingPage = {
                 modal_login_title: "Store Dashboard", password: "Password",
                 modal_register_title: "Grow Your Business", modal_register_sub: "30 days free. Setup in 1 minute.",
                 business_name: "Business Name", btn_launch: "Launch Platform",
-                wallet_title: "My Wallet", wallet_sub: "Access all your cards securely."
+                wallet_title: "My Wallet", wallet_sub: "Access all your cards securely.",
+                forgot_pass: "Forgot your password?", forgot_title: "Recover Password", forgot_sub: "Enter your email. We'll send you a recovery link.",
+                btn_send_link: "Send Link", back_login: "Back to Login", reset_title: "New Password", reset_sub: "Choose a secure new password.", btn_save_pass: "Save Password"
             },
             pt: {
                 nav_wallet: "Minha Carteira", nav_business: "Para Negócios",
@@ -53,7 +62,9 @@ const LandingPage = {
                 modal_login_title: "Gestão de Loja", password: "Palavra-passe",
                 modal_register_title: "Comece a Crescer", modal_register_sub: "30 dias grátis. Configuração em 1 minuto.",
                 business_name: "Nome do Negócio", btn_launch: "Lançar Plataforma",
-                wallet_title: "Minha Carteira", wallet_sub: "Aceda aos seus cartões com segurança."
+                wallet_title: "Minha Carteira", wallet_sub: "Aceda aos seus cartões com segurança.",
+                forgot_pass: "Esqueceu-se da palavra-passe?", forgot_title: "Recuperar Palavra-passe", forgot_sub: "Insira o seu email. Vamos enviar-lhe um link de recuperação.",
+                btn_send_link: "Enviar Link", back_login: "Voltar ao Login", reset_title: "Nova Palavra-passe", reset_sub: "Escolha uma nova palavra-passe segura.", btn_save_pass: "Guardar Palavra-passe"
             }
         };
 
@@ -103,7 +114,6 @@ const LandingPage = {
             finally { loading.value = false; }
         };
         
-        // --- REGISTO NOVA LOJA (COM AUTO-LOGIN) ---
         const handleRegister = async () => {
             loading.value = true; errorMsg.value = ''; successMsg.value = '';
             const emailToLogin = registerForm.value.email;
@@ -120,7 +130,6 @@ const LandingPage = {
                     if (data.status === "pending_verification") {
                         successMsg.value = data.message;
                         
-                        // FAZ O AUTO-LOGIN SECRETO PARA BUSCAR A SESSÃO
                         try {
                             const loginRes = await fetch('/api/v1/auth/login', { 
                                 method: 'POST', headers: { 'Content-Type': 'application/json' }, 
@@ -128,7 +137,7 @@ const LandingPage = {
                             });
                             if(loginRes.ok) {
                                 const loginData = await loginRes.json();
-                                pendingRedirect.value = loginData.redirect; // Salva a Rota de Sucesso
+                                pendingRedirect.value = loginData.redirect;
                             } else {
                                 pendingRedirect.value = data.redirect || '/'; 
                             }
@@ -146,7 +155,6 @@ const LandingPage = {
             finally { loading.value = false; }
         };
 
-        // --- REGISTO WALLET (COM AUTO-LOGIN) ---
         const handleWalletRegister = async () => {
             loading.value = true; errorMsg.value = ''; successMsg.value = '';
             const emailToLogin = globalUserForm.value.email;
@@ -163,7 +171,6 @@ const LandingPage = {
                     if (data.status === "pending_verification") {
                         successMsg.value = data.message;
                         
-                        // FAZ O AUTO-LOGIN SECRETO PARA BUSCAR A SESSÃO
                         try {
                             const loginRes = await fetch('/api/v1/public/wallet-login', {
                                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -208,36 +215,81 @@ const LandingPage = {
             finally { loading.value = false; }
         };
 
-        // Função do Botão "Entendido, Continuar ->"
+        // --- MÉTODOS DE FORGOT PASSWORD ---
+        const handleForgotPassword = async () => {
+            if (!forgotEmail.value) return;
+            loading.value = true; errorMsg.value = ''; successMsg.value = '';
+            const endpoint = currentModal.value === 'store' ? '/api/v1/auth/forgot-password' : '/api/v1/public/wallet-forgot-password';
+            
+            try {
+                await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: forgotEmail.value }) });
+                successMsg.value = lang.value === 'pt' ? "Se o email existir, receberá um link em breve." : "If the email exists, you will receive a link shortly.";
+            } catch (e) { errorMsg.value = lang.value === 'pt' ? "Erro de ligação." : "Connection error."; } 
+            finally { loading.value = false; forgotEmail.value = ''; }
+        };
+
+        const handleResetPassword = async () => {
+            loading.value = true; errorMsg.value = ''; successMsg.value = '';
+            const endpoint = resetType.value === 'store' ? '/api/v1/auth/reset-password' : '/api/v1/public/wallet-reset-password';
+            
+            try {
+                const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: resetToken.value, password: resetPasswordForm.value.password }) });
+                if (res.ok) {
+                    successMsg.value = lang.value === 'pt' ? "Palavra-passe alterada com sucesso! Já pode fazer login." : "Password reset successful! You can now login.";
+                    resetToken.value = '';
+                } else {
+                    const txt = await res.text();
+                    errorMsg.value = txt || (lang.value === 'pt' ? "Erro ao redefinir." : "Error resetting.");
+                }
+            } catch (e) { errorMsg.value = lang.value === 'pt' ? "Erro de ligação." : "Connection error."; } 
+            finally { loading.value = false; }
+        };
+
         const proceedToApp = () => {
             if (pendingRedirect.value) {
                 window.location.href = pendingRedirect.value;
-            } else {
-                currentModal.value = null;
-                successMsg.value = '';
+            } else if (resetToken.value === '') { 
+                currentModal.value = null; 
+                successMsg.value = ''; 
+            } else { 
+                successMsg.value = ''; 
             }
         };
 
-        onMounted(() => { initSettings(); fetchConfig(); fetchStats(); });
+        onMounted(() => { 
+            initSettings(); fetchConfig(); fetchStats(); 
+            
+            // DETETA SE O UTILIZADOR VEM DO LINK DO EMAIL DE RECUPERAÇÃO
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenParam = urlParams.get('reset_token');
+            const typeParam = urlParams.get('type');
+            if (tokenParam && typeParam) {
+                resetToken.value = tokenParam;
+                resetType.value = typeParam;
+                currentModal.value = 'reset_password';
+            }
+        });
 
         return {
             theme, lang, currentModal, loading, errorMsg, successMsg, storeConfig, stats,
             loginForm, registerForm, walletForm, walletTab, storeTab, globalUserForm,
             isWalletFormValid, t, toggleTheme, toggleLang, 
-            handleLogin, handleRegister, handleWalletRegister, handleWalletLogin,
-            proceedToApp, 
+            handleLogin, handleRegister, handleWalletRegister, handleWalletLogin, proceedToApp,
             
-            openLogin: () => { currentModal.value = 'store'; storeTab.value = 'login'; errorMsg.value = ''; successMsg.value = ''; },
-            openRegister: () => { currentModal.value = 'store'; storeTab.value = 'register'; errorMsg.value = ''; successMsg.value = ''; },
+            // Variáveis e funções exportadas para o template
+            forgotMode, forgotEmail, resetToken, resetType, resetPasswordForm, handleForgotPassword, handleResetPassword,
+            
+            openLogin: () => { currentModal.value = 'store'; storeTab.value = 'login'; errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false; },
+            openRegister: () => { currentModal.value = 'store'; storeTab.value = 'register'; errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false; },
             
             openWallet: () => { 
                 currentModal.value = 'wallet'; 
                 walletTab.value = 'login'; 
                 walletForm.value = { email: '', password: '' };
                 globalUserForm.value = { firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false, marketing: false };
-                errorMsg.value = ''; successMsg.value = '';
+                errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false;
             },
-            closeModal: () => { currentModal.value = null; successMsg.value = ''; errorMsg.value = ''; pendingRedirect.value = ''; }
+            closeModal: () => { currentModal.value = null; successMsg.value = ''; errorMsg.value = ''; pendingRedirect.value = ''; forgotMode.value = false; resetToken.value = ''; }
         };
     }
 };

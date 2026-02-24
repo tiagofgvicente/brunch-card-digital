@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -503,8 +504,12 @@ func PublicRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 		return
 	}
 
+	if err := isValidEmailDomain(req.Email); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	if err := isValidStorePassword(req.Password); err != nil {
-		// Devolve o erro diretamente para a landing page mostrar em vermelho
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -610,6 +615,11 @@ func WalletRegisterHandler(w http.ResponseWriter, r *http.Request, repo *databas
 	var req models.RegisterGlobalUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Formato inválido", 400)
+		return
+	}
+
+	if err := isValidEmailDomain(req.Email); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -942,6 +952,125 @@ func isValidCustomerPassword(pwd string) error {
 
 	if !hasLetter || !hasNumber {
 		return fmt.Errorf("A password tem de conter letras e números")
+	}
+
+	return nil
+}
+
+// --- FORGOT PASSWORD HANDLERS ---
+
+func sendRecoveryEmail(email, name, token, userType string) {
+	appURL := os.Getenv("APP_URL")
+	if appURL == "" {
+		appURL = "http://localhost:8080"
+	}
+
+	// Link mágico de volta para a landing page
+	resetLink := fmt.Sprintf("%s/?reset_token=%s&type=%s", appURL, token, userType)
+
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+	senderEmail := os.Getenv("SMTP_USER")
+	senderPassword := os.Getenv("SMTP_PASS")
+
+	if smtpHost == "" || senderEmail == "" {
+		return
+	}
+
+	to := []string{email}
+	subject := "Subject: Recuperação de Palavra-passe Volto\n"
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+	body := fmt.Sprintf(`
+		<h2>Olá %s,</h2>
+		<p>Recebemos um pedido para redefinir a tua palavra-passe na Volto.</p>
+		<p>Clica no botão abaixo para escolher uma nova palavra-passe (o link expira em 30 minutos):</p>
+		<br>
+		<a href="%s" style="padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px;">Redefinir Palavra-passe</a>
+		<br><br>
+		<p>Se não fizeste este pedido, podes ignorar este email.</p>
+	`, name, resetLink)
+
+	message := []byte(subject + mime + body)
+	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
+	go smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, to, message)
+}
+
+func StoreForgotPasswordHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	token, name, err := repo.GeneratePasswordResetTokenStore(req.Email)
+	if err == nil {
+		sendRecoveryEmail(req.Email, name, token, "store")
+	}
+	// Devolvemos sempre OK para não confirmar a hackers se o email existe
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func WalletForgotPasswordHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	token, name, err := repo.GeneratePasswordResetTokenWallet(req.Email)
+	if err == nil {
+		sendRecoveryEmail(req.Email, name, token, "wallet")
+	}
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func StoreResetPasswordHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	if err := isValidStorePassword(req.Password); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if err := repo.ResetPasswordStore(req.Token, req.Password); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func WalletResetPasswordHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	if err := isValidCustomerPassword(req.Password); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if err := repo.ResetPasswordWallet(req.Token, req.Password); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+// --- FUNÇÃO PARA VALIDAR SE O DOMÍNIO DO EMAIL É REAL ---
+func isValidEmailDomain(email string) error {
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return fmt.Errorf("formato de email inválido")
+	}
+	domain := parts[1]
+
+	// O LookupMX pergunta aos servidores DNS se o domínio tem uma caixa de correio configurada
+	mxRecords, err := net.LookupMX(domain)
+	if err != nil || len(mxRecords) == 0 {
+		return fmt.Errorf("o domínio do email (@%s) não é válido ou não recebe correio", domain)
 	}
 
 	return nil

@@ -255,7 +255,6 @@
         /* --- 👇 MEDIA QUERIES PARA MOBILE 👇 --- */
         @media (max-width: 768px) {
             body { height: auto; overflow-y: auto; }
-            /* Ajuste o padding no mobile para as 4 bolinhas caberem perfeitas */
             .top-bar { padding: 15px 20px; }
             .hide-mobile { display: none !important; }
             
@@ -331,35 +330,64 @@
                 <div v-if="successMsg" style="text-align: center; padding: 20px 0; animation: fadeIn 0.3s ease;">
                     <div style="font-size: 4.5rem; margin-bottom: 15px;">✉️</div>
                     <h2 style="color: var(--text-main); margin-bottom: 10px; font-weight: 900;">Quase lá!</h2>
-                    <p style="color: var(--text-sub); font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px;">
-                        {{ successMsg }}
-                    </p>
+                    <p style="color: var(--text-sub); font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px;">{{ successMsg }}</p>
                     <button class="btn-submit" @click="proceedToApp" style="background: #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
                         Entendido, Continuar <span style="font-size: 1.2rem;">➔</span>
                     </button>
+                </div>
+
+                <div v-else-if="currentModal === 'reset_password'">
+                    <h2 style="text-align:center; margin:0 0 10px; color:var(--text-main);">{{ t('reset_title') }}</h2>
+                    <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">{{ t('reset_sub') }}</p>
+                    <form @submit.prevent="handleResetPassword">
+                        <div class="form-group">
+                            <label>{{ t('password') }}</label>
+                            <input type="password" v-model="resetPasswordForm.password" required>
+                            
+                            <div class="pwd-rules" v-if="resetPasswordForm.password && resetType === 'store'">
+                                <div class="pwd-rule" :class="{valid: resetPasswordForm.password.length >= 8}"><span class="indicator"></span> Mínimo 8 caracteres</div>
+                                <div class="pwd-rule" :class="{valid: /[A-Z]/.test(resetPasswordForm.password) && /[a-z]/.test(resetPasswordForm.password)}"><span class="indicator"></span> Maiúscula e minúscula</div>
+                                <div class="pwd-rule" :class="{valid: /[0-9]/.test(resetPasswordForm.password)}"><span class="indicator"></span> Pelo menos 1 número</div>
+                            </div>
+                            <div class="pwd-rules" v-if="resetPasswordForm.password && resetType === 'wallet'">
+                                <div class="pwd-rule" :class="{valid: resetPasswordForm.password.length >= 6}"><span class="indicator"></span> Mínimo 6 caracteres</div>
+                                <div class="pwd-rule" :class="{valid: /[a-zA-Z]/.test(resetPasswordForm.password) && /[0-9]/.test(resetPasswordForm.password)}"><span class="indicator"></span> Letras e números</div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_save_pass') }}</button>
+                    </form>
                 </div>
 
                 <div v-else>
                     
                     <div v-if="currentModal === 'store'">
                         <div style="display: flex; border-bottom: 1px solid var(--border); margin-bottom: 25px;">
-                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" 
-                                    :style="{ opacity: storeTab === 'login' ? 1 : 0.5, borderBottom: storeTab === 'login' ? '3px solid var(--primary)' : '3px solid transparent' }"
-                                    @click="storeTab = 'login'; errorMsg = '';">
-                                {{ t('tab_login') }}
-                            </button>
-                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" 
-                                    :style="{ opacity: storeTab === 'register' ? 1 : 0.5, borderBottom: storeTab === 'register' ? '3px solid var(--primary)' : '3px solid transparent' }"
-                                    @click="storeTab = 'register'; errorMsg = '';">
-                                {{ t('tab_register_store') }}
-                            </button>
+                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" :style="{ opacity: storeTab === 'login' ? 1 : 0.5, borderBottom: storeTab === 'login' ? '3px solid var(--primary)' : '3px solid transparent' }" @click="storeTab = 'login'; errorMsg = ''; forgotMode = false;">{{ t('tab_login') }}</button>
+                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" :style="{ opacity: storeTab === 'register' ? 1 : 0.5, borderBottom: storeTab === 'register' ? '3px solid var(--primary)' : '3px solid transparent' }" @click="storeTab = 'register'; errorMsg = ''; forgotMode = false;">{{ t('tab_register_store') }}</button>
                         </div>
 
-                        <div v-if="storeTab === 'login'">
+                        <div v-if="storeTab === 'login' && forgotMode">
+                            <h2 style="text-align:center; margin:0 0 10px; color:var(--text-main);">{{ t('forgot_title') }}</h2>
+                            <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">{{ t('forgot_sub') }}</p>
+                            <form @submit.prevent="handleForgotPassword">
+                                <div class="form-group"><label>Email</label><input type="email" v-model="forgotEmail" required></div>
+                                <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_send_link') }}</button>
+                                <div style="text-align: center; margin-top: 15px;">
+                                    <a href="#" @click.prevent="forgotMode = false" style="font-size: 0.75rem; color: var(--text-sub); text-decoration: none; font-weight: 700;">{{ t('back_login') }}</a>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div v-else-if="storeTab === 'login' && !forgotMode">
                             <h2 style="text-align:center; margin:0 0 25px; color:var(--text-main);">{{ t('modal_login_title') }}</h2>
                             <form @submit.prevent="handleLogin">
                                 <div class="form-group"><label>Admin Email</label><input type="email" v-model="loginForm.email" required placeholder="manager@store.com"></div>
                                 <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="loginForm.password" required placeholder="••••••••"></div>
+                                
+                                <div style="text-align: right; margin-top: -10px; margin-bottom: 15px;">
+                                    <a href="#" @click.prevent="forgotMode = true; errorMsg = '';" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 700;">{{ t('forgot_pass') }}</a>
+                                </div>
+
                                 <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_enter') }}</button>
                             </form>
                         </div>
@@ -374,56 +402,46 @@
                                     <div class="form-group">
                                         <label>{{ t('password') }}</label>
                                         <input type="password" v-model="registerForm.password" required>
-                                        
                                         <div class="pwd-rules" v-if="registerForm.password">
-                                            <div class="pwd-rule" :class="{valid: registerForm.password.length >= 8}">
-                                                <span class="indicator"></span> Mínimo 8 caracteres
-                                            </div>
-                                            <div class="pwd-rule" :class="{valid: /[A-Z]/.test(registerForm.password) && /[a-z]/.test(registerForm.password)}">
-                                                <span class="indicator"></span> Maiúscula e minúscula
-                                            </div>
-                                            <div class="pwd-rule" :class="{valid: /[0-9]/.test(registerForm.password)}">
-                                                <span class="indicator"></span> Pelo menos 1 número
-                                            </div>
+                                            <div class="pwd-rule" :class="{valid: registerForm.password.length >= 8}"><span class="indicator"></span> Mínimo 8 caracteres</div>
+                                            <div class="pwd-rule" :class="{valid: /[A-Z]/.test(registerForm.password) && /[a-z]/.test(registerForm.password)}"><span class="indicator"></span> Maiúscula e minúscula</div>
+                                            <div class="pwd-rule" :class="{valid: /[0-9]/.test(registerForm.password)}"><span class="indicator"></span> Pelo menos 1 número</div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <button type="submit" class="btn-submit" 
-                                        :disabled="loading || !registerForm.password || registerForm.password.length < 8 || !/[A-Z]/.test(registerForm.password) || !/[a-z]/.test(registerForm.password) || !/[0-9]/.test(registerForm.password)">
-                                    {{ loading ? '...' : t('btn_launch') }}
-                                </button>
+                                <button type="submit" class="btn-submit" :disabled="loading || !registerForm.password || registerForm.password.length < 8 || !/[A-Z]/.test(registerForm.password) || !/[a-z]/.test(registerForm.password) || !/[0-9]/.test(registerForm.password)">{{ loading ? '...' : t('btn_launch') }}</button>
                             </form>
                         </div>
                     </div>
 
                     <div v-if="currentModal === 'wallet'">
                         <div style="display: flex; border-bottom: 1px solid var(--border); margin-bottom: 25px;">
-                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" 
-                                    :style="{ opacity: walletTab === 'login' ? 1 : 0.5, borderBottom: walletTab === 'login' ? '3px solid var(--primary)' : '3px solid transparent' }"
-                                    @click="walletTab = 'login'; errorMsg = '';">
-                                {{ t('tab_login') }}
-                            </button>
-                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" 
-                                    :style="{ opacity: walletTab === 'register' ? 1 : 0.5, borderBottom: walletTab === 'register' ? '3px solid var(--primary)' : '3px solid transparent' }"
-                                    @click="walletTab = 'register'; errorMsg = '';">
-                                {{ t('tab_register_wallet') }}
-                            </button>
+                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" :style="{ opacity: walletTab === 'login' ? 1 : 0.5, borderBottom: walletTab === 'login' ? '3px solid var(--primary)' : '3px solid transparent' }" @click="walletTab = 'login'; errorMsg = ''; forgotMode = false;">{{ t('tab_login') }}</button>
+                            <button style="flex: 1; padding: 15px; background: transparent; border: none; font-weight: 800; font-family: 'Inter'; cursor: pointer; color: var(--text-main); border-bottom: 3px solid transparent;" :style="{ opacity: walletTab === 'register' ? 1 : 0.5, borderBottom: walletTab === 'register' ? '3px solid var(--primary)' : '3px solid transparent' }" @click="walletTab = 'register'; errorMsg = ''; forgotMode = false;">{{ t('tab_register_wallet') }}</button>
                         </div>
 
-                        <div v-if="walletTab === 'login'">
-                            <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">
-                                {{ t('wallet_sub') }}
-                            </p>
+                        <div v-if="walletTab === 'login' && forgotMode">
+                            <h2 style="text-align:center; margin:0 0 10px; color:var(--text-main);">{{ t('forgot_title') }}</h2>
+                            <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">{{ t('forgot_sub') }}</p>
+                            <form @submit.prevent="handleForgotPassword">
+                                <div class="form-group"><label>Email</label><input type="email" v-model="forgotEmail" required></div>
+                                <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? '...' : t('btn_send_link') }}</button>
+                                <div style="text-align: center; margin-top: 15px;">
+                                    <a href="#" @click.prevent="forgotMode = false" style="font-size: 0.75rem; color: var(--text-sub); text-decoration: none; font-weight: 700;">{{ t('back_login') }}</a>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div v-else-if="walletTab === 'login' && !forgotMode">
+                            <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">{{ t('wallet_sub') }}</p>
                             <form @submit.prevent="handleWalletLogin">
-                                <div class="form-group">
-                                    <label>Email</label>
-                                    <input type="email" v-model="walletForm.email" required placeholder="client@gmail.com">
+                                <div class="form-group"><label>Email</label><input type="email" v-model="walletForm.email" required placeholder="client@gmail.com"></div>
+                                <div class="form-group"><label>{{ t('password') }}</label><input type="password" v-model="walletForm.password" required placeholder="••••••••"></div>
+                                
+                                <div style="text-align: right; margin-top: -10px; margin-bottom: 15px;">
+                                    <a href="#" @click.prevent="forgotMode = true; errorMsg = '';" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 700;">{{ t('forgot_pass') }}</a>
                                 </div>
-                                <div class="form-group">
-                                    <label>{{ t('password') }}</label>
-                                    <input type="password" v-model="walletForm.password" required placeholder="••••••••">
-                                </div>
+
                                 <button type="submit" class="btn-submit" :disabled="loading">{{ loading ? 'A entrar...' : t('btn_login') }}</button>
                             </form>
                         </div>
@@ -436,37 +454,25 @@
                                 </div>
                                 <div class="form-group"><label>Email</label><input type="email" v-model="globalUserForm.email" required placeholder="john@example.com"></div>
                                 <div class="form-group"><label>Phone (Optional)</label><input type="tel" v-model="globalUserForm.phone" placeholder="+351 900 000 000"></div>
-                                
                                 <div class="form-group">
                                     <label>{{ t('password') }}</label>
                                     <input type="password" v-model="globalUserForm.password" required placeholder="••••••••">
-                                    
                                     <div class="pwd-rules" v-if="globalUserForm.password">
-                                        <div class="pwd-rule" :class="{valid: globalUserForm.password.length >= 6}">
-                                            <span class="indicator"></span> Mínimo 6 caracteres
-                                        </div>
-                                        <div class="pwd-rule" :class="{valid: /[a-zA-Z]/.test(globalUserForm.password) && /[0-9]/.test(globalUserForm.password)}">
-                                            <span class="indicator"></span> Letras e números
-                                        </div>
+                                        <div class="pwd-rule" :class="{valid: globalUserForm.password.length >= 6}"><span class="indicator"></span> Mínimo 6 caracteres</div>
+                                        <div class="pwd-rule" :class="{valid: /[a-zA-Z]/.test(globalUserForm.password) && /[0-9]/.test(globalUserForm.password)}"><span class="indicator"></span> Letras e números</div>
                                     </div>
                                 </div>
-                                
                                 <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0; text-align: left;">
                                     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                                         <input type="checkbox" v-model="globalUserForm.rgpd" style="margin-top: 3px; width: auto; accent-color: var(--primary);">
                                         <span style="font-size: 0.75rem; color: var(--text-sub);">I agree to the processing of my personal data for the creation of my Volto Wallet in accordance with the Privacy Policy. *</span>
                                     </label>
-                                    
                                     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                                         <input type="checkbox" v-model="globalUserForm.marketing" style="margin-top: 3px; width: auto; accent-color: var(--primary);">
                                         <span style="font-size: 0.75rem; color: var(--text-sub);">I want to receive news, offers, and new loyalty cards directly in my wallet. (Optional)</span>
                                     </label>
                                 </div>
-
-                                <button type="submit" class="btn-submit" 
-                                        :disabled="loading || !isWalletFormValid || !globalUserForm.password || globalUserForm.password.length < 6 || !/[a-zA-Z]/.test(globalUserForm.password) || !/[0-9]/.test(globalUserForm.password)">
-                                    {{ loading ? 'A criar...' : t('tab_register_wallet') }}
-                                </button>
+                                <button type="submit" class="btn-submit" :disabled="loading || !isWalletFormValid || !globalUserForm.password || globalUserForm.password.length < 6 || !/[a-zA-Z]/.test(globalUserForm.password) || !/[0-9]/.test(globalUserForm.password)">{{ loading ? 'A criar...' : t('tab_register_wallet') }}</button>
                             </form>
                         </div>
                     </div>
@@ -476,6 +482,6 @@
         </div>
     </div>
 
-    <script src="/static/js/landing.js?v=6"></script>
+    <script src="/static/js/landing.js?v=8"></script>
 </body>
 </html>

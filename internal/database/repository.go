@@ -839,8 +839,8 @@ func (repo *CardRepository) AuthenticateGlobalUser(email, password string) (*mod
 func (r *CardRepository) GetGlobalUserByID(id string) (*models.GlobalUser, error) {
 	var u models.GlobalUser
 	query := `SELECT id, first_name, last_name, email, phone, is_verified FROM global_users WHERE id = $1`
-    err := r.db.QueryRow(query, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone, &u.IsVerified)
-    return &u, err
+	err := r.db.QueryRow(query, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone, &u.IsVerified)
+	return &u, err
 }
 
 func (r *CardRepository) GetMyWalletCards(email string) ([]map[string]interface{}, error) {
@@ -1122,5 +1122,60 @@ func (repo *CardRepository) VerifyStoreEmail(token string) error {
 		return fmt.Errorf("token inválido ou expirado")
 	}
 
+	return nil
+}
+
+// --- RECUPERAÇÃO DE PASSWORD (LOJA) ---
+
+func (repo *CardRepository) GeneratePasswordResetTokenStore(email string) (string, string, error) {
+	token := generateSecureToken()
+	expires := time.Now().Add(30 * time.Minute)
+	var name string
+
+	// Geramos o token e vamos buscar o nome da loja para o email
+	err := repo.db.QueryRow(`UPDATE stores SET verification_token = $1, token_expires_at = $2 WHERE admin_email = $3 RETURNING name`, token, expires, email).Scan(&name)
+	if err != nil {
+		return "", "", fmt.Errorf("email not found")
+	}
+	return token, name, nil
+}
+
+func (repo *CardRepository) ResetPasswordStore(token, newPassword string) error {
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	res, err := repo.db.Exec(`UPDATE stores SET admin_password = $1, verification_token = NULL, token_expires_at = NULL WHERE verification_token = $2 AND token_expires_at > CURRENT_TIMESTAMP`, string(hashed), token)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("token inválido ou expirado")
+	}
+	return nil
+}
+
+// --- RECUPERAÇÃO DE PASSWORD (WALLET) ---
+
+func (repo *CardRepository) GeneratePasswordResetTokenWallet(email string) (string, string, error) {
+	token := generateSecureToken()
+	expires := time.Now().Add(30 * time.Minute)
+	var name string
+
+	err := repo.db.QueryRow(`UPDATE global_users SET verification_token = $1, token_expires_at = $2 WHERE email = $3 RETURNING first_name`, token, expires, email).Scan(&name)
+	if err != nil {
+		return "", "", fmt.Errorf("email not found")
+	}
+	return token, name, nil
+}
+
+func (repo *CardRepository) ResetPasswordWallet(token, newPassword string) error {
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	res, err := repo.db.Exec(`UPDATE global_users SET password = $1, verification_token = NULL, token_expires_at = NULL WHERE verification_token = $2 AND token_expires_at > CURRENT_TIMESTAMP`, string(hashed), token)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("token inválido ou expirado")
+	}
 	return nil
 }

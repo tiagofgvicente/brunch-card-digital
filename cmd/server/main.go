@@ -240,6 +240,10 @@ func main() {
 	// Auth & Stats
 	mux.HandleFunc("/api/v1/auth/login", tenantMiddleware(makeHandler(api.LoginHandler, repo)))
 	mux.HandleFunc("/api/v1/auth/logout", tenantMiddleware(makeHandler(api.LogoutHandler, repo)))
+	mux.HandleFunc("/api/v1/auth/forgot-password", func(w http.ResponseWriter, r *http.Request) { api.StoreForgotPasswordHandler(w, r, repo) })
+	mux.HandleFunc("/api/v1/auth/reset-password", func(w http.ResponseWriter, r *http.Request) { api.StoreResetPasswordHandler(w, r, repo) })
+	mux.HandleFunc("/api/v1/public/wallet-forgot-password", func(w http.ResponseWriter, r *http.Request) { api.WalletForgotPasswordHandler(w, r, repo) })
+	mux.HandleFunc("/api/v1/public/wallet-reset-password", func(w http.ResponseWriter, r *http.Request) { api.WalletResetPasswordHandler(w, r, repo) })
 	mux.HandleFunc("/api/v1/public/stats", tenantMiddleware(makeHandler(api.PublicStatsHandler, repo)))
 	mux.HandleFunc("/api/v1/public/register", func(w http.ResponseWriter, r *http.Request) {
 		// Não usamos middleware aqui porque é um acesso público (ainda não tem token)
