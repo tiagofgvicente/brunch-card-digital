@@ -208,26 +208,52 @@
         @media (max-width: 768px) {
             #app { flex-direction: column; } 
             
-            .sidebar { width: 100% !important; height: auto; padding: 10px 15px; border-right: none; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
-            .sidebar-header { padding: 0 0 15px 0 !important; margin-bottom: 10px; flex-direction: row; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-            .sidebar-toggle { display: none !important; } 
-            .sidebar.collapsed .nav-text { display: inline-block !important; }
-            .sidebar.collapsed .brand-row h2 { display: inline-block !important; }
-            .sidebar.collapsed .toggle-row { flex-direction: row !important; gap: 12px !important; }
-            .sidebar.collapsed .lang-btn { color: var(--text-main) !important; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-
-            .sidebar nav { display: flex; flex-direction: row; overflow-x: auto; gap: 10px; padding-bottom: 5px; scrollbar-width: none; }
-            .sidebar nav::-webkit-scrollbar { display: none; }
-            .nav-item { white-space: nowrap; border-right: none; border-bottom: 3px solid transparent; padding: 10px 15px !important; border-radius: 8px; background: var(--bg-main); flex-direction: row !important; }
-            .nav-item.active { border-right: none; border-bottom: 3px solid var(--primary); background: rgba(0, 168, 150, 0.1); }
+            /* --- 1. O TOPO (Protegido e igual à tua imagem) --- */
+            .sidebar { width: 100% !important; height: auto !important; padding: 15px !important; border-right: none !important; border-bottom: 1px solid var(--border-color) !important; flex-shrink: 0 !important; }
             
-            .main-content { padding: 20px; }
-            .header-row { flex-direction: column; align-items: flex-start; gap: 15px; }
-            .search-input { width: 100%; box-sizing: border-box; }
+            /* 👇 RESTAURA A LINHA DE SEPARAÇÃO AQUI 👇 */
+            .sidebar-header { padding: 0 0 15px 0 !important; margin-bottom: 15px !important; display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; border-bottom: 1px solid var(--border-color) !important; }
+            
+            /* Força a ignorar regras do modo "fechado" do computador */
+            .sidebar-toggle { display: none !important; } 
+            .brand-row h2 { display: block !important; font-size: 1.2rem !important; }
+            .toggle-row { display: flex !important; flex-direction: row !important; gap: 12px !important; align-items: center !important; }
+            
+            /* Tamanhos originais dos botões do topo */
+            .theme-btn, .notif-btn, .lang-btn { width: 42px !important; height: 42px !important; min-width: 42px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 1.4rem !important; border-radius: 50% !important; }
+            .lang-btn { font-size: 0.85rem !important; border-radius: 12px !important; color: white !important; text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important; display: flex !important; }
+
+            /* --- 2. O MENU DE NAVEGAÇÃO (Apenas Ícones) --- */
+            .sidebar nav { display: flex !important; flex-direction: row !important; overflow-x: auto !important; gap: 10px !important; padding-bottom: 5px !important; scrollbar-width: none; }
+            .sidebar nav::-webkit-scrollbar { display: none; }
+            
+            /* Caixas dos ícones */
+            .nav-item { border: none !important; padding: 12px 20px !important; border-radius: 12px !important; background: var(--bg-main) !important; justify-content: center !important; display: flex !important; align-items: center !important; flex-direction: row !important; }
+            .nav-item.active { background: rgba(0, 168, 150, 0.1) !important; border: 1px solid var(--primary) !important; }
+            
+            /* Esconde o texto APENAS nos botões de baixo */
+            .sidebar nav .nav-item .nav-text { display: none !important; }
+            
+            /* Tamanho de ícone normal (1.4rem) */
+            .sidebar nav .nav-item .nav-icon { font-size: 1.4rem !important; margin: 0 !important; width: auto !important; }
+            
+            /* Ponto vermelho da notificação reposicionado no ícone */
+            .notif-dot { display: block !important; position: absolute; right: -6px; top: -4px; width: 10px; height: 10px; }
+
+            /* --- 3. RESTO DA PÁGINA --- */
+            .main-content { padding: 15px !important; }
+            .header-row { flex-direction: column !important; align-items: flex-start !important; gap: 15px !important; margin-bottom: 20px !important; }
+            .search-input { width: 100% !important; box-sizing: border-box !important; }
             
             .hide-sidebar-mobile { display: none !important; }
             .mobile-scanner-padding { padding: 0 !important; }
             .mobile-only-flex { display: flex !important; }
+            
+            table { min-width: auto; display: block; overflow-x: auto; }
+            .skin-card { width: 100%; }
+            .settings-section { padding: 20px; }
+            .setting-row { flex-direction: column; gap: 15px; }
+            .setting-row .setting-control { width: 100%; }
         }
     </style>
 </head>

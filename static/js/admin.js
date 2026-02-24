@@ -599,7 +599,11 @@ const AdminApp = {
             }
         };
 
-        const logout = async () => { await fetch(api('/api/v1/auth/logout'), { method: 'POST' }); window.location.href = "/"; };
+        const logout = async () => { 
+    await fetch(api('/api/v1/auth/logout'), { method: 'POST' }); 
+    sessionStorage.removeItem('mobile_mode');
+    window.location.href = "/"; 
+};
         const calculateAvailable = (c) => Math.max(0, Math.floor(c.total_stamps / 10) - (c.total_redeemed_bonuses || 0));
         const addStampFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/stamp?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Stamp Added", "success"); };
         const redeemFromAdmin = async (c) => { await fetch(api(`/api/v1/cards/use-reward?id=${c.id}`), {method:'POST'}); fetchCards(); showToast("Reward Redeemed", "success"); };
