@@ -739,24 +739,37 @@ func generateSecureToken() string {
 	return hex.EncodeToString(b)
 }
 
-func (r *CardRepository) CreateGlobalUser(u models.GlobalUser) (string, error) {
-	// 1. Gerar Token e Data de Expiração (+30 minutos)
+func (repo *CardRepository) CreateGlobalUser(user models.GlobalUser) (string, error) {
+	// 👇 1. ENCRIPTAR A PASSWORD DO CLIENTE
+	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	// 2. Gerar o token de verificação de email
 	token := generateSecureToken()
-	expiresAt := time.Now().Add(30 * time.Minute)
+	tokenExpires := time.Now().Add(30 * time.Minute)
 
-	// 2. Inserir na base de dados com os novos campos
+	// 3. Guardar na BD com a password já encriptada (string(hashed))
 	query := `
-        INSERT INTO global_users 
-        (id, first_name, last_name, email, phone, password, rgpd_accepted, marketing_accepted, verification_token, token_expires_at, is_verified) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE)`
+		INSERT INTO global_users (
+			id, first_name, last_name, email, phone, 
+			password, is_verified, verification_token, token_expires_at, 
+			rgpd_accepted, marketing_accepted
+		) VALUES ($1, $2, $3, $4, $5, $6, FALSE, $7, $8, $9, $10)
+	`
 
-	_, err := r.db.Exec(query,
-		u.ID, u.FirstName, u.LastName, u.Email, u.Phone, u.Password,
-		u.RgpdAccepted, u.MarketingAccepted, token, expiresAt,
+	_, err = repo.db.Exec(query,
+		user.ID, user.FirstName, user.LastName, user.Email, user.Phone,
+		string(hashed), // 🔐 PASSWORD ENCRIPTADA AQUI
+		token, tokenExpires, user.RgpdAccepted, user.MarketingAccepted,
 	)
 
-	// Devolvemos o erro (se houver) e o Token para o Main.go poder enviar o email
-	return token, err
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
 func (r *CardRepository) VerifyGlobalUser(token string) error {
@@ -779,28 +792,48 @@ func (r *CardRepository) VerifyGlobalUser(token string) error {
 	return nil
 }
 
-func (r *CardRepository) AuthenticateGlobalUser(email, password string) (*models.GlobalUser, error) {
-	var u models.GlobalUser
+func (repo *CardRepository) AuthenticateGlobalUser(email, password string) (*models.GlobalUser, error) {
+	var user models.GlobalUser
+	var hashedPassword string
 	var isVerified bool
-	var dbPassword string
 
-	// Atualizado para ler o is_verified
-	query := `SELECT id, first_name, last_name, email, phone, password, is_verified FROM global_users WHERE email = $1`
+	query := `
+		SELECT id, first_name, last_name, email, password, is_verified 
+		FROM global_users 
+		WHERE email = $1
+	`
 
-	err := r.db.QueryRow(query, email).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone, &dbPassword, &isVerified)
+	err := repo.db.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&hashedPassword, // Extraímos a password encriptada da BD
+		&isVerified,
+	)
+
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
 		return nil, err
 	}
 
-	// 👇 PROTEÇÃO CONTRA CONTAS NÃO VERIFICADAS
+	// 👇 1. Verifica se já clicou no link do email
 	if !isVerified {
-		return nil, fmt.Errorf("unverified") // Este erro específico avisa o Frontend
+		return nil, fmt.Errorf("unverified")
 	}
 
-	if dbPassword != password {
-		return nil, fmt.Errorf("password inválida")
+	// 👇 2. COMPARA A PASSWORD ENCRIPTADA COM A QUE ELE ESCREVEU
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		return nil, fmt.Errorf("invalid password")
 	}
-	return &u, nil
+
+	// 3. Limpa a password da struct antes de devolver (por segurança na memória)
+	user.Password = ""
+
+	return &user, nil
 }
 
 func (r *CardRepository) GetGlobalUserByID(id string) (*models.GlobalUser, error) {

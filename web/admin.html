@@ -179,19 +179,38 @@
 
         .scope-edit-row { display: flex; gap: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 8px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box; }
 
-        /* --- CSS NOVO PARA O MODO MOBILE --- */
         .btn-prompt { width: 100%; padding: 15px; border-radius: 12px; font-weight: 800; font-size: 1.1rem; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; margin-bottom: 15px; transition: 0.2s; }
         .btn-prompt-scanner { background: var(--primary); color: white; box-shadow: 0 10px 20px rgba(0, 168, 150, 0.3); }
         .btn-prompt-scanner:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(0, 168, 150, 0.4); }
         .btn-prompt-dash { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); }
         .btn-prompt-dash:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* --- 👇 CSS NOVO PARA O MODO MOBILE (ADICIONADO SEM PARTIR NADA) 👇 --- */
         .mobile-only-flex { display: none !important; }
 
         @media (max-width: 768px) {
+            #app { flex-direction: column; } 
+            
+            /* O Menu vai para o topo e fica horizontal */
+            .sidebar { width: 100%; height: auto; padding: 10px 15px; border-right: none; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+            .sidebar-header { padding: 0 0 15px 0; margin-bottom: 10px; flex-direction: row; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+            
+            .sidebar nav { display: flex; flex-direction: row; overflow-x: auto; gap: 10px; padding-bottom: 5px; scrollbar-width: none; }
+            .sidebar nav::-webkit-scrollbar { display: none; }
+            .nav-item { white-space: nowrap; border-right: none; border-bottom: 3px solid transparent; padding: 10px 15px; border-radius: 8px; background: var(--bg-main); }
+            .nav-item.active { border-right: none; border-bottom: 3px solid var(--primary); background: rgba(0, 168, 150, 0.1); }
+            
+            .main-content { padding: 20px; }
+            .header-row { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .search-input { width: 100%; box-sizing: border-box; }
+            
+            /* Mantém a tabela com scroll no mobile */
+            table { min-width: 800px; }
+            
+            /* Classes Auxiliares para o Scanner */
             .hide-sidebar-mobile { display: none !important; }
-            .mobile-scanner-padding { padding: 20px !important; }
+            .mobile-scanner-padding { padding: 0 !important; }
             .mobile-only-flex { display: flex !important; }
-            .sidebar { width: 100%; border-right: none; }
         }
     </style>
 </head>
@@ -685,6 +704,6 @@
         </div>
 
     </div>
-    <script src="/static/js/admin.js"></script>
+    <script src="/static/js/admin.js?v=3"></script>
 </body>
 </html>
