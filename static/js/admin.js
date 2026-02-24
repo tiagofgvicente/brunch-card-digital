@@ -638,9 +638,15 @@ const AdminApp = {
                     fetchAvailableSkins();
                     
                     if (window.innerWidth <= 768) {
-                        // 👇 FORÇA O SCANNER NO MOBILE DIRETAMENTE 👇
-                        isMobileScannerMode.value = true;
-                        changePage('scanner');
+                        const savedMode = sessionStorage.getItem('mobile_mode');
+                        if (savedMode === 'scanner') {
+                            isMobileScannerMode.value = true;
+                            changePage('scanner');
+                        } else if (savedMode === 'dashboard') {
+                            isMobileScannerMode.value = false;
+                        } else {
+                            showMobilePrompt.value = true;
+                        }
                     }
                 }
             }); 

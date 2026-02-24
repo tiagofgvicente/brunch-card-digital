@@ -185,8 +185,14 @@
         .btn-prompt-scanner:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(0, 168, 150, 0.4); }
         .btn-prompt-dash { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); }
         .btn-prompt-dash:hover { border-color: var(--primary); color: var(--primary); }
+        .mobile-only-flex { display: none !important; }
 
-        /* REMOVI O CSS DO FAB-EXIT-SCANNER */
+        @media (max-width: 768px) {
+            .hide-sidebar-mobile { display: none !important; }
+            .mobile-scanner-padding { padding: 20px !important; }
+            .mobile-only-flex { display: flex !important; }
+            .sidebar { width: 100%; border-right: none; }
+        }
     </style>
 </head>
 <body>
@@ -199,7 +205,7 @@
             </div>
         </div>
 
-        <aside class="sidebar" v-if="!isMobileScannerMode">
+        <aside class="sidebar" v-if="!isMobileScannerMode" :class="{'hide-sidebar-mobile': currentPage === 'scanner'}">
             <div class="sidebar-header">
                 <div class="brand-row">
                     <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" alt="Logo">
@@ -239,7 +245,7 @@
             </nav>
         </aside>
 
-        <main class="main-content" :style="isMobileScannerMode ? 'padding: 20px;' : ''">
+        <main class="main-content" :class="{'mobile-scanner-padding': currentPage === 'scanner' || isMobileScannerMode}">
             
             <div v-if="storeConfig.tier === 'free_trial' && trialDaysLeft > 0" style="background: linear-gradient(90deg, #f59e0b, #fbbf24); color: #fffbeb; padding: 12px 20px; border-radius: 12px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -374,9 +380,21 @@
                 </div>
             </div>
 
-            <div v-else-if="currentPage === 'scanner' && !isStoreLocked" class="scanner-box" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+            <div v-else-if="currentPage === 'scanner' && !isStoreLocked" class="scanner-box" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; position: relative;">
                 
-                <div v-if="activeScopesList.length > 1" style="background: var(--bg-card); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; text-align: center; width: 100%; max-width: 400px; box-sizing: border-box;">
+                <button v-if="isMobileScannerMode" @click="logout" 
+                        style="position: absolute; top: 10px; right: 10px; z-index: 1000; background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; font-family: 'Inter', sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    Sair
+                </button>
+
+                <button v-if="!isMobileScannerMode" class="mobile-only-flex" @click="changePage('customers')" 
+                        style="position: absolute; top: 10px; right: 10px; z-index: 1000; background: var(--bg-btn); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 8px; font-weight: bold; font-family: 'Inter', sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; align-items: center; gap: 6px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Voltar
+                </button>
+
+                <div v-if="activeScopesList.length > 1" style="background: var(--bg-card); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; text-align: center; width: 100%; max-width: 400px; box-sizing: border-box; margin-top: 40px;">
                     <p style="font-size: 0.8rem; font-weight: bold; margin-top: 0; color: var(--text-sub);">Selecione o Cartão a atribuir:</p>
                     <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                         <button v-for="scope in activeScopesList" :key="scope.id" 
