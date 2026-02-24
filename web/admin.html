@@ -28,20 +28,39 @@
         body { background: var(--bg-main); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
         #app { display: flex; height: 100%; width: 100%; overflow: hidden; }
         
-        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; z-index: 100; flex-shrink: 0; box-sizing: border-box; }
-        .sidebar-header { padding: 0 25px 25px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .brand-row { display: flex; align-items: center; gap: 12px; }
-        .brand-row img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: white; border: 1px solid var(--border-color); }
-        .brand-row h2 { color: var(--text-main); font-size: 1.1rem; margin: 0; font-weight: 800; }
-        .toggle-row { display: flex; align-items: center; gap: 12px; }
+        /* --- SIDEBAR BASE & ANIMAÇÃO --- */
+        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; z-index: 100; flex-shrink: 0; box-sizing: border-box; position: relative; transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .sidebar-header { padding: 0 25px 25px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; display: flex; flex-direction: column; gap: 20px; transition: padding 0.3s; }
+        .brand-row { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+        .brand-row img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: white; border: 1px solid var(--border-color); flex-shrink: 0; }
+        .brand-row h2 { color: var(--text-main); font-size: 1.1rem; margin: 0; font-weight: 800; white-space: nowrap; }
+        .toggle-row { display: flex; align-items: center; gap: 12px; transition: 0.3s; }
+
+        .sidebar-toggle { position: absolute; right: -12px; top: 32px; width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 101; border: 2px solid var(--bg-side); font-size: 0.7rem; font-weight: bold; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .sidebar-toggle:hover { filter: brightness(1.1); transform: scale(1.1); }
+        
+        .sidebar.collapsed { width: 80px; }
+        .sidebar.collapsed .sidebar-toggle { transform: rotate(180deg); }
+        .sidebar.collapsed .sidebar-toggle:hover { transform: rotate(180deg) scale(1.1); }
+        .sidebar.collapsed .nav-text { display: none; }
+        .sidebar.collapsed .brand-row h2 { display: none; }
+        .sidebar.collapsed .sidebar-header { padding: 0 10px 25px; align-items: center; }
+        .sidebar.collapsed .brand-row { justify-content: center; margin-bottom: 5px; }
+        .sidebar.collapsed .toggle-row { flex-direction: column; gap: 15px; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 15px 0; }
+        .sidebar.collapsed .lang-btn { color: transparent; text-shadow: none; }
+
+        .nav-icon { font-size: 1.3rem; display: flex; align-items: center; justify-content: center; width: 24px; flex-shrink: 0; }
+        .nav-text { white-space: nowrap; flex: 1; display: flex; align-items: center; }
 
         .theme-btn, .lang-btn { background-color: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden; }
-        .theme-btn { width: 42px; height: 42px; border-radius: 50%; font-size: 1.4rem; }
-        .notif-btn { background-color: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; width: 42px; height: 42px; border-radius: 50%; font-size: 1.4rem; }
+        .theme-btn { width: 42px; height: 42px; min-width: 42px; border-radius: 50%; font-size: 1.4rem; flex-shrink: 0; }
+        .notif-btn { background-color: var(--bg-btn); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; position: relative; width: 42px; height: 42px; min-width: 42px; border-radius: 50%; font-size: 1.4rem; flex-shrink: 0; }
         .notif-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
         .notif-badge { position: absolute; top: -3px; right: -3px; background: #ef4444; color: white; width: 18px; height: 18px; font-size: 0.65rem; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-side); z-index: 10; }
 
-        .lang-btn { width: 42px; height: 42px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; background-repeat: no-repeat; background-position: left center; background-size: 0% 100%; }
+        /* 👇 CORREÇÃO DA BANDEIRA: O min-width: 42px impede-a de esticar! 👇 */
+        .lang-btn { width: 42px; height: 42px; min-width: 42px; max-width: 42px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; background-repeat: no-repeat; background-position: left center; background-size: 0% 100%; flex-shrink: 0; }
         .lang-pt { background-image: url('https://flagcdn.com/w160/pt.png'); }
         .lang-en { background-image: url('https://flagcdn.com/w160/gb.png'); }
         @keyframes sun-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -52,7 +71,7 @@
         [data-theme="dark"] .theme-btn:hover .icon-moon { animation: moon-rock 2s ease-in-out infinite; display: inline-block; }
         .lang-btn:hover { background-size: 100% 100%; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.8); border-color: transparent; transform: rotate(-5deg) scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
 
-        .nav-item { padding: 12px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-sub); transition: 0.2s; font-weight: 600; font-size: 0.9rem; }
+        .nav-item { padding: 12px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-sub); transition: 0.2s; font-weight: 600; font-size: 0.9rem; overflow: hidden; }
         .nav-item:hover { background: var(--bg-btn); color: var(--text-main); }
         .nav-item.active { background: rgba(0, 168, 150, 0.1); color: var(--primary); border-right: 3px solid var(--primary); }
         
@@ -64,7 +83,7 @@
         .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 168, 150, 0.1); }
         .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
 
-        table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-side); border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-side); border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; min-width: 800px; }
         th { background: var(--primary); color: white; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; font-weight: 800; padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border-color); }
         td { padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; vertical-align: middle; }
         tr:hover { background: rgba(0,0,0,0.03); }
@@ -185,29 +204,28 @@
         .btn-prompt-dash { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); }
         .btn-prompt-dash:hover { border-color: var(--primary); color: var(--primary); }
 
-        /* --- 👇 CSS NOVO PARA O MODO MOBILE (ADICIONADO SEM PARTIR NADA) 👇 --- */
         .mobile-only-flex { display: none !important; }
 
         @media (max-width: 768px) {
             #app { flex-direction: column; } 
             
-            /* O Menu vai para o topo e fica horizontal */
-            .sidebar { width: 100%; height: auto; padding: 10px 15px; border-right: none; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
-            .sidebar-header { padding: 0 0 15px 0; margin-bottom: 10px; flex-direction: row; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-            
+            .sidebar { width: 100% !important; height: auto; padding: 10px 15px; border-right: none; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+            .sidebar-header { padding: 0 0 15px 0 !important; margin-bottom: 10px; flex-direction: row; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+            .sidebar-toggle { display: none !important; } 
+            .sidebar.collapsed .nav-text { display: inline-block !important; }
+            .sidebar.collapsed .brand-row h2 { display: inline-block !important; }
+            .sidebar.collapsed .toggle-row { flex-direction: row !important; gap: 12px !important; }
+            .sidebar.collapsed .lang-btn { color: var(--text-main) !important; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
             .sidebar nav { display: flex; flex-direction: row; overflow-x: auto; gap: 10px; padding-bottom: 5px; scrollbar-width: none; }
             .sidebar nav::-webkit-scrollbar { display: none; }
-            .nav-item { white-space: nowrap; border-right: none; border-bottom: 3px solid transparent; padding: 10px 15px; border-radius: 8px; background: var(--bg-main); }
+            .nav-item { white-space: nowrap; border-right: none; border-bottom: 3px solid transparent; padding: 10px 15px !important; border-radius: 8px; background: var(--bg-main); flex-direction: row !important; }
             .nav-item.active { border-right: none; border-bottom: 3px solid var(--primary); background: rgba(0, 168, 150, 0.1); }
             
             .main-content { padding: 20px; }
             .header-row { flex-direction: column; align-items: flex-start; gap: 15px; }
             .search-input { width: 100%; box-sizing: border-box; }
             
-            /* Mantém a tabela com scroll no mobile */
-            table { min-width: 800px; }
-            
-            /* Classes Auxiliares para o Scanner */
             .hide-sidebar-mobile { display: none !important; }
             .mobile-scanner-padding { padding: 0 !important; }
             .mobile-only-flex { display: flex !important; }
@@ -224,16 +242,18 @@
             </div>
         </div>
 
-        <aside class="sidebar" v-if="!isMobileScannerMode" :class="{'hide-sidebar-mobile': currentPage === 'scanner'}">
+        <aside class="sidebar" v-if="!isMobileScannerMode" :class="{'hide-sidebar-mobile': currentPage === 'scanner', 'collapsed': isSidebarCollapsed}">
+            <div class="sidebar-toggle" @click="toggleSidebar">❮</div>
+
             <div class="sidebar-header">
                 <div class="brand-row">
                     <img v-if="storeConfig.logo_url" :src="storeConfig.logo_url" alt="Logo">
-                    <span v-else style="font-size: 1.5rem;">⚡</span>
-                    <h2>{{ storeConfig.name }}</h2>
+                    <span v-else class="nav-icon" style="font-size: 1.5rem;">⚡</span>
+                    <h2 class="nav-text">{{ storeConfig.name }}</h2>
                 </div>
                 
                 <div class="toggle-row">
-                    <button class="notif-btn" @click="changePage('messages')" title="Caixa de Mensagens">
+                    <button class="notif-btn" @click="changePage('messages')" :title="isSidebarCollapsed ? 'Caixa de Mensagens' : ''">
                         <span>✉️</span>
                         <span v-if="unreadAdminCount > 0" class="notif-badge">{{ unreadAdminCount }}</span>
                     </button>
@@ -242,25 +262,41 @@
                         <span v-if="theme === 'dark'" class="icon-moon">🌙</span>
                         <span v-else class="icon-sun">☀️</span>
                     </button>
-                    <button class="lang-btn" :class="'lang-' + lang" @click="toggleLang" title="Switch Language">
+                    <button class="lang-btn nav-text" :class="'lang-' + lang" @click="toggleLang" title="Switch Language">
                         {{ lang }}
                     </button>
                 </div>
             </div>
             
             <nav>
-                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')">👥 {{ t('nav_customers') }}</div>
-                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'scanner'}" @click="changePage('scanner')">📷 {{ t('nav_scanner') }}</div>
-                
-                <div class="nav-item" :class="{active: currentPage === 'messages'}" @click="changePage('messages')">
-                    📬 Mensagens 
-                    <span v-if="unreadAdminCount > 0" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.6rem; font-weight: bold; margin-left: auto;">{{ unreadAdminCount }}</span>
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'customers'}" @click="changePage('customers')" :title="isSidebarCollapsed ? t('nav_customers') : ''">
+                    <span class="nav-icon">👥</span> <span class="nav-text">{{ t('nav_customers') }}</span>
+                </div>
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'scanner'}" @click="changePage('scanner')" :title="isSidebarCollapsed ? t('nav_scanner') : ''">
+                    <span class="nav-icon">📷</span> <span class="nav-text">{{ t('nav_scanner') }}</span>
                 </div>
                 
-                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')">🎨 {{ t('nav_skins') }}</div>
-                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')">⚙️ {{ t('nav_settings') }}</div>
+                <div class="nav-item" :class="{active: currentPage === 'messages'}" @click="changePage('messages')" :title="isSidebarCollapsed ? 'Mensagens' : ''">
+                    <span class="nav-icon" style="position: relative;">
+                        📬
+                        <span v-if="unreadAdminCount > 0 && isSidebarCollapsed" style="position: absolute; top: -2px; right: -5px; background: #ef4444; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-side);"></span>
+                    </span>
+                    <span class="nav-text">
+                        Mensagens 
+                        <span v-if="unreadAdminCount > 0" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.6rem; font-weight: bold; margin-left: 10px;">{{ unreadAdminCount }}</span>
+                    </span>
+                </div>
                 
-                <div class="nav-item" @click="logout" style="margin-top:auto; color:var(--red);">🚪 {{ t('nav_logout') }}</div>
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'skins'}" @click="changePage('skins')" :title="isSidebarCollapsed ? t('nav_skins') : ''">
+                    <span class="nav-icon">🎨</span> <span class="nav-text">{{ t('nav_skins') }}</span>
+                </div>
+                <div v-if="!isStoreLocked" class="nav-item" :class="{active: currentPage === 'settings'}" @click="changePage('settings')" :title="isSidebarCollapsed ? t('nav_settings') : ''">
+                    <span class="nav-icon">⚙️</span> <span class="nav-text">{{ t('nav_settings') }}</span>
+                </div>
+                
+                <div class="nav-item" @click="logout" style="margin-top:auto; color:var(--red);" :title="isSidebarCollapsed ? t('nav_logout') : ''">
+                    <span class="nav-icon">🚪</span> <span class="nav-text">{{ t('nav_logout') }}</span>
+                </div>
             </nav>
         </aside>
 
@@ -704,6 +740,6 @@
         </div>
 
     </div>
-    <script src="/static/js/admin.js?v=3"></script>
+    <script src="/static/js/admin.js"></script>
 </body>
 </html>

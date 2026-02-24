@@ -2,6 +2,9 @@ const AdminApp = {
     setup() {
         const { ref, onMounted, nextTick, computed } = Vue;
 
+        // 👇 AGORA SIM, O isSidebarCollapsed ESTÁ DEPOIS DA DESESTRUTURAÇÃO DO VUE 👇
+        const isSidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === 'true');
+
         const urlParams = new URLSearchParams(window.location.search);
         const currentStore = urlParams.get('store');
         const api = (url) => currentStore ? `${url}${url.includes('?') ? '&' : '?'}store=${currentStore}` : url;
@@ -17,14 +20,14 @@ const AdminApp = {
         const lang = ref('pt');
         
         const showIconPicker = ref(false);
-        const iconPickerTarget = ref(null); // 'new' ou 'edit'
+        const iconPickerTarget = ref(null);
         const icons = ['🍳','🍔','🍕','🌭','🥪','🌮','🥗','🥐','🥯','🥞','☕','🍺','🍷','🍹','🥤','🧋','🍩','🍪','🍰','🍦','✂️','💇','💅','💄','💈','🏋️','🧘','🚗','🚲','🎮','🐾','🐶','🐱','📚','💊','🦷','🕶️','💍','👠','🧢', '💳', '🎁', '🛒'];
 
         // --- LÓGICA DE MOBILE / MODO SCANNER ---
         const showMobilePrompt = ref(false);
         const isMobileScannerMode = ref(false);
-        const showMobileSuccessModal = ref(false); // Adicionado para o novo fluxo
-        const showMobileInfoModal = ref(false); // 👇 NOVO: Modal de Informação (Já Existe)
+        const showMobileSuccessModal = ref(false);
+        const showMobileInfoModal = ref(false);
 
         const chooseScannerMode = () => {
             showMobilePrompt.value = false;
@@ -41,8 +44,8 @@ const AdminApp = {
 
         const resetMobileScanner = () => {
             showMobileSuccessModal.value = false;
-            showMobileInfoModal.value = false; // Fecha o modal azul também
-            startScanner(); // Reinicia a câmara quando clica em "Próximo"
+            showMobileInfoModal.value = false;
+            startScanner();
         };
 
         const playBeep = () => {
@@ -81,7 +84,7 @@ const AdminApp = {
         const activeScannerScope = ref('');
         const predefinedScopeNames = ['Geral', 'Pequeno-Almoço', 'Menu de Almoço', 'Sopa', 'Lanche', 'Jantar', 'Cafetaria', 'Bebidas'];
         
-        const newScopeName = ref(predefinedScopeNames[7]); // Bebidas default
+        const newScopeName = ref(predefinedScopeNames[7]);
         const newScopeIcon = ref('🍹');
 
         const editingScopeId = ref(null);
@@ -248,7 +251,6 @@ const AdminApp = {
                     }
                 }
 
-                // 👇 FLUXO COM INFORMAÇÃO DE JÁ EXISTE 👇
                 if (res && res.ok) {
                     playBeep();
                     if (isMobileScannerMode.value) {
@@ -259,13 +261,12 @@ const AdminApp = {
                         await fetchCards();
                     }
                 } else if (res && data && data.action === 'global_register') {
-                    // Se falhou num registo, é porque a pessoa já tem o cartão. Mostramos "INFO".
-                    playBeep(); // Faz bip na mesma para o funcionário saber que leu
+                    playBeep(); 
                     if (isMobileScannerMode.value) {
                         stopScanner();
-                        showMobileInfoModal.value = true; // Abre o modal azul
+                        showMobileInfoModal.value = true; 
                     } else {
-                        showToast("O cliente já tem este cartão.", "info"); // Mostra Toast Azul no PC
+                        showToast("O cliente já tem este cartão.", "info"); 
                     }
                 } else if (res) {
                     showToast("Erro ao processar na base de dados.", "error");
@@ -339,6 +340,12 @@ const AdminApp = {
             reader.readAsDataURL(file); 
         };
         const removeMenu = () => { settingsForm.value.menu_url = ''; };
+
+        // 👇 FUNÇÃO DE TOGGLE DECLARADA CORRETAMENTE AQUI 👇
+        const toggleSidebar = () => {
+            isSidebarCollapsed.value = !isSidebarCollapsed.value;
+            localStorage.setItem('sidebar_collapsed', isSidebarCollapsed.value);
+        };
 
         const translations = {
             en: { 
@@ -670,7 +677,9 @@ const AdminApp = {
             adminNotifications, unreadAdminCount, trialDaysLeft, formatDate,
             showMobilePrompt, isMobileScannerMode, chooseScannerMode, chooseFullDashboard, exitScannerMode,
             
-            // 👇 EXPORTADAS PARA O HTML CONSEGUIR ABRIR OS MODAIS 👇
+            // 👇 AQUI ESTÃO ELAS, EXPORTADAS SEM ERRO 👇
+            isSidebarCollapsed, toggleSidebar,
+            
             showMobileSuccessModal, showMobileInfoModal, resetMobileScanner,
             isStoreLocked, isAccountExpired, isAccountSuspended 
         };
