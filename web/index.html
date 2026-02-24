@@ -14,7 +14,7 @@
             --bg-main: #eaeff2; --bg-card: #ffffff;
             --text-main: #1e293b; --text-sub: #64748b;
             --primary: #2563eb; --primary-light: #dbeafe;
-            --accent: #f59e0b; /* Laranja para o Sol */
+            --accent: #f59e0b;
             --border: #cbd5e1;
             --shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
             --modal-bg: rgba(234, 239, 242, 0.95);
@@ -69,7 +69,7 @@
             transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.08);
         }
 
-        /* Botão Premium da Loja (Sem Foguetão) */
+        /* Botão Premium da Loja */
         .btn-business {
             background: var(--text-main);
             color: var(--bg-main);
@@ -255,6 +255,7 @@
         /* --- 👇 MEDIA QUERIES PARA MOBILE 👇 --- */
         @media (max-width: 768px) {
             body { height: auto; overflow-y: auto; }
+            /* Ajuste o padding no mobile para as 4 bolinhas caberem perfeitas */
             .top-bar { padding: 15px 20px; }
             .hide-mobile { display: none !important; }
             
@@ -287,9 +288,16 @@
                     </svg>
                     <span class="hide-mobile">{{ t('nav_wallet') }}</span>
                 </button>
+                
                 <div class="hide-mobile" style="width: 1px; height: 20px; background: var(--border);"></div>
                 
-                <button @click="openLogin" class="btn-nav btn-business hide-mobile">{{ t('nav_business') }}</button>
+                <button @click="openLogin" class="btn-nav btn-business">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                    </svg>
+                    <span class="hide-mobile">{{ t('nav_business') }}</span>
+                </button>
                 
                 <div class="hide-mobile" style="width: 1px; height: 20px; background: var(--border);"></div>
                 
@@ -468,6 +476,6 @@
         </div>
     </div>
 
-    <script src="/static/js/landing.js?v=5"></script>
+    <script src="/static/js/landing.js?v=6"></script>
 </body>
 </html>
