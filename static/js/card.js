@@ -8,7 +8,8 @@ createApp({
         const hasStore = ref(!!currentStore && currentStore !== 'null');
         const api = (url) => hasStore.value ? `${url}${url.includes('?') ? '&' : '?'}store=${currentStore}` : url;
 
-        const card = ref({ id: null, customer_id: '', last_name: '', email: '', phone: '', total_stamps: 0, stamps_count: 0 });
+        // 👇 ADICIONADO: is_verified à estrutura base do cartão 👇
+        const card = ref({ id: null, customer_id: '', last_name: '', email: '', phone: '', total_stamps: 0, stamps_count: 0, is_verified: true });
         const myWalletCards = ref([]); 
         
         const notifications = ref([]);
@@ -109,7 +110,6 @@ createApp({
             const res = await fetch(endpoint);
             if (res.ok) {
                 const data = await res.json();
-                // 👇 GARANTIA: Inicializamos campos sociais para evitar que fiquem undefined
                 const socialDefaults = {
                     social_instagram: '', social_facebook: '', social_twitter: '', social_whatsapp: '', 
                     social_tiktok: '', social_youtube: '', social_website: '', 

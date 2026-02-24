@@ -59,7 +59,6 @@
         .notif-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
         .notif-badge { position: absolute; top: -3px; right: -3px; background: #ef4444; color: white; width: 18px; height: 18px; font-size: 0.65rem; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-side); z-index: 10; }
 
-        /* 👇 CORREÇÃO DA BANDEIRA: O min-width: 42px impede-a de esticar! 👇 */
         .lang-btn { width: 42px; height: 42px; min-width: 42px; max-width: 42px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; background-repeat: no-repeat; background-position: left center; background-size: 0% 100%; flex-shrink: 0; }
         .lang-pt { background-image: url('https://flagcdn.com/w160/pt.png'); }
         .lang-en { background-image: url('https://flagcdn.com/w160/gb.png'); }
@@ -302,6 +301,14 @@
 
         <main class="main-content" :class="{'mobile-scanner-padding': currentPage === 'scanner' || isMobileScannerMode}">
             
+            <div v-if="storeConfig.is_verified === false" style="background: linear-gradient(90deg, #ef4444, #f97316); color: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+                <span style="font-size: 1.5rem;">⚠️</span>
+                <div>
+                    <strong style="font-size: 0.95rem;">Confirme o seu Email!</strong>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Enviámos um link de verificação. Se não confirmar a conta nas próximas 24h, perderá o acesso a este painel.</div>
+                </div>
+            </div>
+
             <div v-if="storeConfig.tier === 'free_trial' && trialDaysLeft > 0" style="background: linear-gradient(90deg, #f59e0b, #fbbf24); color: #fffbeb; padding: 12px 20px; border-radius: 12px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5rem;">⏱️</span>
