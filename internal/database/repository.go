@@ -668,7 +668,7 @@ func (repo *CardRepository) RegisterStore(req models.RegisterStoreRequest) (stri
 func (repo *CardRepository) AuthenticateStore(email, password string) (*models.Store, error) {
 	var store models.Store
 	var hashedPassword string
-	var isActivated bool
+	//var isActivated bool
 
 	// Lemos também o account_activated
 	query := `
@@ -683,7 +683,7 @@ func (repo *CardRepository) AuthenticateStore(email, password string) (*models.S
 		&hashedPassword,
 		&store.Tier,
 		&store.IsActive,
-		&isActivated,
+		&store.AccountActivated,
 	)
 
 	if err != nil {
@@ -694,9 +694,9 @@ func (repo *CardRepository) AuthenticateStore(email, password string) (*models.S
 	}
 
 	// 👇 PROTEÇÃO CONTRA LOJAS NÃO VERIFICADAS 👇
-	if !isActivated {
-		return nil, fmt.Errorf("unverified")
-	}
+	// if !isActivated {
+	// 	return nil, fmt.Errorf("unverified")
+	// }
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
@@ -795,7 +795,7 @@ func (r *CardRepository) VerifyGlobalUser(token string) error {
 func (repo *CardRepository) AuthenticateGlobalUser(email, password string) (*models.GlobalUser, error) {
 	var user models.GlobalUser
 	var hashedPassword string
-	var isVerified bool
+	//var isVerified bool
 
 	query := `
 		SELECT id, first_name, last_name, email, password, is_verified 
@@ -808,8 +808,8 @@ func (repo *CardRepository) AuthenticateGlobalUser(email, password string) (*mod
 		&user.FirstName,
 		&user.LastName,
 		&user.Email,
-		&hashedPassword, // Extraímos a password encriptada da BD
-		&isVerified,
+		&hashedPassword,
+		&user.IsVerified,
 	)
 
 	if err != nil {
@@ -820,9 +820,9 @@ func (repo *CardRepository) AuthenticateGlobalUser(email, password string) (*mod
 	}
 
 	// 👇 1. Verifica se já clicou no link do email
-	if !isVerified {
-		return nil, fmt.Errorf("unverified")
-	}
+	// if !isVerified {
+	// 	return nil, fmt.Errorf("unverified")
+	// }
 
 	// 👇 2. COMPARA A PASSWORD ENCRIPTADA COM A QUE ELE ESCREVEU
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
@@ -838,9 +838,9 @@ func (repo *CardRepository) AuthenticateGlobalUser(email, password string) (*mod
 
 func (r *CardRepository) GetGlobalUserByID(id string) (*models.GlobalUser, error) {
 	var u models.GlobalUser
-	query := `SELECT id, first_name, last_name, email, phone FROM global_users WHERE id = $1`
-	err := r.db.QueryRow(query, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone)
-	return &u, err
+	query := `SELECT id, first_name, last_name, email, phone, is_verified FROM global_users WHERE id = $1`
+    err := r.db.QueryRow(query, id).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.Phone, &u.IsVerified)
+    return &u, err
 }
 
 func (r *CardRepository) GetMyWalletCards(email string) ([]map[string]interface{}, error) {

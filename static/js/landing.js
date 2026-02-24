@@ -3,13 +3,13 @@ const LandingPage = {
         const { ref, computed, onMounted } = Vue;
 
         const theme = ref('light'); 
-        const lang = ref('pt'); // Default Português
+        const lang = ref('pt'); 
         const currentModal = ref(null); 
         const loading = ref(false);
         const errorMsg = ref('');
         const successMsg = ref(''); 
         
-        // 👇 NOVA VARIÁVEL: Guarda o link de redirecionamento 👇
+        // Guarda o link de redirecionamento para o botão "Entendido, Continuar"
         const pendingRedirect = ref('');
         
         const storeTab = ref('login'); 
@@ -34,13 +34,9 @@ const LandingPage = {
 
         const translations = {
             en: {
-                nav_wallet: "My Wallet", 
-                nav_business: "For Businesses",
-                tab_login: "Login",
-                tab_register_store: "Start Free Trial",
-                tab_register_wallet: "Create Account",
-                btn_login: "Login",
-                btn_enter: "Enter Dashboard",
+                nav_wallet: "My Wallet", nav_business: "For Businesses",
+                tab_login: "Login", tab_register_store: "Start Free Trial", tab_register_wallet: "Create Account",
+                btn_login: "Login", btn_enter: "Enter Dashboard",
                 hero_title: "Turn customers <br> into regulars.", hero_subtitle: "The simplest loyalty platform for modern businesses.",
                 stats_users: "Happy Users", stats_stamps: "Stamps Given", stats_rewards: "Rewards Claimed",
                 modal_login_title: "Store Dashboard", password: "Password",
@@ -49,13 +45,9 @@ const LandingPage = {
                 wallet_title: "My Wallet", wallet_sub: "Access all your cards securely."
             },
             pt: {
-                nav_wallet: "Minha Carteira", 
-                nav_business: "Para Negócios",
-                tab_login: "Entrar",
-                tab_register_store: "Teste Grátis",
-                tab_register_wallet: "Criar Conta",
-                btn_login: "Entrar",
-                btn_enter: "Entrar no Painel",
+                nav_wallet: "Minha Carteira", nav_business: "Para Negócios",
+                tab_login: "Entrar", tab_register_store: "Teste Grátis", tab_register_wallet: "Criar Conta",
+                btn_login: "Entrar", btn_enter: "Entrar no Painel",
                 hero_title: "Transforme clientes <br> em fãs.", hero_subtitle: "A plataforma de fidelização mais simples para o seu negócio.",
                 stats_users: "Clientes Felizes", stats_stamps: "Selos Dados", stats_rewards: "Prémios Dados",
                 modal_login_title: "Gestão de Loja", password: "Palavra-passe",
@@ -103,8 +95,6 @@ const LandingPage = {
                     const errorText = await res.text();
                     if (errorText.includes("SUSPENDED")) {
                         errorMsg.value = lang.value === 'pt' ? "⛔ A sua conta encontra-se suspensa." : "⛔ Account suspended.";
-                    } else if (errorText.includes("unverified")) {
-                        errorMsg.value = lang.value === 'pt' ? "📧 Vá ao seu email para ativar a conta." : "📧 Please check your email to activate.";
                     } else {
                         errorMsg.value = lang.value === 'pt' ? "Email ou Password incorretos." : "Invalid email or password."; 
                     }
@@ -113,8 +103,12 @@ const LandingPage = {
             finally { loading.value = false; }
         };
         
+        // --- REGISTO NOVA LOJA (COM AUTO-LOGIN) ---
         const handleRegister = async () => {
             loading.value = true; errorMsg.value = ''; successMsg.value = '';
+            const emailToLogin = registerForm.value.email;
+            const passToLogin = registerForm.value.password;
+
             try {
                 const res = await fetch('/api/v1/public/register', { 
                     method: 'POST', headers: {'Content-Type': 'application/json'}, 
@@ -125,7 +119,21 @@ const LandingPage = {
                     const data = await res.json(); 
                     if (data.status === "pending_verification") {
                         successMsg.value = data.message;
-                        pendingRedirect.value = data.redirect; // 👈 Guarda o redirecionamento
+                        
+                        // FAZ O AUTO-LOGIN SECRETO PARA BUSCAR A SESSÃO
+                        try {
+                            const loginRes = await fetch('/api/v1/auth/login', { 
+                                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                                body: JSON.stringify({ identifier: emailToLogin, password: passToLogin }) 
+                            });
+                            if(loginRes.ok) {
+                                const loginData = await loginRes.json();
+                                pendingRedirect.value = loginData.redirect; // Salva a Rota de Sucesso
+                            } else {
+                                pendingRedirect.value = data.redirect || '/'; 
+                            }
+                        } catch(e) { pendingRedirect.value = data.redirect || '/'; }
+
                         registerForm.value = { name: '', email: '', password: '' };
                     } else {
                         window.location.href = data.redirect; 
@@ -138,8 +146,12 @@ const LandingPage = {
             finally { loading.value = false; }
         };
 
+        // --- REGISTO WALLET (COM AUTO-LOGIN) ---
         const handleWalletRegister = async () => {
             loading.value = true; errorMsg.value = ''; successMsg.value = '';
+            const emailToLogin = globalUserForm.value.email;
+            const passToLogin = globalUserForm.value.password;
+
             try {
                 const res = await fetch('/api/v1/public/wallet-register', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -150,7 +162,21 @@ const LandingPage = {
                     const data = await res.json();
                     if (data.status === "pending_verification") {
                         successMsg.value = data.message;
-                        pendingRedirect.value = data.redirect; // 👈 Guarda o redirecionamento
+                        
+                        // FAZ O AUTO-LOGIN SECRETO PARA BUSCAR A SESSÃO
+                        try {
+                            const loginRes = await fetch('/api/v1/public/wallet-login', {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ Email: emailToLogin, Password: passToLogin })
+                            });
+                            if (loginRes.ok) {
+                                const loginData = await loginRes.json();
+                                pendingRedirect.value = loginData.redirect;
+                            } else {
+                                pendingRedirect.value = '/card'; 
+                            }
+                        } catch(e) { pendingRedirect.value = '/card'; }
+
                         globalUserForm.value = { firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false, marketing: false };
                     } else {
                         window.location.href = data.redirect;
@@ -176,17 +202,13 @@ const LandingPage = {
                     window.location.href = data.redirect;
                 } else {
                     const txt = await res.text();
-                    if (txt.includes("unverified")) {
-                        errorMsg.value = lang.value === 'pt' ? "📧 Vá ao seu email para ativar a conta." : "📧 Please check your email to activate.";
-                    } else {
-                        errorMsg.value = lang.value === 'pt' ? "Email ou Password incorretos." : "Invalid credentials.";
-                    }
+                    errorMsg.value = lang.value === 'pt' ? "Email ou Password incorretos." : "Invalid credentials.";
                 }
             } catch (e) { errorMsg.value = lang.value === 'pt' ? "Erro de ligação." : "Connection error."; } 
             finally { loading.value = false; }
         };
 
-        // 👇 NOVA FUNÇÃO: Segue para a App em vez de fechar o modal
+        // Função do Botão "Entendido, Continuar ->"
         const proceedToApp = () => {
             if (pendingRedirect.value) {
                 window.location.href = pendingRedirect.value;
@@ -203,7 +225,7 @@ const LandingPage = {
             loginForm, registerForm, walletForm, walletTab, storeTab, globalUserForm,
             isWalletFormValid, t, toggleTheme, toggleLang, 
             handleLogin, handleRegister, handleWalletRegister, handleWalletLogin,
-            proceedToApp, // 👈 Função exportada
+            proceedToApp, 
             
             openLogin: () => { currentModal.value = 'store'; storeTab.value = 'login'; errorMsg.value = ''; successMsg.value = ''; },
             openRegister: () => { currentModal.value = 'store'; storeTab.value = 'register'; errorMsg.value = ''; successMsg.value = ''; },

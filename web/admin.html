@@ -301,11 +301,11 @@
 
         <main class="main-content" :class="{'mobile-scanner-padding': currentPage === 'scanner' || isMobileScannerMode}">
             
-            <div v-if="storeConfig.is_verified === false" style="background: linear-gradient(90deg, #ef4444, #f97316); color: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+            <div v-if="storeConfig.account_activated === false" style="background: linear-gradient(90deg, #ef4444, #f97316); color: white; padding: 12px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
                 <span style="font-size: 1.5rem;">⚠️</span>
                 <div>
                     <strong style="font-size: 0.95rem;">Confirme o seu Email!</strong>
-                    <div style="font-size: 0.8rem; opacity: 0.9;">Enviámos um link de verificação. Se não confirmar a conta nas próximas 24h, perderá o acesso a este painel.</div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Enviámos um link de verificação. Se não confirmar a conta nos próximos 30 mins , perderá o acesso a este painel.</div>
                 </div>
             </div>
 

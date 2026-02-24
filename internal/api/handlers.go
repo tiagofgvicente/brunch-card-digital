@@ -718,6 +718,7 @@ func WalletProfileHandler(w http.ResponseWriter, r *http.Request, repo *database
 		"phone":        gu.Phone,
 		"total_stamps": 0,
 		"stamps_count": 0,
+		"is_verified":  gu.IsVerified,
 	})
 }
 

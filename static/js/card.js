@@ -8,7 +8,7 @@ createApp({
         const hasStore = ref(!!currentStore && currentStore !== 'null');
         const api = (url) => hasStore.value ? `${url}${url.includes('?') ? '&' : '?'}store=${currentStore}` : url;
 
-        // 👇 ADICIONADO: is_verified à estrutura base do cartão 👇
+        // O is_verified começa a true para não assustar enquanto carrega
         const card = ref({ id: null, customer_id: '', last_name: '', email: '', phone: '', total_stamps: 0, stamps_count: 0, is_verified: true });
         const myWalletCards = ref([]); 
         
@@ -147,11 +147,21 @@ createApp({
             } catch(e) {}
         };
 
+        // 👇 FETCH CARD ATUALIZADO (A MÁGICA ESTÁ AQUI) 👇
         const fetchCard = async () => { 
             const endpoint = hasStore.value ? `/api/v1/cards/status?id=${cardId}&store=${currentStore}` : `/api/v1/public/wallet-profile?id=${cardId}`;
             const res = await fetch(endpoint); 
             if (res.ok) {
-                card.value = await res.json(); 
+                const data = await res.json(); 
+                
+                // Mapeia inteligentemente quer venha de uma loja ou da wallet
+                card.value = { 
+                    ...card.value, 
+                    ...data,
+                    customer_id: data.customer_id || data.first_name || '', // Unifica o nome
+                    is_verified: data.is_verified !== undefined ? data.is_verified : true // Protege contra false hiding
+                }; 
+                
                 if(!hasStore.value && card.value.email) {
                     fetchWalletCards(card.value.email);
                     fetchNotifications(card.value.email); 
@@ -276,9 +286,11 @@ createApp({
             return styles;
         });
 
+        // 👇 PROTEÇÃO CONTRA O ERRO 502 DE BAD GATEWAY 👇
         const qrCodeUrl = computed(() => {
             const targetId = hasStore.value ? card.value.id : (activeWalletCardId.value || card.value.id);
             const targetStore = hasStore.value ? currentStore : activeWalletStoreSlug.value;
+            if (!targetId || !targetStore) return ''; // Proteção adicionada
             const url = `${window.location.origin}/card?store=${targetStore}&id=${targetId}`;
             return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
         });
@@ -286,6 +298,7 @@ createApp({
         const redeemQrUrl = computed(() => {
             const targetId = hasStore.value ? card.value.id : activeWalletCardId.value;
             const targetStore = hasStore.value ? currentStore : activeWalletStoreSlug.value;
+            if (!targetId || !targetStore) return ''; // Proteção adicionada
             const data = JSON.stringify({ action: 'redeem', id: targetId, store: targetStore });
             return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`;
         });

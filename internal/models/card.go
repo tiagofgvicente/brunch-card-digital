@@ -156,6 +156,7 @@ type GlobalUser struct {
 	RgpdAccepted      bool      `json:"rgpd_accepted"`
 	MarketingAccepted bool      `json:"marketing_accepted"`
 	CreatedAt         time.Time `json:"created_at"`
+	IsVerified        bool      `json:"is_verified"`
 }
 
 type RegisterGlobalUserRequest struct {
