@@ -18,6 +18,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
+	"github.com/stripe/stripe-go/v76"
+	"github.com/stripe/stripe-go/v76/checkout/session"
 )
 
 func getCurrentStore(r *http.Request) *models.Store {
@@ -1074,4 +1076,177 @@ func isValidEmailDomain(email string) error {
 	}
 
 	return nil
+}
+
+// --- STRIPE CHECKOUT HANDLER ---
+func CreateCheckoutSessionHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req struct {
+		StoreName string `json:"store_name"`
+		Email     string `json:"email"`
+		Password  string `json:"password"`
+		Tier      string `json:"tier"`  // basic, lite, pro
+		Cycle     string `json:"cycle"` // monthly, yearly
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		return
+	}
+
+	// 1. Definir os Preços baseados na escolha do cliente (em cêntimos)
+	prices := map[string]map[string]int64{
+		"monthly": {"basic": 2000, "lite": 3000, "pro": 4000},
+		"yearly":  {"basic": 18000, "lite": 30000, "pro": 36000},
+	}
+
+	amount, ok := prices[req.Cycle][req.Tier]
+	if !ok {
+		http.Error(w, "Plano inválido", http.StatusBadRequest)
+		return
+	}
+
+	// 2. Registar a Loja (Fica com status 'pending_payment')
+	// NOTA: Para simplicidade deste código, usamos a tua função de registo normal.
+	// O ideal numa versão final é criar um status "pending_payment" na base de dados.
+	storeReq := models.RegisterStoreRequest{
+		Name:     req.StoreName,
+		Email:    req.Email,
+		Password: req.Password,
+		Slug:     generateSlug(req.StoreName),
+	}
+	storeID, _, err := repo.RegisterStore(storeReq)
+	if err != nil {
+		http.Error(w, "Erro ao criar loja. O email pode já estar em uso.", http.StatusConflict)
+		return
+	}
+
+	// 3. Configurar a Sessão do Stripe
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+	appURL := os.Getenv("APP_URL")
+	if appURL == "" {
+		appURL = "http://localhost:8080"
+	}
+
+	tierNames := map[string]string{"basic": "Basic", "lite": "Lite", "pro": "Pro"}
+	cycleNames := map[string]string{"monthly": "Mensal", "yearly": "Anual"}
+	productName := fmt.Sprintf("Plano Volto %s (%s)", tierNames[req.Tier], cycleNames[req.Cycle])
+
+	params := &stripe.CheckoutSessionParams{
+		// O Stripe Checkout decide os métodos (Cartão, MBWay, Multibanco) baseando-se no teu Dashboard
+		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
+					Currency: stripe.String("eur"),
+					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
+						Name: stripe.String(productName),
+					},
+					UnitAmount: stripe.Int64(amount),
+				},
+				Quantity: stripe.Int64(1),
+			},
+		},
+		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+		// Passamos o ID da loja no ClientReferenceID para depois ativarmos a conta (via Webhook)
+		ClientReferenceID: stripe.String(storeID),
+		SuccessURL:        stripe.String(appURL + "/?store_verified=true"), // Sucesso: vai para a landing page
+		CancelURL:         stripe.String(appURL + "/checkout.html?tier=" + req.Tier + "&cycle=" + req.Cycle),
+	}
+
+	session, err := session.New(params)
+	if err != nil {
+		http.Error(w, "Erro ao comunicar com a Stripe", http.StatusInternalServerError)
+		return
+	}
+
+	// Devolver o URL da fatura para o Frontend redirecionar o cliente
+	json.NewEncoder(w).Encode(map[string]string{"url": session.URL})
+}
+
+// --- CAPTURA DE LEADS (CONCIERGE ONBOARDING) ---
+func CaptureLeadHandler(w http.ResponseWriter, r *http.Request, repo *database.CardRepository) {
+	var req models.Lead
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		return
+	}
+
+	// 1. VALIDAÇÃO DE EMAIL RIGOROSA (Como no registo normal)
+	if err := isValidEmailDomain(req.Email); err != nil {
+		// Se falhar a validação de MX, bloqueamos logo aqui!
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// 2. GRAVAR NA BASE DE DADOS (CRM Master)
+	req.ID = uuid.New().String() // Gera o ID único
+	if err := repo.SaveLead(req); err != nil {
+		log.Printf("❌ Erro ao guardar Lead na BD: %v", err)
+		http.Error(w, "Erro interno ao processar pedido", http.StatusInternalServerError)
+		return
+	}
+
+	// 3. ENVIO DO EMAIL DE CONFIRMAÇÃO EM BACKGROUND
+	go func() {
+		smtpHost := os.Getenv("SMTP_HOST")
+		smtpPort := os.Getenv("SMTP_PORT")
+		senderEmail := os.Getenv("SMTP_USER")
+		senderPassword := os.Getenv("SMTP_PASS")
+
+		if smtpHost == "" || senderEmail == "" {
+			log.Println("⚠️ Aviso: Credenciais SMTP em falta para envio de Lead.")
+			return
+		}
+
+		to := []string{req.Email}
+		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+		
+		tierName := strings.ToUpper(string(req.Tier[0])) + req.Tier[1:]
+		
+		var subject, cycleName, body string
+
+		// Lógica Inteligente de Idioma
+		if req.Lang == "en" {
+			cycleName = "Monthly"
+			if req.Cycle == "yearly" { cycleName = "Yearly" }
+			
+			subject = "Subject: Your Volto subscription request\n"
+			body = fmt.Sprintf(`
+				<h2>Hello %s,</h2>
+				<p>We have received your subscription request for the <strong>Volto</strong> platform.</p>
+				<p>We noted the interest of your business <strong>%s</strong> in the <strong>%s (%s)</strong> plan.</p>
+				<p>To ensure you get the most out of our platform, one of our agents will contact you very soon at <strong>%s</strong>.</p>
+				<p>We will help you set up your store at no additional cost.</p>
+				<br>
+				<p>Thank you for choosing Volto!<br>The Volto-Group Team</p>
+			`, req.ContactName, req.CompanyName, tierName, cycleName, req.Phone)
+		} else {
+			cycleName = "Mensal"
+			if req.Cycle == "yearly" { cycleName = "Anual" }
+			
+			subject = "Subject: O seu pedido de subscrição Volto\n"
+			body = fmt.Sprintf(`
+				<h2>Olá %s,</h2>
+				<p>Recebemos o pedido de subscrição para a plataforma <strong>Volto</strong>.</p>
+				<p>Anotámos o interesse da sua empresa <strong>%s</strong> no plano <strong>%s (%s)</strong>.</p>
+				<p>Para garantir que tira o máximo partido da nossa plataforma, um dos nossos agentes irá entrar em contacto consigo muito em breve para o número <strong>%s</strong>.</p>
+				<p>Ajudaremos com toda a configuração da sua loja sem qualquer custo adicional.</p>
+				<br>
+				<p>Obrigado por escolher a Volto!<br>A Equipa Volto-Group</p>
+			`, req.ContactName, req.CompanyName, tierName, cycleName, req.Phone)
+		}
+
+		message := []byte(subject + mime + body)
+		auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
+		err := smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, to, message)
+		
+		if err != nil {
+			log.Printf("⚠️ Erro ao enviar email de Lead para %s: %v", req.Email, err)
+		} else {
+			log.Printf("✅ Lead guardada e email enviado: %s (%s) - Plano: %s", req.CompanyName, req.Email, tierName)
+		}
+	}()
+
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Pedido recebido com sucesso!"})
 }

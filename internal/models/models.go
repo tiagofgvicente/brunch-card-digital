@@ -202,3 +202,16 @@ type StoreNotification struct {
 	IsRead    bool      `json:"is_read"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type Lead struct {
+	ID          string    `json:"id"`
+	CompanyName string    `json:"company_name"`
+	ContactName string    `json:"contact_name"`
+	Email       string    `json:"email"`
+	Phone       string    `json:"phone"`
+	Tier        string    `json:"tier"`
+	Cycle       string    `json:"cycle"`
+	Lang        string    `json:"lang"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+}

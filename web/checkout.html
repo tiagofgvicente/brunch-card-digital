@@ -3,31 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout | Volto</title>
+    <title>Checkout Seguro | Volto</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800;900&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; display: flex; justify-content: center; padding: 40px 20px; }
-        .checkout-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); width: 100%; max-width: 500px; border: 1px solid #e2e8f0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #eaeff2; color: #1e293b; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        .checkout-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 100%; max-width: 450px; border: 1px solid #cbd5e1; }
         
-        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; }
-        .brand { font-weight: 900; font-size: 1.5rem; color: #0f172a; text-decoration: none; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; border-bottom: 1px solid #cbd5e1; padding-bottom: 20px; }
+        .brand { font-weight: 900; font-size: 1.5rem; color: #1e293b; text-decoration: none; }
         .brand span { color: #2563eb; }
         .btn-back { font-size: 0.85rem; font-weight: 700; color: #64748b; text-decoration: none; transition: 0.2s; }
         .btn-back:hover { color: #2563eb; }
 
-        .summary { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
-        .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 600; }
-        .tier-name { text-transform: capitalize; color: #2563eb; font-weight: 900; font-size: 1.2rem; }
-        .total-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; font-weight: 900; font-size: 1.4rem; }
+        .summary { background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #e2e8f0; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; font-size: 0.95rem; }
+        .tier-name { text-transform: uppercase; color: #2563eb; font-weight: 900; font-size: 1rem; }
+        .total-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #cbd5e1; font-weight: 900; font-size: 1.5rem; color: #0f172a; }
 
-        h3 { font-size: 1.1rem; margin: 0 0 15px; }
+        h3 { font-size: 1.1rem; margin: 0 0 15px; color: #0f172a; }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; }
+        input { width: 100%; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; color: #1e293b; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; transition: 0.2s; }
+        input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px #dbeafe; }
 
-        /* Placeholders para os botões do Stripe (MBWay, Multibanco, Cartão) */
-        .payment-placeholder { width: 100%; padding: 15px; border-radius: 8px; border: 2px dashed #cbd5e1; background: #f8fafc; color: #64748b; font-weight: 600; text-align: center; margin-bottom: 15px; box-sizing: border-box; }
-        .pay-btn { width: 100%; padding: 16px; background: #0f172a; color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 800; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        .pay-btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3); }
+        .pay-btn { width: 100%; padding: 16px; background: #0f172a; color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 800; cursor: pointer; transition: 0.3s; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .pay-btn:hover:not(:disabled) { background: #2563eb; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3); }
+        .pay-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .secure-badge { text-align: center; font-size: 0.75rem; color: #64748b; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; }
+        .error-msg { color: #ef4444; font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -52,28 +57,40 @@
             </div>
         </div>
 
-        <h3>Detalhes de Pagamento</h3>
-        
-        <div class="payment-placeholder">
-            🔒 Área Segura para o Stripe<br>
-            <span style="font-size:0.75rem; font-weight:normal;">MBWay, Multibanco, Apple Pay e Cartão</span>
-        </div>
+        <h3>Dados da Loja</h3>
+        <form id="checkoutForm">
+            <div class="form-group">
+                <label>Nome do Negócio</label>
+                <input type="text" id="storeName" required placeholder="Ex: Joe's Burgers">
+            </div>
+            <div class="form-group">
+                <label>Email de Gestão</label>
+                <input type="email" id="email" required placeholder="manager@loja.com">
+            </div>
+            <div class="form-group">
+                <label>Palavra-passe Segura</label>
+                <input type="password" id="password" required placeholder="Mínimo 8 caracteres, números e letras">
+            </div>
 
-        <button class="pay-btn" onclick="alert('Integração de pagamento em breve!')">Confirmar e Subscrever</button>
+            <div id="errorBox" class="error-msg"></div>
+
+            <button type="submit" class="pay-btn" id="submitBtn">
+                Avançar para Pagamento 
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+        </form>
 
         <div class="secure-badge">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            Pagamento 100% Seguro
+            Pagamento Processado pela Stripe
         </div>
     </div>
 
     <script>
-        // Lê as variáveis do URL vindas da Landing Page
         const urlParams = new URLSearchParams(window.location.search);
         const tier = urlParams.get('tier') || 'basic';
         const cycle = urlParams.get('cycle') || 'monthly';
 
-        // Tabela de Preços no código para calcular o total
         const prices = {
             monthly: { basic: 20, lite: 30, pro: 40 },
             yearly: { basic: 180, lite: 300, pro: 360 }
@@ -83,9 +100,49 @@
         const cycleText = cycle === 'monthly' ? 'Mensal' : 'Anual';
         const price = prices[cycle][tier];
 
-        document.getElementById('planName').innerText = `Plano ${planName}`;
+        document.getElementById('planName').innerText = planName;
         document.getElementById('cycleName').innerText = cycleText;
         document.getElementById('totalPrice').innerText = `€${price}.00`;
+
+        document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const errBox = document.getElementById('errorBox');
+            
+            btn.disabled = true;
+            btn.innerText = "A redirecionar para a Stripe...";
+            errBox.innerText = "";
+
+            const payload = {
+                store_name: document.getElementById('storeName').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                tier: tier,
+                cycle: cycle
+            };
+
+            try {
+                const res = await fetch('/api/v1/payments/create-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    window.location.href = data.url;
+                } else {
+                    const txt = await res.text();
+                    errBox.innerText = txt || "Erro ao processar. Verifique os dados.";
+                    btn.disabled = false;
+                    btn.innerText = "Avançar para Pagamento →";
+                }
+            } catch (err) {
+                errBox.innerText = "Falha de ligação ao servidor.";
+                btn.disabled = false;
+                btn.innerText = "Avançar para Pagamento →";
+            }
+        });
     </script>
 </body>
 </html>

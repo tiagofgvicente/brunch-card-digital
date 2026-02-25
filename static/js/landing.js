@@ -29,13 +29,41 @@ const LandingPage = {
         const walletForm = ref({ email: '', password: '' });
         const globalUserForm = ref({ firstName: '', lastName: '', email: '', phone: '', password: '', rgpd: false, marketing: false });
 
+        const leadForm = ref({ businessType: '', contactName: '', email: '', phone: '' });
+        const selectedTierForLead = ref('');
+
         const isWalletFormValid = computed(() => {
             const f = globalUserForm.value;
             return f.firstName.trim() !== '' && f.lastName.trim() !== '' &&
                    f.email.trim() !== '' && f.password.trim() !== '' && f.rgpd === true;
         });
 
-        // 👇 TRADUÇÕES TOTALMENTE ATUALIZADAS (com os limites e novas funcionalidades) 👇
+        // 👇 AVALIAÇÃO EM TEMPO REAL DOS CAMPOS DA LEAD 👇
+        const isLeadEmailInvalid = computed(() => {
+            const email = leadForm.value.email;
+            if (email.length === 0) return false; // Não mostra erro se estiver vazio
+            return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        });
+
+        const isLeadPhoneInvalid = computed(() => {
+            const phone = leadForm.value.phone;
+            if (phone.length === 0) return false; // Não mostra erro se estiver vazio
+            const cleanPhone = phone.replace(/\s+/g, '');
+            return !/^\+?[0-9]{9,}$/.test(cleanPhone);
+        });
+
+        const isLeadFormValid = computed(() => {
+            const f = leadForm.value;
+            const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+            const cleanPhone = f.phone.replace(/\s+/g, '');
+            const phoneValid = /^\+?[0-9]{9,}$/.test(cleanPhone);
+            
+            return f.businessType.trim() !== '' && 
+                   f.contactName.trim() !== '' && 
+                   emailValid && 
+                   phoneValid;
+        });
+
         const translations = {
             en: {
                 nav_wallet: "My Wallet", nav_business: "For Businesses", nav_pricing: "Pricing",
@@ -53,16 +81,16 @@ const LandingPage = {
                 price_title: "Simple & Transparent Pricing", price_sub: "Start with a 30-day free trial. No credit card required.",
                 bill_monthly: "Monthly", bill_yearly: "Yearly",
                 per_month: "/month", btn_start_trial: "Start Free Trial",
-                btn_subscribe: "Subscribe Now", // NOVO
+                btn_subscribe: "Subscribe Now",
                 
                 billed_monthly_note: "Billed monthly. Cancel anytime.",
-                billed_yearly_basic: "Billed yearly at €180. Cancel anytime.",
-                billed_yearly_lite: "Billed yearly at €300. Cancel anytime.",
-                billed_yearly_pro: "Billed yearly at €360. Cancel anytime.",
+                billed_yearly_basic: "Billed yearly at €180, cancel anytime.",
+                billed_yearly_lite: "Billed yearly at €300, cancel anytime.",
+                billed_yearly_pro: "Billed yearly at €360, cancel anytime.",
                 save_tag: "Save",
                 
                 tier_basic: "Basic", tier_basic_sub: "Just the essentials to start",
-                feat_basic_1: "Max 50 Customers", feat_basic_2: "1 Fixed standard stamp card", feat_basic_3: "No custom card design", feat_basic_4: "No Socials, Menu or Maps", feat_basic_5: "No Customer Management", feat_basic_6: "No Reservations System",
+                feat_basic_1: "Max 50 Customers", feat_basic_2: "1 Fixed standard stamp card", feat_basic_3: "No custom card design", feat_basic_4: "No Social Media or Maps", feat_basic_5: "No Customer Management", feat_basic_6: "No Reservations System",
                 
                 tier_lite: "Lite", tier_lite_sub: "Ideal for growing businesses",
                 feat_lite_1: "Max 100 Customers", feat_lite_2: "1 Customizable Card (Icon OR Logo)", feat_lite_3: "Social Media & Maps in Wallet", feat_lite_4: "Basic Customer Management", feat_lite_5: "No Digital Menu", feat_lite_6: "No Reservations System",
@@ -73,7 +101,11 @@ const LandingPage = {
                 foot_product: "Product", foot_resources: "Resources", foot_legal: "Legal",
                 foot_features: "Features", foot_pricing: "Pricing", foot_login: "Login",
                 foot_help: "Help Center", foot_contact: "Contact Us",
-                foot_privacy: "Privacy Policy", foot_terms: "Terms of Service"
+                foot_privacy: "Privacy Policy", foot_terms: "Terms of Service",
+                
+                // Erros inline
+                lead_err_email: "Invalid email format.",
+                lead_err_phone: "Must contain numbers only (min. 9 digits)."
             },
             pt: {
                 nav_wallet: "Minha Carteira", nav_business: "Para Negócios", nav_pricing: "Preços",
@@ -90,8 +122,8 @@ const LandingPage = {
                 
                 price_title: "Planos Simples e Transparentes", price_sub: "Comece com 30 dias grátis. Sem cartão de crédito.",
                 bill_monthly: "Mensal", bill_yearly: "Anual",
-                per_month: "/mês", btn_start_trial: "Teste Grátis (30 Dias)",
-                btn_subscribe: "Subscrever Agora", // NOVO
+                per_month: "/mês", btn_start_trial: "Começar Teste Grátis",
+                btn_subscribe: "Subscrever Agora", 
                 
                 billed_monthly_note: "Faturado mensalmente. Cancele quando quiser.",
                 billed_yearly_basic: "Faturado anualmente a €180. Cancele quando quiser.",
@@ -111,7 +143,11 @@ const LandingPage = {
                 foot_product: "Produto", foot_resources: "Recursos", foot_legal: "Legal",
                 foot_features: "Funcionalidades", foot_pricing: "Preços", foot_login: "Entrar na Loja",
                 foot_help: "Centro de Ajuda", foot_contact: "Contacte-nos",
-                foot_privacy: "Política de Privacidade", foot_terms: "Termos de Serviço"
+                foot_privacy: "Política de Privacidade", foot_terms: "Termos de Serviço",
+                
+                // Erros inline
+                lead_err_email: "Formato de email inválido.",
+                lead_err_phone: "Tem de conter apenas números (mín. 9)."
             }
         };
 
@@ -291,6 +327,55 @@ const LandingPage = {
             finally { loading.value = false; }
         };
 
+        const openSubscribeModal = (tier) => {
+            selectedTierForLead.value = tier;
+            currentModal.value = 'lead_capture';
+            errorMsg.value = '';
+            successMsg.value = '';
+        };
+
+        const submitLeadForm = async () => {
+            if (!isLeadFormValid.value) return; // Segurança extra
+
+            loading.value = true;
+            errorMsg.value = '';
+            successMsg.value = '';
+            
+            const cleanPhone = leadForm.value.phone.replace(/\s+/g, '');
+
+            try {
+                const payload = {
+                    company_name: leadForm.value.businessType, 
+                    contact_name: leadForm.value.contactName, 
+                    email: leadForm.value.email,
+                    phone: cleanPhone, 
+                    tier: selectedTierForLead.value,
+                    cycle: billingCycle.value,
+                    lang: lang.value
+                };
+
+                const res = await fetch('/api/v1/public/capture-lead', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    successMsg.value = lang.value === 'pt' 
+                        ? "Recebemos o seu pedido! Um dos nossos agentes vai contactá-lo muito em breve para o ajudar." 
+                        : "Request received! An agent will contact you shortly to help you setup.";
+                    leadForm.value = { businessType: '', contactName: '', email: '', phone: '' };
+                } else {
+                    const errorText = await res.text();
+                    errorMsg.value = errorText || (lang.value === 'pt' ? "Erro ao enviar pedido. Tente novamente." : "Error sending request. Please try again.");
+                }
+            } catch(e) {
+                errorMsg.value = lang.value === 'pt' ? "Erro de ligação ao servidor." : "Connection error to server.";
+            } finally {
+                loading.value = false;
+            }
+        };
+
         const proceedToApp = () => {
             if (pendingRedirect.value) {
                 window.location.href = pendingRedirect.value;
@@ -305,11 +390,6 @@ const LandingPage = {
         const scrollToPricing = () => {
             const el = document.getElementById('pricing');
             if(el) el.scrollIntoView({ behavior: 'smooth' });
-        };
-
-        // 👇 ADIÇÃO: Redireciona para o checkout com os parâmetros da escolha 👇
-        const goToCheckout = (tier) => {
-            window.location.href = `/checkout.html?tier=${tier}&cycle=${billingCycle.value}`;
         };
 
         onMounted(() => { 
@@ -328,11 +408,13 @@ const LandingPage = {
         return {
             theme, lang, currentModal, loading, errorMsg, successMsg, storeConfig, stats,
             loginForm, registerForm, walletForm, walletTab, storeTab, globalUserForm,
-            isWalletFormValid, t, toggleTheme, toggleLang, 
+            isWalletFormValid, isLeadFormValid, isLeadEmailInvalid, isLeadPhoneInvalid, t, toggleTheme, toggleLang, 
             handleLogin, handleRegister, handleWalletRegister, handleWalletLogin, proceedToApp,
             forgotMode, forgotEmail, resetToken, resetType, resetPasswordForm, handleForgotPassword, handleResetPassword,
             
-            billingCycle, scrollToPricing, goToCheckout, // Variáveis Expostas
+            billingCycle, scrollToPricing, 
+            
+            leadForm, openSubscribeModal, submitLeadForm,
             
             openLogin: () => { currentModal.value = 'store'; storeTab.value = 'login'; errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false; },
             openRegister: () => { currentModal.value = 'store'; storeTab.value = 'register'; errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false; },

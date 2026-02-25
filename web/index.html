@@ -89,7 +89,7 @@
         .card-showcase:hover .card-2 { transform: rotate(20deg) translate(80px, 30px); }
         .card-showcase:hover .card-3 { transform: scale(1.15) translateY(-30px); }
 
-        /* --- 👇 PRICING SECTION 👇 --- */
+        /* --- PRICING SECTION --- */
         .pricing-section { padding: 100px 20px; background: linear-gradient(to bottom, transparent, var(--bg-card)); }
         .section-header { text-align: center; margin-bottom: 60px; }
         .section-header h2 { font-size: 3rem; font-weight: 900; letter-spacing: -1px; margin: 0 0 15px; color: var(--text-main); }
@@ -134,13 +134,12 @@
         .btn-pricing-solid { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
         .btn-pricing-solid:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4); }
 
-        /* Nova class para o botão do Trial abaixo do Subscribe */
         .btn-pricing-text { background: transparent; border: none; color: var(--text-sub); font-weight: 700; font-size: 0.8rem; text-decoration: underline; margin-top: 10px; cursor: pointer; transition: 0.2s; width: 100%; }
         .btn-pricing-text:hover { color: var(--primary); }
         .pro-tier .btn-pricing-text { color: var(--tier-pro-sub); }
         .pro-tier .btn-pricing-text:hover { color: white; }
 
-        /* --- 👇 FOOTER 👇 --- */
+        /* --- FOOTER --- */
         .site-footer { background: #0f172a; color: #cbd5e1; padding: 60px 40px 30px; margin-top: auto; }
         .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; max-width: 1200px; margin: 0 auto; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 40px; margin-bottom: 30px; }
         .footer-brand { font-size: 2rem; font-weight: 900; color: white; letter-spacing: -1px; margin: 0 0 15px; }
@@ -155,15 +154,17 @@
 
         /* MODAIS E FORMS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); backdrop-filter: blur(12px); display: flex; justify-content: center; align-items: center; z-index: 100; animation: fadeIn 0.3s ease; }
-        .auth-card { background: var(--bg-card); padding: 40px; border-radius: 20px; width: 100%; max-width: 380px; border: 1px solid var(--border); box-shadow: var(--shadow); position: relative; }
-        .close-btn { position: absolute; top: 20px; right: 25px; background: none; border: none; color: var(--text-sub); font-size: 1.5rem; cursor: pointer; }
+        .auth-card { background: var(--bg-card); padding: 40px; border-radius: 20px; width: 100%; max-width: 380px; border: 1px solid var(--border); box-shadow: var(--shadow); position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-btn { position: absolute; top: 20px; right: 25px; background: none; border: none; color: var(--text-sub); font-size: 1.5rem; cursor: pointer; z-index: 10;}
         .form-group { margin-bottom: 15px; text-align: left; }
         label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 6px; font-weight: 700; }
-        input { width: 100%; padding: 12px; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
+        input { width: 100%; padding: 12px; background: var(--bg-main); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; transition: border-color 0.2s; }
         input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        
         .btn-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; margin-top: 10px; transition: all 0.2s; }
         .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(80%); }
         .btn-submit:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-2px); }
+        
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .pwd-rules { margin-top: 5px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px; }
         .pwd-rule { font-size: 0.75rem; color: var(--text-sub); display: flex; align-items: center; gap: 8px; transition: color 0.3s; }
@@ -171,6 +172,9 @@
         .pwd-rule.valid { color: #10b981; font-weight: 700; }
         .pwd-rule.valid .indicator { background: #10b981; border-color: #10b981; }
         .pwd-rule.valid .indicator::after { content: '✓'; color: white; font-size: 9px; font-weight: bold; }
+
+        /* Nova class para mensagens de erro pequenas debaixo do input */
+        .field-error { color: #ef4444; font-size: 0.7rem; font-weight: 600; display: block; margin-top: 4px; }
 
         @media (max-width: 768px) {
             .top-bar { padding: 15px 20px; }
@@ -186,7 +190,7 @@
             .pricing-card.pro-tier:hover { transform: translateY(-5px); }
             .footer-grid { grid-template-columns: 1fr; gap: 30px; text-align: center; }
             .footer-desc { margin: 0 auto; }
-            .auth-card { width: 92%; padding: 30px 20px; max-height: 90vh; overflow-y: auto; }
+            .auth-card { width: 92%; padding: 30px 20px; }
             .form-grid-mobile { grid-template-columns: 1fr !important; }
         }
     </style>
@@ -273,7 +277,7 @@
                     </ul>
                     
                     <div style="display: flex; flex-direction: column;">
-                        <button class="btn-pricing btn-pricing-light" @click="goToCheckout('basic')">{{ t('btn_subscribe') }}</button>
+                        <button class="btn-pricing btn-pricing-light" @click="openSubscribeModal('basic')">{{ t('btn_subscribe') }}</button>
                         <button class="btn-pricing-text" @click="openRegister">{{ t('btn_start_trial') }}</button>
                     </div>
                 </div>
@@ -303,7 +307,7 @@
                     </ul>
                     
                     <div style="display: flex; flex-direction: column;">
-                        <button class="btn-pricing btn-pricing-solid" @click="goToCheckout('pro')">{{ t('btn_subscribe') }}</button>
+                        <button class="btn-pricing btn-pricing-solid" @click="openSubscribeModal('pro')">{{ t('btn_subscribe') }}</button>
                         <button class="btn-pricing-text" @click="openRegister">{{ t('btn_start_trial') }}</button>
                     </div>
                 </div>
@@ -333,7 +337,7 @@
                     </ul>
                     
                     <div style="display: flex; flex-direction: column;">
-                        <button class="btn-pricing btn-pricing-light" @click="goToCheckout('lite')">{{ t('btn_subscribe') }}</button>
+                        <button class="btn-pricing btn-pricing-light" @click="openSubscribeModal('lite')">{{ t('btn_subscribe') }}</button>
                         <button class="btn-pricing-text" @click="openRegister">{{ t('btn_start_trial') }}</button>
                     </div>
                 </div>
@@ -364,8 +368,8 @@
                 <div class="footer-col">
                     <h4>{{ t('foot_legal') }}</h4>
                     <ul>
-                        <li><a href="#">{{ t('foot_privacy') }}</a></li>
-                        <li><a href="#">{{ t('foot_terms') }}</a></li>
+                        <li><a href="/privacy.html" target="_blank">{{ t('foot_privacy') }}</a></li>
+                        <li><a href="/terms.html" target="_blank">{{ t('foot_terms') }}</a></li>
                     </ul>
                 </div>
             </div>
@@ -385,6 +389,41 @@
                     <button class="btn-submit" @click="proceedToApp" style="background: #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
                         Entendido, Continuar <span style="font-size: 1.2rem;">➔</span>
                     </button>
+                </div>
+
+                <div v-else-if="currentModal === 'lead_capture'">
+                    <h2 style="text-align:center; margin:0 0 10px; color:var(--text-main);">Configurar Conta</h2>
+                    <p style="text-align:center; color:var(--text-sub); font-size:0.85rem; margin-bottom:25px;">
+                        Por favor preencha os seus dados. Um especialista da Volto entrará em contacto para ativar o seu plano.
+                    </p>
+                    <form @submit.prevent="submitLeadForm" novalidate>
+                        <div class="form-group">
+                            <label>Tipo de Negócio</label>
+                            <input type="text" v-model="leadForm.businessType" required placeholder="Ex: Cafetaria, Cabeleireiro...">
+                        </div>
+                        <div class="form-group">
+                            <label>Pessoa de Contacto</label>
+                            <input type="text" v-model="leadForm.contactName" required placeholder="O seu nome">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" v-model="leadForm.email" required placeholder="geral@empresa.com" :style="isLeadEmailInvalid ? 'border-color: #ef4444;' : ''">
+                            <span v-if="isLeadEmailInvalid" class="field-error">{{ t('lead_err_email') }}</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Contacto Telefónico</label>
+                            <input type="tel" v-model="leadForm.phone" required placeholder="Nº telemóvel" :style="isLeadPhoneInvalid ? 'border-color: #ef4444;' : ''">
+                            <span v-if="isLeadPhoneInvalid" class="field-error">{{ t('lead_err_phone') }}</span>
+                        </div>
+                        
+                        <div v-if="errorMsg" style="color:#ef4444; text-align:center; margin-bottom:15px; font-size:0.85rem; font-weight:bold;">
+                            {{ errorMsg }}
+                        </div>
+                        
+                        <button type="submit" class="btn-submit" :disabled="loading || !isLeadFormValid">
+                            {{ loading ? 'A enviar...' : 'Pedir Contacto' }}
+                        </button>
+                    </form>
                 </div>
 
                 <div v-else-if="currentModal === 'reset_password'">
@@ -490,12 +529,12 @@
                                     <label>{{ t('password') }}</label>
                                     <input type="password" v-model="globalUserForm.password" required placeholder="••••••••">
                                     <div class="pwd-rules" v-if="globalUserForm.password">
-                                        <div class="pwd-rule" :class="{valid: globalUserForm.password.length >= 6}"><span class="indicator"></span> Mínimo 6 caracteres</div>
+                                        <div class="pwd-rule" :class="{valid: globalUserForm.password.length >= 6}"><span class="indicator"></span> Mínimo 6</div>
                                         <div class="pwd-rule" :class="{valid: /[a-zA-Z]/.test(globalUserForm.password) && /[0-9]/.test(globalUserForm.password)}"><span class="indicator"></span> Letras e números</div>
                                     </div>
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0; text-align: left;">
-                                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;"><input type="checkbox" v-model="globalUserForm.rgpd" style="margin-top: 3px; width: auto; accent-color: var(--primary);"><span style="font-size: 0.75rem; color: var(--text-sub);">I agree to the processing of my personal data for the creation of my Volto Wallet in accordance with the Privacy Policy. *</span></label>
+                                    <span style="font-size: 0.75rem; color: var(--text-sub);">I agree to the processing of my personal data for the creation of my Volto Wallet in accordance with the <a href="/privacy.html" target="_blank" style="color: var(--primary); text-decoration: underline;">Privacy Policy</a>. *</span>
                                     <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;"><input type="checkbox" v-model="globalUserForm.marketing" style="margin-top: 3px; width: auto; accent-color: var(--primary);"><span style="font-size: 0.75rem; color: var(--text-sub);">I want to receive news, offers, and new loyalty cards directly in my wallet. (Optional)</span></label>
                                 </div>
                                 <button type="submit" class="btn-submit" :disabled="loading || !isWalletFormValid || !globalUserForm.password || globalUserForm.password.length < 6 || !/[a-zA-Z]/.test(globalUserForm.password) || !/[0-9]/.test(globalUserForm.password)">{{ loading ? 'A criar...' : t('tab_register_wallet') }}</button>
@@ -503,12 +542,12 @@
                         </div>
                     </div>
 
-                    <div v-if="errorMsg" class="error-msg" style="color:#ef4444; text-align:center; margin-top:15px; font-size:0.85rem;">{{ errorMsg }}</div>
+                    <div v-if="errorMsg && currentModal !== 'lead_capture'" class="error-msg" style="color:#ef4444; text-align:center; margin-top:15px; font-size:0.85rem;">{{ errorMsg }}</div>
                 </div> 
             </div>
         </div>
     </div>
 
-    <script src="/static/js/landing.js?v=12"></script>
+    <script src="/static/js/landing.js?v=15"></script>
 </body>
 </html>

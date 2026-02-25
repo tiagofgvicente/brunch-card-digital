@@ -253,6 +253,7 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+	mux.HandleFunc("/api/v1/public/capture-lead", func(w http.ResponseWriter, r *http.Request) { api.CaptureLeadHandler(w, r, repo) })
 	mux.HandleFunc("/api/v1/public/wallet-register", func(w http.ResponseWriter, r *http.Request) {
 		// Acesso público (sem middleware) para registar o cliente Global
 		if r.Method == http.MethodPost {
@@ -326,6 +327,9 @@ func main() {
 	mux.HandleFunc("/api/v1/admin/scopes/toggle", tenantMiddleware(makeHandler(api.ToggleScopeHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/scopes/update", tenantMiddleware(makeHandler(api.UpdateScopeHandler, repo)))
 	mux.HandleFunc("/api/v1/admin/scopes/delete", tenantMiddleware(makeHandler(api.DeleteScopeHandler, repo)))
+
+	// PAYMENTS API
+	mux.HandleFunc("/api/v1/payments/create-checkout", func(w http.ResponseWriter, r *http.Request) { api.CreateCheckoutSessionHandler(w, r, repo) })
 
 	server := &http.Server{
 		Addr:         ":" + port,

@@ -152,6 +152,19 @@ CREATE TABLE IF NOT EXISTS store_notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS leads (
+    id UUID PRIMARY KEY,
+    company_name VARCHAR(255) NOT NULL,
+    contact_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    tier VARCHAR(50),
+    cycle VARCHAR(50),
+    lang VARCHAR(10),
+    status VARCHAR(50) DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 
 
 -- ==========================================

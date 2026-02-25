@@ -1179,3 +1179,23 @@ func (repo *CardRepository) ResetPasswordWallet(token, newPassword string) error
 	}
 	return nil
 }
+
+// --- GESTÃO DE LEADS (CRM) ---
+func (repo *CardRepository) SaveLead(lead models.Lead) error {
+	query := `
+		INSERT INTO leads (id, company_name, contact_name, email, phone, tier, cycle, lang, status, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', CURRENT_TIMESTAMP)
+	`
+	_, err := repo.db.Exec(
+		query,
+		lead.ID,
+		lead.CompanyName,
+		lead.ContactName,
+		lead.Email,
+		lead.Phone,
+		lead.Tier,
+		lead.Cycle,
+		lead.Lang,
+	)
+	return err
+}
