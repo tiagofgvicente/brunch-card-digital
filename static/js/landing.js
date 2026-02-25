@@ -9,18 +9,17 @@ const LandingPage = {
         const errorMsg = ref('');
         const successMsg = ref(''); 
         
-        // Guarda o link de redirecionamento para o botão "Entendido, Continuar"
         const pendingRedirect = ref('');
-        
         const storeTab = ref('login'); 
         const walletTab = ref('login'); 
 
-        // --- ESTADOS PARA FORGOT PASSWORD ---
         const forgotMode = ref(false);
         const forgotEmail = ref('');
         const resetToken = ref('');
-        const resetType = ref(''); // 'store' ou 'wallet'
+        const resetType = ref(''); 
         const resetPasswordForm = ref({ password: '' });
+
+        const billingCycle = ref('monthly');
 
         const storeConfig = ref({ name: 'Volto', logo: '' });
         const stats = ref({ total_cards: 0, total_stamps: 0, total_redeems: 0 });
@@ -32,16 +31,14 @@ const LandingPage = {
 
         const isWalletFormValid = computed(() => {
             const f = globalUserForm.value;
-            return f.firstName.trim() !== '' &&
-                   f.lastName.trim() !== '' &&
-                   f.email.trim() !== '' &&
-                   f.password.trim() !== '' &&
-                   f.rgpd === true;
+            return f.firstName.trim() !== '' && f.lastName.trim() !== '' &&
+                   f.email.trim() !== '' && f.password.trim() !== '' && f.rgpd === true;
         });
 
+        // 👇 TRADUÇÕES TOTALMENTE ATUALIZADAS (com os limites e novas funcionalidades) 👇
         const translations = {
             en: {
-                nav_wallet: "My Wallet", nav_business: "For Businesses",
+                nav_wallet: "My Wallet", nav_business: "For Businesses", nav_pricing: "Pricing",
                 tab_login: "Login", tab_register_store: "Start Free Trial", tab_register_wallet: "Create Account",
                 btn_login: "Login", btn_enter: "Enter Dashboard",
                 hero_title: "Turn customers <br> into regulars.", hero_subtitle: "The simplest loyalty platform for modern businesses.",
@@ -51,10 +48,35 @@ const LandingPage = {
                 business_name: "Business Name", btn_launch: "Launch Platform",
                 wallet_title: "My Wallet", wallet_sub: "Access all your cards securely.",
                 forgot_pass: "Forgot your password?", forgot_title: "Recover Password", forgot_sub: "Enter your email. We'll send you a recovery link.",
-                btn_send_link: "Send Link", back_login: "Back to Login", reset_title: "New Password", reset_sub: "Choose a secure new password.", btn_save_pass: "Save Password"
+                btn_send_link: "Send Link", back_login: "Back to Login", reset_title: "New Password", reset_sub: "Choose a secure new password.", btn_save_pass: "Save Password",
+                
+                price_title: "Simple & Transparent Pricing", price_sub: "Start with a 30-day free trial. No credit card required.",
+                bill_monthly: "Monthly", bill_yearly: "Yearly",
+                per_month: "/month", btn_start_trial: "Start Free Trial",
+                btn_subscribe: "Subscribe Now", // NOVO
+                
+                billed_monthly_note: "Billed monthly. Cancel anytime.",
+                billed_yearly_basic: "Billed yearly at €180. Cancel anytime.",
+                billed_yearly_lite: "Billed yearly at €300. Cancel anytime.",
+                billed_yearly_pro: "Billed yearly at €360. Cancel anytime.",
+                save_tag: "Save",
+                
+                tier_basic: "Basic", tier_basic_sub: "Just the essentials to start",
+                feat_basic_1: "Max 50 Customers", feat_basic_2: "1 Fixed standard stamp card", feat_basic_3: "No custom card design", feat_basic_4: "No Socials, Menu or Maps", feat_basic_5: "No Customer Management", feat_basic_6: "No Reservations System",
+                
+                tier_lite: "Lite", tier_lite_sub: "Ideal for growing businesses",
+                feat_lite_1: "Max 100 Customers", feat_lite_2: "1 Customizable Card (Icon OR Logo)", feat_lite_3: "Social Media & Maps in Wallet", feat_lite_4: "Basic Customer Management", feat_lite_5: "No Digital Menu", feat_lite_6: "No Reservations System",
+                
+                tier_pro: "Pro", tier_pro_sub: "Everything you need to scale",
+                feat_pro_1: "Unlimited Customers & Advanced Mgmt", feat_pro_2: "Up to 3 Cards + Tiers (Bronze, Silver, Gold)", feat_pro_3: "1 Card 100% Custom Designed for You", feat_pro_4: "Both Logo AND Custom Icon", feat_pro_5: "Socials, Maps & Digital Menu in Wallet", feat_pro_6: "Reservations System (Brunch, Lunch, etc.)",
+                
+                foot_product: "Product", foot_resources: "Resources", foot_legal: "Legal",
+                foot_features: "Features", foot_pricing: "Pricing", foot_login: "Login",
+                foot_help: "Help Center", foot_contact: "Contact Us",
+                foot_privacy: "Privacy Policy", foot_terms: "Terms of Service"
             },
             pt: {
-                nav_wallet: "Minha Carteira", nav_business: "Para Negócios",
+                nav_wallet: "Minha Carteira", nav_business: "Para Negócios", nav_pricing: "Preços",
                 tab_login: "Entrar", tab_register_store: "Teste Grátis", tab_register_wallet: "Criar Conta",
                 btn_login: "Entrar", btn_enter: "Entrar no Painel",
                 hero_title: "Transforme clientes <br> em fãs.", hero_subtitle: "A plataforma de fidelização mais simples para o seu negócio.",
@@ -64,7 +86,32 @@ const LandingPage = {
                 business_name: "Nome do Negócio", btn_launch: "Lançar Plataforma",
                 wallet_title: "Minha Carteira", wallet_sub: "Aceda aos seus cartões com segurança.",
                 forgot_pass: "Esqueceu-se da palavra-passe?", forgot_title: "Recuperar Palavra-passe", forgot_sub: "Insira o seu email. Vamos enviar-lhe um link de recuperação.",
-                btn_send_link: "Enviar Link", back_login: "Voltar ao Login", reset_title: "Nova Palavra-passe", reset_sub: "Escolha uma nova palavra-passe segura.", btn_save_pass: "Guardar Palavra-passe"
+                btn_send_link: "Enviar Link", back_login: "Voltar ao Login", reset_title: "Nova Palavra-passe", reset_sub: "Escolha uma nova palavra-passe segura.", btn_save_pass: "Guardar Palavra-passe",
+                
+                price_title: "Planos Simples e Transparentes", price_sub: "Comece com 30 dias grátis. Sem cartão de crédito.",
+                bill_monthly: "Mensal", bill_yearly: "Anual",
+                per_month: "/mês", btn_start_trial: "Teste Grátis (30 Dias)",
+                btn_subscribe: "Subscrever Agora", // NOVO
+                
+                billed_monthly_note: "Faturado mensalmente. Cancele quando quiser.",
+                billed_yearly_basic: "Faturado anualmente a €180. Cancele quando quiser.",
+                billed_yearly_lite: "Faturado anualmente a €300. Cancele quando quiser.",
+                billed_yearly_pro: "Faturado anualmente a €360. Cancele quando quiser.",
+                save_tag: "Poupança de",
+                
+                tier_basic: "Basic", tier_basic_sub: "O essencial para arrancar",
+                feat_basic_1: "Máximo 50 Clientes", feat_basic_2: "1 Cartão (Selo Fixo Standard)", feat_basic_3: "Sem design personalizável", feat_basic_4: "Sem Redes Sociais, Menu ou Mapas", feat_basic_5: "Sem Gestão de Clientes", feat_basic_6: "Sem Sistema de Reservas",
+                
+                tier_lite: "Lite", tier_lite_sub: "Ideal para pequenos negócios",
+                feat_lite_1: "Máximo 100 Clientes", feat_lite_2: "1 Cartão Personalizável (Ícone OU Logo)", feat_lite_3: "Redes Sociais e Mapas na Wallet", feat_lite_4: "Gestão Básica de Clientes", feat_lite_5: "Sem Menu Digital", feat_lite_6: "Sem Sistema de Reservas",
+                
+                tier_pro: "Pro", tier_pro_sub: "Tudo o que o negócio precisa",
+                feat_pro_1: "Clientes Ilimitados e Gestão Avançada", feat_pro_2: "Até 3 Cartões + Níveis (Bronze, Silver, Gold)", feat_pro_3: "1 Cartão 100% Desenhado à Imagem da Loja", feat_pro_4: "Ícone e Logótipo em simultâneo", feat_pro_5: "Redes Sociais, Mapas e Menu Digital", feat_pro_6: "Sistema de Reservas (Brunch, Almoço, etc.)",
+                
+                foot_product: "Produto", foot_resources: "Recursos", foot_legal: "Legal",
+                foot_features: "Funcionalidades", foot_pricing: "Preços", foot_login: "Entrar na Loja",
+                foot_help: "Centro de Ajuda", foot_contact: "Contacte-nos",
+                foot_privacy: "Política de Privacidade", foot_terms: "Termos de Serviço"
             }
         };
 
@@ -215,7 +262,6 @@ const LandingPage = {
             finally { loading.value = false; }
         };
 
-        // --- MÉTODOS DE FORGOT PASSWORD ---
         const handleForgotPassword = async () => {
             if (!forgotEmail.value) return;
             loading.value = true; errorMsg.value = ''; successMsg.value = '';
@@ -256,10 +302,19 @@ const LandingPage = {
             }
         };
 
+        const scrollToPricing = () => {
+            const el = document.getElementById('pricing');
+            if(el) el.scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // 👇 ADIÇÃO: Redireciona para o checkout com os parâmetros da escolha 👇
+        const goToCheckout = (tier) => {
+            window.location.href = `/checkout.html?tier=${tier}&cycle=${billingCycle.value}`;
+        };
+
         onMounted(() => { 
             initSettings(); fetchConfig(); fetchStats(); 
             
-            // DETETA SE O UTILIZADOR VEM DO LINK DO EMAIL DE RECUPERAÇÃO
             const urlParams = new URLSearchParams(window.location.search);
             const tokenParam = urlParams.get('reset_token');
             const typeParam = urlParams.get('type');
@@ -275,9 +330,9 @@ const LandingPage = {
             loginForm, registerForm, walletForm, walletTab, storeTab, globalUserForm,
             isWalletFormValid, t, toggleTheme, toggleLang, 
             handleLogin, handleRegister, handleWalletRegister, handleWalletLogin, proceedToApp,
-            
-            // Variáveis e funções exportadas para o template
             forgotMode, forgotEmail, resetToken, resetType, resetPasswordForm, handleForgotPassword, handleResetPassword,
+            
+            billingCycle, scrollToPricing, goToCheckout, // Variáveis Expostas
             
             openLogin: () => { currentModal.value = 'store'; storeTab.value = 'login'; errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false; },
             openRegister: () => { currentModal.value = 'store'; storeTab.value = 'register'; errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false; },
