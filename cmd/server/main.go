@@ -245,6 +245,7 @@ func main() {
 	mux.HandleFunc("/api/v1/public/wallet-forgot-password", func(w http.ResponseWriter, r *http.Request) { api.WalletForgotPasswordHandler(w, r, repo) })
 	mux.HandleFunc("/api/v1/public/wallet-reset-password", func(w http.ResponseWriter, r *http.Request) { api.WalletResetPasswordHandler(w, r, repo) })
 	mux.HandleFunc("/api/v1/public/stats", tenantMiddleware(makeHandler(api.PublicStatsHandler, repo)))
+	mux.HandleFunc("/api/v1/public/contact", func(w http.ResponseWriter, r *http.Request) { api.ContactUsHandler(w, r) })
 	mux.HandleFunc("/api/v1/public/register", func(w http.ResponseWriter, r *http.Request) {
 		// Não usamos middleware aqui porque é um acesso público (ainda não tem token)
 		if r.Method == http.MethodPost {
@@ -330,6 +331,23 @@ func main() {
 
 	// PAYMENTS API
 	mux.HandleFunc("/api/v1/payments/create-checkout", func(w http.ResponseWriter, r *http.Request) { api.CreateCheckoutSessionHandler(w, r, repo) })
+
+	// FOOTER PAGES
+	mux.HandleFunc("/checkout.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/checkout.html")
+	})
+
+	mux.HandleFunc("/privacy.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/privacy.html")
+	})
+
+	mux.HandleFunc("/terms.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/terms.html")
+	})
+
+	mux.HandleFunc("/help.html", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/help.html")
+	})
 
 	server := &http.Server{
 		Addr:         ":" + port,

@@ -31,6 +31,9 @@ const LandingPage = {
 
         const leadForm = ref({ businessType: '', contactName: '', email: '', phone: '' });
         const selectedTierForLead = ref('');
+        
+        // 👇 NOVO: Variável do Formulário de Contacto 👇
+        const contactForm = ref({ name: '', email: '', subject: '', message: '' });
 
         const isWalletFormValid = computed(() => {
             const f = globalUserForm.value;
@@ -38,16 +41,15 @@ const LandingPage = {
                    f.email.trim() !== '' && f.password.trim() !== '' && f.rgpd === true;
         });
 
-        // 👇 AVALIAÇÃO EM TEMPO REAL DOS CAMPOS DA LEAD 👇
         const isLeadEmailInvalid = computed(() => {
             const email = leadForm.value.email;
-            if (email.length === 0) return false; // Não mostra erro se estiver vazio
+            if (email.length === 0) return false; 
             return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         });
 
         const isLeadPhoneInvalid = computed(() => {
             const phone = leadForm.value.phone;
-            if (phone.length === 0) return false; // Não mostra erro se estiver vazio
+            if (phone.length === 0) return false; 
             const cleanPhone = phone.replace(/\s+/g, '');
             return !/^\+?[0-9]{9,}$/.test(cleanPhone);
         });
@@ -62,6 +64,13 @@ const LandingPage = {
                    f.contactName.trim() !== '' && 
                    emailValid && 
                    phoneValid;
+        });
+
+        // 👇 NOVO: Validação do formulário de Contacto 👇
+        const isContactFormValid = computed(() => {
+            const f = contactForm.value;
+            const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+            return f.name.trim() !== '' && emailValid && f.subject.trim() !== '' && f.message.trim() !== '';
         });
 
         const translations = {
@@ -103,9 +112,11 @@ const LandingPage = {
                 foot_help: "Help Center", foot_contact: "Contact Us",
                 foot_privacy: "Privacy Policy", foot_terms: "Terms of Service",
                 
-                // Erros inline
                 lead_err_email: "Invalid email format.",
-                lead_err_phone: "Must contain numbers only (min. 9 digits)."
+                lead_err_phone: "Must contain numbers only (min. 9 digits).",
+                
+                // 👇 NOVAS: Traduções para o Contacto 👇
+                contact_title: "Contact Us", contact_sub: "Have a question? Send us a message and we'll reply shortly.", contact_name: "Your Name", contact_subject: "Subject", contact_message: "Message", btn_send_msg: "Send Message"
             },
             pt: {
                 nav_wallet: "Minha Carteira", nav_business: "Para Negócios", nav_pricing: "Preços",
@@ -145,9 +156,11 @@ const LandingPage = {
                 foot_help: "Centro de Ajuda", foot_contact: "Contacte-nos",
                 foot_privacy: "Política de Privacidade", foot_terms: "Termos de Serviço",
                 
-                // Erros inline
                 lead_err_email: "Formato de email inválido.",
-                lead_err_phone: "Tem de conter apenas números (mín. 9)."
+                lead_err_phone: "Tem de conter apenas números (mín. 9).",
+
+                // 👇 NOVAS: Traduções para o Contacto 👇
+                contact_title: "Contacte-nos", contact_sub: "Tem alguma dúvida? Envie-nos uma mensagem e responderemos em breve.", contact_name: "O seu Nome", contact_subject: "Assunto", contact_message: "Mensagem", btn_send_msg: "Enviar Mensagem"
             }
         };
 
@@ -335,7 +348,7 @@ const LandingPage = {
         };
 
         const submitLeadForm = async () => {
-            if (!isLeadFormValid.value) return; // Segurança extra
+            if (!isLeadFormValid.value) return; 
 
             loading.value = true;
             errorMsg.value = '';
@@ -376,6 +389,29 @@ const LandingPage = {
             }
         };
 
+        // 👇 NOVO: Submeter Contacto 👇
+        const submitContactForm = async () => {
+            if (!isContactFormValid.value) return;
+            loading.value = true; errorMsg.value = ''; successMsg.value = '';
+            try {
+                const res = await fetch('/api/v1/public/contact', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(contactForm.value)
+                });
+                if (res.ok) {
+                    successMsg.value = lang.value === 'pt' ? "Mensagem enviada! Responderemos o mais breve possível." : "Message sent! We'll reply as soon as possible.";
+                    contactForm.value = { name: '', email: '', subject: '', message: '' };
+                } else {
+                    const txt = await res.text();
+                    errorMsg.value = txt || (lang.value === 'pt' ? "Erro ao enviar mensagem." : "Error sending message.");
+                }
+            } catch(e) {
+                errorMsg.value = lang.value === 'pt' ? "Erro de ligação." : "Connection error.";
+            } finally {
+                loading.value = false;
+            }
+        };
+
         const proceedToApp = () => {
             if (pendingRedirect.value) {
                 window.location.href = pendingRedirect.value;
@@ -398,10 +434,17 @@ const LandingPage = {
             const urlParams = new URLSearchParams(window.location.search);
             const tokenParam = urlParams.get('reset_token');
             const typeParam = urlParams.get('type');
+            const openParam = urlParams.get('open');
+            
             if (tokenParam && typeParam) {
                 resetToken.value = tokenParam;
                 resetType.value = typeParam;
                 currentModal.value = 'reset_password';
+            }
+
+            if (openParam === 'contact') {
+                currentModal.value = 'contact';
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
 
@@ -415,6 +458,10 @@ const LandingPage = {
             billingCycle, scrollToPricing, 
             
             leadForm, openSubscribeModal, submitLeadForm,
+            
+            // 👇 NOVOS: Variáveis exportadas do Contacto 👇
+            contactForm, isContactFormValid, submitContactForm,
+            openContactModal: () => { currentModal.value = 'contact'; errorMsg.value = ''; successMsg.value = ''; },
             
             openLogin: () => { currentModal.value = 'store'; storeTab.value = 'login'; errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false; },
             openRegister: () => { currentModal.value = 'store'; storeTab.value = 'register'; errorMsg.value = ''; successMsg.value = ''; forgotMode.value = false; },

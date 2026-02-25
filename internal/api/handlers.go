@@ -1201,16 +1201,18 @@ func CaptureLeadHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 
 		to := []string{req.Email}
 		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-		
+
 		tierName := strings.ToUpper(string(req.Tier[0])) + req.Tier[1:]
-		
+
 		var subject, cycleName, body string
 
 		// Lógica Inteligente de Idioma
 		if req.Lang == "en" {
 			cycleName = "Monthly"
-			if req.Cycle == "yearly" { cycleName = "Yearly" }
-			
+			if req.Cycle == "yearly" {
+				cycleName = "Yearly"
+			}
+
 			subject = "Subject: Your Volto subscription request\n"
 			body = fmt.Sprintf(`
 				<h2>Hello %s,</h2>
@@ -1223,8 +1225,10 @@ func CaptureLeadHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 			`, req.ContactName, req.CompanyName, tierName, cycleName, req.Phone)
 		} else {
 			cycleName = "Mensal"
-			if req.Cycle == "yearly" { cycleName = "Anual" }
-			
+			if req.Cycle == "yearly" {
+				cycleName = "Anual"
+			}
+
 			subject = "Subject: O seu pedido de subscrição Volto\n"
 			body = fmt.Sprintf(`
 				<h2>Olá %s,</h2>
@@ -1240,7 +1244,7 @@ func CaptureLeadHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 		message := []byte(subject + mime + body)
 		auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
 		err := smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, to, message)
-		
+
 		if err != nil {
 			log.Printf("⚠️ Erro ao enviar email de Lead para %s: %v", req.Email, err)
 		} else {
@@ -1249,4 +1253,58 @@ func CaptureLeadHandler(w http.ResponseWriter, r *http.Request, repo *database.C
 	}()
 
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "message": "Pedido recebido com sucesso!"})
+}
+
+// --- CONTACTE-NOS (SUPORTE) ---
+func ContactUsHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name    string `json:"name"`
+		Email   string `json:"email"`
+		Subject string `json:"subject"`
+		Message string `json:"message"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		return
+	}
+
+	// Validação de email para evitar spam de bots
+	if err := isValidEmailDomain(req.Email); err != nil {
+		http.Error(w, "O domínio do email não é válido.", http.StatusBadRequest)
+		return
+	}
+
+	go func() {
+		smtpHost := os.Getenv("SMTP_HOST")
+		smtpPort := os.Getenv("SMTP_PORT")
+		senderEmail := os.Getenv("SMTP_USER")
+		senderPassword := os.Getenv("SMTP_PASS")
+
+		if smtpHost == "" || senderEmail == "" {
+			return
+		}
+
+		// Envia a mensagem para o teu próprio email (o administrador)
+		to := []string{senderEmail}
+
+		subject := fmt.Sprintf("Subject: [Volto Site] Contacto: %s\n", req.Subject)
+		mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+		body := fmt.Sprintf(`
+			<h2>Novo Contacto pelo Site</h2>
+			<p><strong>Nome:</strong> %s</p>
+			<p><strong>Email:</strong> %s</p>
+			<p><strong>Assunto:</strong> %s</p>
+			<hr>
+			<p><strong>Mensagem:</strong></p>
+			<p>%s</p>
+		`, req.Name, req.Email, req.Subject, req.Message)
+
+		message := []byte(subject + mime + body)
+		auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
+		smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, to, message)
+	}()
+
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }

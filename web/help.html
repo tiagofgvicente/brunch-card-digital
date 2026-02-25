@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Ajuda | Volto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #eaeff2; color: #1e293b; line-height: 1.6; }
+        .top-bar { background: white; padding: 20px 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .brand { font-weight: 900; font-size: 1.5rem; color: #1e293b; text-decoration: none; }
+        .brand span { color: #2563eb; }
+        .btn-back { font-size: 0.9rem; font-weight: 700; color: #64748b; text-decoration: none; transition: 0.2s; }
+        .btn-back:hover { color: #2563eb; }
+        
+        .container { max-width: 800px; margin: 40px auto; }
+        .header-section { text-align: center; margin-bottom: 50px; }
+        h1 { font-size: 2.8rem; font-weight: 900; margin-bottom: 10px; color: #0f172a; }
+        p.subtitle { color: #64748b; font-size: 1.1rem; }
+
+        /* Accordion Styles */
+        .faq-item { background: white; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); overflow: hidden; border: 1px solid #cbd5e1; transition: 0.3s; }
+        .faq-item:hover { border-color: #2563eb; }
+        
+        .faq-question { width: 100%; padding: 20px 25px; text-align: left; background: transparent; border: none; font-size: 1.1rem; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-family: 'Inter', sans-serif; }
+        .faq-question:focus { outline: none; }
+        
+        .faq-icon { width: 24px; height: 24px; transition: transform 0.3s ease; color: #2563eb; }
+        .faq-item.active .faq-icon { transform: rotate(45deg); }
+        
+        .faq-answer { padding: 0 25px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; color: #475569; background: #f8fafc; border-top: 1px solid transparent; }
+        .faq-item.active .faq-answer { padding: 20px 25px; max-height: 500px; border-top-color: #e2e8f0; }
+
+        .contact-box { background: #0f172a; color: white; padding: 40px; border-radius: 20px; text-align: center; margin-top: 60px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .contact-box h2 { margin-top: 0; font-size: 1.5rem; }
+        .contact-box p { color: #cbd5e1; margin-bottom: 25px; }
+        .btn-contact { background: #2563eb; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-block; transition: 0.2s; }
+        .btn-contact:hover { background: #1d4ed8; transform: translateY(-2px); }
+
+        @media (max-width: 768px) {
+            .container { padding: 0 20px; }
+            h1 { font-size: 2rem; }
+            .faq-question { font-size: 1rem; padding: 15px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <a href="/" class="brand">Volto<span>.</span></a>
+        <a href="/" class="btn-back">← Voltar</a>
+    </div>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>Como podemos ajudar?</h1>
+            <p class="subtitle">As respostas para as dúvidas mais comuns da nossa plataforma.</p>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">
+                Preciso de comprar algum equipamento (tablet ou máquina)?
+                <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <div class="faq-answer">
+                <p><strong>Não.</strong> A Volto é 100% digital e baseada na nuvem. Só precisa do seu próprio telemóvel, tablet ou computador (o dispositivo que já usa na loja) para aceder ao nosso painel e registar os selos dos seus clientes.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">
+                Os meus clientes precisam de instalar mais uma aplicação?
+                <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <div class="faq-answer">
+                <p>Nenhuma instalação pesada é necessária. Os seus clientes acedem à "Volto Wallet" diretamente pelo navegador do telemóvel através de um QR Code ou Link que a sua loja disponibiliza, de forma rápida e segura.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">
+                Como é que o cliente ganha os selos ou pontos?
+                <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <div class="faq-answer">
+                <p>No momento do pagamento, o cliente mostra-lhe o seu cartão digital (na Wallet) com um QR Code único. A sua equipa apenas tem de ler esse código usando a câmara do telemóvel da loja ou inserindo o email do cliente no nosso painel de administração para lhe atribuir os selos.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">
+                Posso cancelar a minha subscrição a qualquer momento?
+                <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <div class="faq-answer">
+                <p><strong>Sim, absolutamente.</strong> Não temos contratos de fidelização forçada. Se escolher o plano mensal, pode cancelar e a sua conta será encerrada no final desse mês. Se cancelar o plano anual, terá acesso até ao fim do período já pago.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">
+                Que tipo de negócios beneficiam mais com a Volto?
+                <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <div class="faq-answer">
+                <p>A plataforma é ideal para qualquer negócio com compras recorrentes: Cafetarias, Barbearias, Restaurantes (Brunch, Almoços diários), Salões de Beleza, Lavagens Auto, Ginásios e Retalho local.</p>
+            </div>
+        </div>
+
+        <div class="contact-box">
+            <h2>Não encontrou o que procura?</h2>
+            <p>A nossa equipa de especialistas está pronta para ajudar a sua loja a faturar mais.</p>
+            <a href="/?open=contact" class="btn-contact">Contacte o Suporte</a>
+        </div>
+    </div>
+
+    <script>
+        // Lógica simples para abrir e fechar as perguntas
+        document.querySelectorAll('.faq-question').forEach(button => {
+            button.addEventListener('click', () => {
+                const item = button.parentElement;
+                
+                // Opcional: Fecha as outras abertas
+                document.querySelectorAll('.faq-item').forEach(otherItem => {
+                    if (otherItem !== item) otherItem.classList.remove('active');
+                });
+                
+                // Abre/Fecha a atual
+                item.classList.toggle('active');
+            });
+        });
+    </script>
+</body>
+</html>
